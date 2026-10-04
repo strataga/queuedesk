@@ -1,0 +1,26 @@
+{
+  "mode": "interactive",
+  "granularity": "fine",
+  "model_profile": "inherit",
+  "resolve_model_ids": "omit",
+  "runtime": "codex",
+  "phase_id_convention": "sequential",
+  "workflow": {
+    "research": true,
+    "plan_check": true,
+    "verifier": true,
+    "auto_advance": false,
+    "nyquist_validation": true,
+    "ai_integration_phase": false
+  },
+  "planning": {
+    "commit_docs": true,
+    "search_gitignored": false
+  },
+  "parallelization": {
+    "enabled": false,
+    "plan_level": false,
+    "task_level": false
+  },
+  "project_code": null
+}

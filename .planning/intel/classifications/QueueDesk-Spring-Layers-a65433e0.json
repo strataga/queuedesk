@@ -1,0 +1,15 @@
+{
+  "source_path": "/Users/jason/projects/queuedesk/docs/images/QueueDesk_Spring_Layers.png",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "QueueDesk Spring layers diagram",
+  "summary": "HTTP controller, use-case service, persistence repository and infrastructure adapter responsibilities use constructor injection.",
+  "scope": [
+    "Spring layers",
+    "injection"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null
+}

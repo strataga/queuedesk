@@ -1,0 +1,14 @@
+{
+  "source_path": "/Users/jason/projects/queuedesk/docs/images/QueueDesk_Learning_Path.png",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "QueueDesk learning path diagram",
+  "summary": "Java/CLI, persistence, MQ, reliability and optional UI/deployment stages advance through explainable checkpoints.",
+  "scope": [
+    "learning stages"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null
+}

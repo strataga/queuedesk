@@ -1,0 +1,17 @@
+{
+  "source_path": "/Users/jason/projects/queuedesk/docs/QueueDesk_PRD.pdf",
+  "type": "PRD",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "QueueDesk Product Requirements and Learning Guide",
+  "summary": "Companion 24-page PDF of the synthetic messaging requirements and learning guide.",
+  "scope": [
+    "requirements",
+    "contracts",
+    "scenarios",
+    "learning"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null
+}

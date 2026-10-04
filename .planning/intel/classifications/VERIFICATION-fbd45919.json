@@ -1,0 +1,15 @@
+{
+  "source_path": "/Users/jason/projects/queuedesk/docs/VERIFICATION.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Verification — 4 October 2026",
+  "summary": "Recorded five-test, packaging, smoke, HTTP and provenance verification for the in-memory starter.",
+  "scope": [
+    "verification",
+    "baseline"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null
+}

@@ -1,0 +1,16 @@
+{
+  "source_path": "/Users/jason/projects/queuedesk/docs/images/QueueDesk_Data_Model.png",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "QueueDesk data model diagram",
+  "summary": "Instruction, outbox, event dedup, processing attempts and reconciled quarantine records with separate admission and outcome transactions.",
+  "scope": [
+    "data model",
+    "dedup",
+    "quarantine"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null
+}

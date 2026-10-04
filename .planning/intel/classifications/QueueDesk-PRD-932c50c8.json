@@ -1,0 +1,25 @@
+{
+  "source_path": "/Users/jason/projects/queuedesk/docs/QueueDesk_PRD.md",
+  "type": "PRD",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "QueueDesk Product Requirements",
+  "summary": "Synthetic messaging lab scope, staged requirements, technical contracts, scenarios, learning checkpoints and optional later work.",
+  "scope": [
+    "requirements",
+    "contracts",
+    "scenarios",
+    "learning"
+  ],
+  "cross_refs": [
+    "images/QueueDesk_Architecture.png",
+    "images/QueueDesk_Data_Model.png",
+    "images/QueueDesk_Learning_Path.png",
+    "images/QueueDesk_Mock_Participants.png",
+    "images/QueueDesk_Outbox_Recovery.png",
+    "images/QueueDesk_Spring_Layers.png",
+    "images/QueueDesk_Status_Model.png"
+  ],
+  "locked": false,
+  "precedence": null
+}

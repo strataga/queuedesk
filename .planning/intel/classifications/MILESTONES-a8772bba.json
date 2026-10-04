@@ -1,0 +1,16 @@
+{
+  "source_path": "/Users/jason/projects/queuedesk/docs/MILESTONES.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Bounded learning milestones",
+  "summary": "Current L0/pre-L1 evidence and staged gates for persistence, MQ, reliability and optional UI.",
+  "scope": [
+    "learning stages",
+    "baseline",
+    "persistence"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null
+}

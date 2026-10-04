@@ -1,0 +1,15 @@
+{
+  "source_path": "/Users/jason/projects/queuedesk/docs/images/QueueDesk_Architecture.png",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "QueueDesk architecture diagram",
+  "summary": "CLI, API, Postgres, outbox, MQ and worker flow with later API-only read dashboard.",
+  "scope": [
+    "architecture",
+    "transaction boundaries"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null
+}

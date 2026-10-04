@@ -1,0 +1,16 @@
+{
+  "source_path": "/Users/jason/projects/queuedesk/docs/images/QueueDesk_Status_Model.png",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "QueueDesk status model diagram",
+  "summary": "Business transitions include explicit rejection and pending confirmation; delivery detail remains separate.",
+  "scope": [
+    "state machine",
+    "uncertainty",
+    "delivery"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null
+}

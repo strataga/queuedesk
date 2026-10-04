@@ -1,0 +1,15 @@
+{
+  "source_path": "/Users/jason/projects/queuedesk/docs/images/QueueDesk_Mock_Participants.png",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "QueueDesk mock participant diagram",
+  "summary": "Script sender, worker clearing and simulated receiver are local mock roles.",
+  "scope": [
+    "participants",
+    "simulation"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null
+}

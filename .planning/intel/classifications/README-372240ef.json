@@ -1,0 +1,28 @@
+{
+  "source_path": "/Users/jason/projects/queuedesk/README.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "QueueDesk",
+  "summary": "Current Java foundation and in-memory HTTP rehearsal, local generator usage, limitations and source links.",
+  "scope": [
+    "starter",
+    "HTTP",
+    "Java generator"
+  ],
+  "cross_refs": [
+    "docs/MILESTONES.md",
+    "docs/QueueDesk_PRD.md",
+    "docs/QueueDesk_PRD.pdf",
+    "docs/images/QueueDesk_Architecture.png",
+    "docs/images/QueueDesk_Data_Model.png",
+    "docs/images/QueueDesk_Learning_Path.png",
+    "docs/images/QueueDesk_Mock_Participants.png",
+    "docs/images/QueueDesk_Outbox_Recovery.png",
+    "docs/images/QueueDesk_Spring_Layers.png",
+    "docs/images/QueueDesk_Status_Model.png",
+    "docs/SOURCES.json"
+  ],
+  "locked": false,
+  "precedence": null
+}

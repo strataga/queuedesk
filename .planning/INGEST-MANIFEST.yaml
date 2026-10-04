@@ -1,0 +1,27 @@
+# Reproducible source inventory. PRD Markdown is canonical; PDF is its companion rendering.
+# Precedence: ADR > SPEC > PRD > DOC. No ADR or standalone SPEC is present.
+docs:
+  - path: docs/QueueDesk_PRD.md
+    type: PRD
+  - path: docs/QueueDesk_PRD.pdf
+    type: PRD
+  - path: README.md
+    type: DOC
+  - path: docs/MILESTONES.md
+    type: DOC
+  - path: docs/VERIFICATION.md
+    type: DOC
+  - path: docs/images/QueueDesk_Learning_Path.png
+    type: DOC
+  - path: docs/images/QueueDesk_Architecture.png
+    type: DOC
+  - path: docs/images/QueueDesk_Mock_Participants.png
+    type: DOC
+  - path: docs/images/QueueDesk_Data_Model.png
+    type: DOC
+  - path: docs/images/QueueDesk_Status_Model.png
+    type: DOC
+  - path: docs/images/QueueDesk_Outbox_Recovery.png
+    type: DOC
+  - path: docs/images/QueueDesk_Spring_Layers.png
+    type: DOC

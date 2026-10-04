@@ -1,0 +1,16 @@
+{
+  "source_path": "/Users/jason/projects/queuedesk/docs/images/QueueDesk_Outbox_Recovery.png",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "QueueDesk outbox recovery diagram",
+  "summary": "MQ commit precedes the published marker; a crash resends the same eventId and worker dedup protects the result.",
+  "scope": [
+    "outbox",
+    "crash window",
+    "dedup"
+  ],
+  "cross_refs": [],
+  "locked": false,
+  "precedence": null
+}
