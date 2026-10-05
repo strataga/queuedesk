@@ -1,0 +1,124 @@
+{
+  "sources": [
+    {
+      "library_file_id": "libfile_c99638ff71ec81919f5f43f8d071c7b1",
+      "file_id": "file_00000000edc481f5acd40dde901a9d14",
+      "file_name": "QueueDesk_PRD.md",
+      "current_version_number": 3,
+      "size_bytes": 71578,
+      "xattrs": [
+        {
+          "name": "user.library-file-version",
+          "value": "3"
+        }
+      ],
+      "project_path": "docs/QueueDesk_PRD.md",
+      "sha256": "80569fbe401a09161ae90a3621bd71e331b2927645701265d12979763bf2acc8"
+    },
+    {
+      "library_file_id": "libfile_bbbdbe0d5d948191a8afa0b78240b9a0",
+      "file_id": "file_00000000714881f5a58e3be123a11f22",
+      "file_name": "QueueDesk_PRD.pdf",
+      "current_version_number": 2,
+      "size_bytes": 2900121,
+      "xattrs": [
+        {
+          "name": "user.library-file-version",
+          "value": "2"
+        }
+      ],
+      "project_path": "docs/QueueDesk_PRD.pdf",
+      "sha256": "ecfa1b87761ceec1eee1c61f77359df3f6567a34b86de1a08b1687048e3080e0"
+    },
+    {
+      "library_file_id": "libfile_d8938d5853d8819196299a3e1d8b1a82",
+      "file_id": "file_00000000125081f5acda6e6c5d4ee135",
+      "file_name": "QueueDesk_PRD_Visual_Bundle.zip",
+      "current_version_number": 3,
+      "size_bytes": 3805856,
+      "xattrs": [
+        {
+          "name": "user.library-file-version",
+          "value": "3"
+        }
+      ],
+      "project_path": "docs/source-bundle/QueueDesk_PRD_Visual_Bundle.zip",
+      "sha256": "10388b94922c951cf2e5b3111f38ba966fd3dc82b6dcb98f7daf53a56bd21bb1"
+    }
+  ],
+  "edition": "1.2",
+  "diagrams": [
+    {
+      "project_path": "docs/images/QueueDesk_Architecture.png",
+      "size_bytes": 1568542,
+      "sha256": "9fa192179f94c2e7d10a9d15fcf8a3ae4809b7c900ec6a36954c01fa6c6ab4be",
+      "source_library_file_id": "libfile_d8938d5853d8819196299a3e1d8b1a82",
+      "source_version": 3
+    },
+    {
+      "project_path": "docs/images/QueueDesk_Data_Model.png",
+      "size_bytes": 91271,
+      "sha256": "15a83d9d7faa35df821536a3d5a6dd3b84eec72cf948ad3a7d098e14a13a96be",
+      "source_library_file_id": "libfile_d8938d5853d8819196299a3e1d8b1a82",
+      "source_version": 3
+    },
+    {
+      "project_path": "docs/images/QueueDesk_Learning_Path.png",
+      "size_bytes": 82271,
+      "sha256": "2fde82858b1448bd848e56bf774934f551174ff2704394be637b7e7cadd23b30",
+      "source_library_file_id": "libfile_d8938d5853d8819196299a3e1d8b1a82",
+      "source_version": 3
+    },
+    {
+      "project_path": "docs/images/QueueDesk_Mock_Participants.png",
+      "size_bytes": 37206,
+      "sha256": "022316358f55cc0772f08316c2b2e7f990b6665dce15ba8a11f5f9b4a3d56a7f",
+      "source_library_file_id": "libfile_d8938d5853d8819196299a3e1d8b1a82",
+      "source_version": 3
+    },
+    {
+      "project_path": "docs/images/QueueDesk_Outbox_Recovery.png",
+      "size_bytes": 78480,
+      "sha256": "1a36304034c291fff583946627b2b1c4280af6605f869a363549d4bd8f9dba70",
+      "source_library_file_id": "libfile_d8938d5853d8819196299a3e1d8b1a82",
+      "source_version": 3
+    },
+    {
+      "project_path": "docs/images/QueueDesk_Risk_Gate.png",
+      "size_bytes": 103307,
+      "sha256": "d82cd5ed3df94f155837d34d8a7ed6229dfd48a3ce0348f4ffc6e81c23bea08a",
+      "source_library_file_id": "libfile_d8938d5853d8819196299a3e1d8b1a82",
+      "source_version": 3
+    },
+    {
+      "project_path": "docs/images/QueueDesk_Spring_Layers.png",
+      "size_bytes": 80416,
+      "sha256": "07bcecad2af17a843f6d9b1e4af171ab1f1b6e6482f00a32717d8a9ac6929a33",
+      "source_library_file_id": "libfile_d8938d5853d8819196299a3e1d8b1a82",
+      "source_version": 3
+    },
+    {
+      "project_path": "docs/images/QueueDesk_Status_Model.png",
+      "size_bytes": 76736,
+      "sha256": "e724a7187fc440931d3ba1868d513474bc9de639b316ad3c7375352c7ef13716",
+      "source_library_file_id": "libfile_d8938d5853d8819196299a3e1d8b1a82",
+      "source_version": 3
+    }
+  ],
+  "architecture_artifacts": [
+    {
+      "project_path": "docs/QueueDesk_Architecture.pdf",
+      "size_bytes": 2132311,
+      "sha256": "6eeb2e4408825223b8f47e0ca17c4fa22e37d5213ded2bfc6acb3c8d2203d8a8",
+      "source_library_file_id": "libfile_d8938d5853d8819196299a3e1d8b1a82",
+      "source_version": 3
+    },
+    {
+      "project_path": "docs/QueueDesk_Architecture.mmd",
+      "size_bytes": 2685,
+      "sha256": "60e487e351f8055d6542b482092dadd10121e56ac5569968c46b54898ec3b1e4",
+      "source_library_file_id": "libfile_d8938d5853d8819196299a3e1d8b1a82",
+      "source_version": 3
+    }
+  ]
+}

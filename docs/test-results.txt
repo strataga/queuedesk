@@ -1,0 +1,75 @@
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/Users/jason/projects/queuedesk/.cache/apache-maven-3.9.11/lib/guice-5.1.0-classes.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------------------< dev.queuedesk:queuedesk >-----------------------
+[INFO] Building QueueDesk 0.1.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ queuedesk ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 0 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ queuedesk ---
+[INFO] Recompiling the module because of added or removed source files.
+[INFO] Compiling 8 source files with javac [debug parameters release 25] to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ queuedesk ---
+[INFO] skip non existing resourceDirectory /Users/jason/projects/queuedesk/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ queuedesk ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 3 source files with javac [debug parameters release 25] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.5.6:test (default-test) @ queuedesk ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running dev.queuedesk.http.InstructionApiTest
+13:34:03.001 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [dev.queuedesk.http.InstructionApiTest]: InstructionApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+13:34:03.068 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration dev.queuedesk.QueueDeskApplication for test class dev.queuedesk.http.InstructionApiTest
+13:34:03.106 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [dev.queuedesk.http.InstructionApiTest]: InstructionApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+13:34:03.108 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration dev.queuedesk.QueueDeskApplication for test class dev.queuedesk.http.InstructionApiTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.8)
+
+2026-10-04T13:34:03.252-05:00  INFO 1657 --- [queuedesk] [           main] dev.queuedesk.http.InstructionApiTest    : Starting InstructionApiTest using Java 25.0.4.1 with PID 1657 (started by jason in /Users/jason/projects/queuedesk)
+2026-10-04T13:34:03.252-05:00  INFO 1657 --- [queuedesk] [           main] dev.queuedesk.http.InstructionApiTest    : No active profile set, falling back to 1 default profile: "default"
+2026-10-04T13:34:03.707-05:00  INFO 1657 --- [queuedesk] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-10-04T13:34:03.708-05:00  INFO 1657 --- [queuedesk] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-10-04T13:34:03.709-05:00  INFO 1657 --- [queuedesk] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-10-04T13:34:03.719-05:00  INFO 1657 --- [queuedesk] [           main] dev.queuedesk.http.InstructionApiTest    : Started InstructionApiTest in 0.586 seconds (process running for 1.111)
+Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+Java HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+WARNING: A Java agent has been loaded dynamically (/Users/jason/projects/queuedesk/.cache/repository/net/bytebuddy/byte-buddy-agent/1.17.8/byte-buddy-agent-1.17.8.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.254 s -- in dev.queuedesk.http.InstructionApiTest
+[INFO] Running dev.queuedesk.service.AdmissionServiceTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.023 s -- in dev.queuedesk.service.AdmissionServiceTest
+[INFO] Running dev.queuedesk.domain.PaymentInstructionTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in dev.queuedesk.domain.PaymentInstructionTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.953 s
+[INFO] Finished at: 2026-10-04T13:34:04-05:00
+[INFO] ------------------------------------------------------------------------

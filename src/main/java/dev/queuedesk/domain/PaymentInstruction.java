@@ -1,0 +1,22 @@
+package dev.queuedesk.domain;
+
+// A record is immutable data, roughly a readonly TypeScript object with value equality.
+// This type deliberately knows nothing about Spring, HTTP, or persistence.
+public record PaymentInstruction(String clientReference, String runId,
+        String senderParticipant, String receiverParticipant, Long amountMinor, String currency) {
+    public PaymentInstruction {
+        clientReference = token(clientReference, "clientReference");
+        runId = token(runId, "runId");
+        if (!"SENDER_A".equals(senderParticipant) || !"RECEIVER_B".equals(receiverParticipant))
+            throw new IllegalArgumentException("Participants must be SENDER_A and RECEIVER_B");
+        if (amountMinor == null || amountMinor < 1 || amountMinor > 1_000_000_000L)
+            throw new IllegalArgumentException("amountMinor must be 1..1000000000 (synthetic lab cap)");
+        if (!"USD".equals(currency)) throw new IllegalArgumentException("currency must be USD");
+    }
+
+    public static String token(String value, String field) {
+        if (value == null || !value.trim().matches("[A-Za-z0-9_-]{1,80}"))
+            throw new IllegalArgumentException(field + " must be a 1..80 character synthetic token");
+        return value.trim();
+    }
+}
