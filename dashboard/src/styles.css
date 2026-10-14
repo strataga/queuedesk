@@ -1,10 +1,15 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Lab dashboard base: quiet surfaces, one accent, visible keyboard focus. */
 body {
   background-color: var(--color-slate-100);
   color: var(--color-slate-900);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
 }
 
 :focus-visible {
@@ -13,7 +18,9 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }

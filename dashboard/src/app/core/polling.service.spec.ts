@@ -27,7 +27,9 @@ describe('PollingService', () => {
     const sub = service()
       .poll(() => (++calls === 2 ? throwError(() => ({ status: 500 })) : of(`v${calls}`)), 10)
       .subscribe((r) =>
-        seen.push(r.status === 'ok' ? { status: 'ok', last: null } : { status: 'error', last: r.lastOk }),
+        seen.push(
+          r.status === 'ok' ? { status: 'ok', last: null } : { status: 'error', last: r.lastOk },
+        ),
       );
     await sleep(45);
     sub.unsubscribe();

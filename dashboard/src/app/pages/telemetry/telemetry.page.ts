@@ -34,7 +34,15 @@ interface LatencySample {
 // newest-last, threshold-filtered client-side, and never holds stack traces.
 @Component({
   selector: 'qd-telemetry',
-  imports: [CommonModule, RouterLink, TimeAgoPipe, RefreshNoteComponent, StateMessageComponent, StatusBadgeComponent, TrendChartComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    TimeAgoPipe,
+    RefreshNoteComponent,
+    StateMessageComponent,
+    StatusBadgeComponent,
+    TrendChartComponent,
+  ],
   templateUrl: './telemetry.page.html',
 })
 export class TelemetryPage {
@@ -77,14 +85,26 @@ export class TelemetryPage {
 
   protected admissionTrend(): TrendSeries[] {
     return [
-      { label: 'HTTP admission', color: '#0369a1', values: this.latency.map((s) => s.admission ?? 0) },
-      { label: 'End-to-end completion', color: '#0d9488', values: this.latency.map((s) => s.completion ?? 0) },
+      {
+        label: 'HTTP admission',
+        color: '#0369a1',
+        values: this.latency.map((s) => s.admission ?? 0),
+      },
+      {
+        label: 'End-to-end completion',
+        color: '#0d9488',
+        values: this.latency.map((s) => s.completion ?? 0),
+      },
     ];
   }
 
   protected providerTrend(): TrendSeries[] {
     return [
-      { label: 'Risk provider', color: '#7c3aed', values: this.latency.map((s) => s.provider ?? 0) },
+      {
+        label: 'Risk provider',
+        color: '#7c3aed',
+        values: this.latency.map((s) => s.provider ?? 0),
+      },
     ];
   }
 

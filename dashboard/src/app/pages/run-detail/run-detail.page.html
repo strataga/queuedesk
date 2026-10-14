@@ -1,7 +1,13 @@
-<p class="text-sm"><a routerLink="/" class="text-sky-800 underline hover:text-sky-600">← Back to overview</a></p>
+<p class="text-sm">
+  <a routerLink="/" class="text-sky-800 underline hover:text-sky-600">← Back to overview</a>
+</p>
 @let runId = (runId$ | async) ?? '';
-<h1 class="mt-1 text-2xl font-semibold tracking-tight">Run <span class="font-mono text-xl">{{ runId }}</span></h1>
-<p class="mt-1 text-sm text-slate-600">API-backed accounting. Refreshes every 5 seconds while this tab is visible.</p>
+<h1 class="mt-1 text-2xl font-semibold tracking-tight">
+  Run <span class="font-mono text-xl">{{ runId }}</span>
+</h1>
+<p class="mt-1 text-sm text-slate-600">
+  API-backed accounting. Refreshes every 5 seconds while this tab is visible.
+</p>
 
 @if (view$ | async; as r) {
   @let v = toView(r);
@@ -10,18 +16,32 @@
       <qd-state-message state="error" [message]="describe(v.error)" />
     }
     @if (run.admitted === 0) {
-      <qd-state-message state="empty" message="This run has no admitted instructions. Unknown runs report zeros — absence of evidence is itself evidence." />
+      <qd-state-message
+        state="empty"
+        message="This run has no admitted instructions. Unknown runs report zeros — absence of evidence is itself evidence."
+      />
     }
-    <section aria-label="Run accounting" class="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white">
+    <section
+      aria-label="Run accounting"
+      class="mt-4 overflow-x-auto rounded-lg border border-slate-200 bg-white"
+    >
       <table class="w-full text-left text-sm">
-        <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
-          <tr><th scope="col" class="px-4 py-2">Measure</th><th scope="col" class="px-4 py-2">Count</th><th scope="col" class="px-4 py-2">Source</th></tr>
+        <thead
+          class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600"
+        >
+          <tr>
+            <th scope="col" class="px-4 py-2">Measure</th>
+            <th scope="col" class="px-4 py-2">Count</th>
+            <th scope="col" class="px-4 py-2">Source</th>
+          </tr>
         </thead>
         <tbody>
           <tr class="border-b border-slate-100">
             <th scope="row" class="px-4 py-2 font-medium">Expected unique</th>
             <td class="px-4 py-2 text-slate-600">unknown</td>
-            <td class="px-4 py-2 text-xs text-slate-600">Generator manifests are not persisted; nothing to compare against.</td>
+            <td class="px-4 py-2 text-xs text-slate-600">
+              Generator manifests are not persisted; nothing to compare against.
+            </td>
           </tr>
           <tr class="border-b border-slate-100">
             <th scope="row" class="px-4 py-2 font-medium">Admitted</th>
@@ -30,49 +50,84 @@
           </tr>
           <tr class="border-b border-slate-100">
             <th scope="row" class="px-4 py-2 font-medium">Completed (simulated)</th>
-            <td class="px-4 py-2 text-xl font-semibold tabular-nums">{{ stateCount(run, 'COMPLETED_SIMULATED') }}</td>
-            <td class="px-4 py-2 text-xs text-slate-600">Terminal business outcome; never regresses.</td>
+            <td class="px-4 py-2 text-xl font-semibold tabular-nums">
+              {{ stateCount(run, 'COMPLETED_SIMULATED') }}
+            </td>
+            <td class="px-4 py-2 text-xs text-slate-600">
+              Terminal business outcome; never regresses.
+            </td>
           </tr>
           <tr class="border-b border-slate-100">
             <th scope="row" class="px-4 py-2 font-medium">Rejected</th>
-            <td class="px-4 py-2 text-xl font-semibold tabular-nums">{{ stateCount(run, 'REJECTED') }}</td>
+            <td class="px-4 py-2 text-xl font-semibold tabular-nums">
+              {{ stateCount(run, 'REJECTED') }}
+            </td>
             <td class="px-4 py-2 text-xs text-slate-600">Terminal business outcome.</td>
           </tr>
           <tr class="border-b border-slate-100">
             <th scope="row" class="px-4 py-2 font-medium">Duplicate admissions</th>
             <td class="px-4 py-2 text-slate-600">unknown</td>
-            <td class="px-4 py-2 text-xs text-slate-600">Repeats reuse the existing row without a per-run repeat count.</td>
+            <td class="px-4 py-2 text-xs text-slate-600">
+              Repeats reuse the existing row without a per-run repeat count.
+            </td>
           </tr>
           <tr class="border-b border-slate-100">
             <th scope="row" class="px-4 py-2 font-medium">Unresolved</th>
             <td class="px-4 py-2 text-xl font-semibold tabular-nums">{{ unresolved(run) }}</td>
-            <td class="px-4 py-2 text-xs text-slate-600">Non-terminal states; {{ run.reconcileOpen }} open confirmation tasks.</td>
+            <td class="px-4 py-2 text-xs text-slate-600">
+              Non-terminal states; {{ run.reconcileOpen }} open confirmation tasks.
+            </td>
           </tr>
           <tr>
             <th scope="row" class="px-4 py-2 font-medium">Outbox</th>
-            <td class="px-4 py-2 tabular-nums">{{ run.outboxPending }} pending · {{ run.outboxPublished }} published</td>
-            <td class="px-4 py-2 text-xs text-slate-600">Transport progress, separate from business outcome.</td>
+            <td class="px-4 py-2 tabular-nums">
+              {{ run.outboxPending }} pending · {{ run.outboxPublished }} published
+            </td>
+            <td class="px-4 py-2 text-xs text-slate-600">
+              Transport progress, separate from business outcome.
+            </td>
           </tr>
         </tbody>
       </table>
     </section>
 
     @if (needsAttention(run)) {
-      <section aria-label="Needs attention" class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4">
+      <section
+        aria-label="Needs attention"
+        class="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-4"
+      >
         <h2 class="text-lg font-semibold text-amber-900">Needs attention</h2>
         <ul class="mt-2 space-y-1 text-sm text-amber-900">
           @if (stateCount(run, 'PENDING_CONFIRMATION') > 0) {
             <li>
-              ⚠ {{ stateCount(run, 'PENDING_CONFIRMATION') }} unknown confirmation{{ stateCount(run, 'PENDING_CONFIRMATION') === 1 ? '' : 's' }} —
-              <a [routerLink]="['/payments']" [queryParams]="{ runId: runId, status: 'PENDING_CONFIRMATION' }" class="font-medium text-sky-800 underline hover:text-sky-600">inspect pending confirmations →</a>
+              ⚠ {{ stateCount(run, 'PENDING_CONFIRMATION') }} unknown confirmation{{
+                stateCount(run, 'PENDING_CONFIRMATION') === 1 ? '' : 's'
+              }}
+              —
+              <a
+                [routerLink]="['/payments']"
+                [queryParams]="{ runId: runId, status: 'PENDING_CONFIRMATION' }"
+                class="font-medium text-sky-800 underline hover:text-sky-600"
+                >inspect pending confirmations →</a
+              >
             </li>
           }
           @if (stateCount(run, 'RISK_HELD') > 0) {
             <li>
-              ◉ {{ stateCount(run, 'RISK_HELD') }} risk-held instruction{{ stateCount(run, 'RISK_HELD') === 1 ? '' : 's' }} —
-              <a [routerLink]="['/payments']" [queryParams]="{ runId: runId, status: 'RISK_HELD' }" class="font-medium text-sky-800 underline hover:text-sky-600">inspect held instructions →</a>
+              ◉ {{ stateCount(run, 'RISK_HELD') }} risk-held instruction{{
+                stateCount(run, 'RISK_HELD') === 1 ? '' : 's'
+              }}
+              —
+              <a
+                [routerLink]="['/payments']"
+                [queryParams]="{ runId: runId, status: 'RISK_HELD' }"
+                class="font-medium text-sky-800 underline hover:text-sky-600"
+                >inspect held instructions →</a
+              >
               ·
-              <a routerLink="/risk" class="font-medium text-sky-800 underline hover:text-sky-600">open risk review →</a>
+              <a routerLink="/risk" class="font-medium text-sky-800 underline hover:text-sky-600"
+                >open risk review →</a
+              >
             </li>
           }
         </ul>
@@ -83,14 +138,21 @@
       <h2 class="text-lg font-semibold">State breakdown</h2>
       <ul class="mt-2 flex flex-wrap gap-2">
         @for (state of knownStates; track state) {
-          <li class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm">
+          <li
+            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm"
+          >
             <qd-status-badge [value]="state"></qd-status-badge>
             <span class="font-semibold tabular-nums">{{ stateCount(run, state) }}</span>
           </li>
         }
       </ul>
       <p class="mt-3 text-sm">
-        <a [routerLink]="['/payments']" [queryParams]="{ runId: runId }" class="text-sky-800 underline hover:text-sky-600">Inspect this run's instructions →</a>
+        <a
+          [routerLink]="['/payments']"
+          [queryParams]="{ runId: runId }"
+          class="text-sky-800 underline hover:text-sky-600"
+          >Inspect this run's instructions →</a
+        >
       </p>
     </section>
     <qd-refresh-note [at]="v.at" [stale]="!v.fresh"></qd-refresh-note>

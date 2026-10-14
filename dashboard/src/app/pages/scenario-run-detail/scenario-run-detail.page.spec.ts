@@ -7,17 +7,34 @@ import { PollingService } from '../../core/polling.service';
 import { ScenarioRunReport } from '../../core/models';
 
 const report: ScenarioRunReport = {
-  runId: 'demo-0042', scenarioId: 'SC02', scenarioTitle: 'Duplicates',
-  startedAt: '2026-10-04T10:12:00Z', seed: null, riskMode: 'OFF',
-  httpAttempts: 25, uniqueAdmitted: 20, simulatedCompleted: 20,
-  unknownConfirmations: 0, repeatResponses: 5, duplicateOutcomes: 0,
+  runId: 'demo-0042',
+  scenarioId: 'SC02',
+  scenarioTitle: 'Duplicates',
+  startedAt: '2026-10-04T10:12:00Z',
+  seed: null,
+  riskMode: 'OFF',
+  httpAttempts: 25,
+  uniqueAdmitted: 20,
+  simulatedCompleted: 20,
+  unknownConfirmations: 0,
+  repeatResponses: 5,
+  duplicateOutcomes: 0,
   assertions: [
     { text: '20 unique instructions admitted', passed: true },
     { text: '0 duplicate business outcomes', passed: false },
   ],
-  generator: { scenario: 'duplicate', seed: null, unique: 20, repeats: 5, maxAttempts: 25, participants: 'SENDER_A → RECEIVER_B' },
-  commandPreview: 'scripts/generate --scenario duplicate --seed <seed> --count 20 --run-id demo-0042 --send --observe',
-  commandArgs: ['scripts/generate'], dryRunDefault: true,
+  generator: {
+    scenario: 'duplicate',
+    seed: null,
+    unique: 20,
+    repeats: 5,
+    maxAttempts: 25,
+    participants: 'SENDER_A → RECEIVER_B',
+  },
+  commandPreview:
+    'scripts/generate --scenario duplicate --seed <seed> --count 20 --run-id demo-0042 --send --observe',
+  commandArgs: ['scripts/generate'],
+  dryRunDefault: true,
 };
 
 describe('ScenarioRunDetailPage', () => {
@@ -35,7 +52,9 @@ describe('ScenarioRunDetailPage', () => {
         provideRouter([]),
         {
           provide: ActivatedRoute,
-          useValue: { paramMap: params$.pipe(map((m) => ({ get: (k: string) => m.get(k) ?? null }))) },
+          useValue: {
+            paramMap: params$.pipe(map((m) => ({ get: (k: string) => m.get(k) ?? null }))),
+          },
         },
         {
           provide: ApiService,

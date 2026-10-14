@@ -12,7 +12,8 @@ import { ThroughputPoint } from '../core/models';
   template: `
     @if (points.length < 2) {
       <p
-        class="rounded-md border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-700">
+        class="rounded-md border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-700"
+      >
         Throughput needs at least two buckets — widen the window or wait for the next bucket.
       </p>
     } @else {
@@ -21,9 +22,17 @@ import { ThroughputPoint } from '../core/models';
         preserveAspectRatio="none"
         class="h-60 w-full"
         role="img"
-        [attr.aria-label]="ariaLabel">
+        [attr.aria-label]="ariaLabel"
+      >
         @for (t of ticks; track t.value) {
-          <line x1="44" [attr.y1]="t.y" x2="592" [attr.y2]="t.y" stroke="#e2e8f0" stroke-width="1" />
+          <line
+            x1="44"
+            [attr.y1]="t.y"
+            x2="592"
+            [attr.y2]="t.y"
+            stroke="#e2e8f0"
+            stroke-width="1"
+          />
           <text x="38" [attr.y]="t.y + 4" text-anchor="end" font-size="13" fill="#64748b">
             {{ t.value }}
           </text>
@@ -34,21 +43,18 @@ import { ThroughputPoint } from '../core/models';
           fill="none"
           stroke="#0d9488"
           stroke-width="2"
-          vector-effect="non-scaling-stroke" />
+          vector-effect="non-scaling-stroke"
+        />
         @for (l of xLabels; track l.text) {
-          <text
-            [attr.x]="l.x"
-            y="224"
-            [attr.text-anchor]="l.anchor"
-            font-size="13"
-            fill="#64748b">
+          <text [attr.x]="l.x" y="224" [attr.text-anchor]="l.anchor" font-size="13" fill="#64748b">
             {{ l.text }}
           </text>
         }
       </svg>
       <p class="mt-1 text-xs text-slate-600">
-        Latest bucket: <span class="font-medium tabular-nums text-slate-800">{{ lastCount }}</span>
-        completions · {{ points.length }} buckets
+        Latest bucket:
+        <span class="font-medium tabular-nums text-slate-800">{{ lastCount }}</span> completions ·
+        {{ points.length }} buckets
       </p>
     }
   `,
@@ -95,7 +101,9 @@ export class ThroughputChartComponent {
   }
 
   protected get linePoints(): string {
-    return this.points.map((p, i) => `${this.xFor(i).toFixed(1)},${this.yFor(p.count, this.scaleMax).toFixed(1)}`).join(' ');
+    return this.points
+      .map((p, i) => `${this.xFor(i).toFixed(1)},${this.yFor(p.count, this.scaleMax).toFixed(1)}`)
+      .join(' ');
   }
 
   protected get areaPoints(): string {

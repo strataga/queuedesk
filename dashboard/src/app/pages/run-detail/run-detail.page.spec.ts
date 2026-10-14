@@ -9,8 +9,12 @@ describe('RunDetailPage route params', () => {
   const params$ = new BehaviorSubject(new Map([['runId', 'A']]));
   const requested: string[] = [];
   const fakeRun = (runId: string) => ({
-    runId, admitted: 4, byState: { COMPLETED_SIMULATED: 1, PENDING_CONFIRMATION: 2, RISK_HELD: 1 },
-    outboxPending: 0, outboxPublished: 1, reconcileOpen: 2,
+    runId,
+    admitted: 4,
+    byState: { COMPLETED_SIMULATED: 1, PENDING_CONFIRMATION: 2, RISK_HELD: 1 },
+    outboxPending: 0,
+    outboxPublished: 1,
+    reconcileOpen: 2,
   });
   // Snapshot stays fixed at A while paramMap emits A then B: a snapshot read
   // can never observe B, so this fails against the old implementation.

@@ -5,7 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
 import { ApiService } from '../../core/api.service';
-import { InstructionPage, InstructionView, KNOWN_RISK_RESULTS, KNOWN_STATES } from '../../core/models';
+import {
+  InstructionPage,
+  InstructionView,
+  KNOWN_RISK_RESULTS,
+  KNOWN_STATES,
+} from '../../core/models';
 import { PollingService } from '../../core/polling.service';
 import { MinorCurrencyPipe } from '../../shared/minor-currency.pipe';
 import { TimeAgoPipe } from '../../shared/time-ago.pipe';
@@ -27,8 +32,14 @@ const MAX_LOADED_ROWS = 500;
 @Component({
   selector: 'qd-instruction-list',
   imports: [
-    CommonModule, FormsModule, RouterLink, MinorCurrencyPipe, TimeAgoPipe,
-    RefreshNoteComponent, StateMessageComponent, StatusBadgeComponent,
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    MinorCurrencyPipe,
+    TimeAgoPipe,
+    RefreshNoteComponent,
+    StateMessageComponent,
+    StatusBadgeComponent,
   ],
   templateUrl: './instruction-list.page.html',
 })
@@ -160,14 +171,16 @@ export class InstructionListPage implements OnInit {
     this.censusFresh = true;
     const runId = this.runId.trim();
     this.censusRun = runId !== '';
-    const fetch: () => Observable<{ admitted: number; byState: Record<string, number> }> = runId !== ''
-      ? () => this.api.getRun(runId)
-      : () => {
-        const since = this.windowMinutes > 0
-          ? new Date(Date.now() - this.windowMinutes * 60_000).toISOString()
-          : undefined;
-        return this.api.getOverview(since);
-      };
+    const fetch: () => Observable<{ admitted: number; byState: Record<string, number> }> =
+      runId !== ''
+        ? () => this.api.getRun(runId)
+        : () => {
+            const since =
+              this.windowMinutes > 0
+                ? new Date(Date.now() - this.windowMinutes * 60_000).toISOString()
+                : undefined;
+            return this.api.getOverview(since);
+          };
     this.statsSub = this.polling.poll(fetch).subscribe((result) => {
       if (result.status === 'ok') {
         this.census = { admitted: result.value.admitted, byState: result.value.byState };
@@ -184,10 +197,12 @@ export class InstructionListPage implements OnInit {
     this.modeSub?.unsubscribe();
     this.modeSub = null;
     this.riskMode = null;
-    this.modeSub = this.polling.poll(() => this.api.getRiskSummary()).subscribe((result) => {
-      if (result.status === 'ok') this.riskMode = result.value.mode;
-      this.cdr.markForCheck();
-    });
+    this.modeSub = this.polling
+      .poll(() => this.api.getRiskSummary())
+      .subscribe((result) => {
+        if (result.status === 'ok') this.riskMode = result.value.mode;
+        this.cdr.markForCheck();
+      });
   }
 
   // Reconciliation watch: a bounded pending-confirmation sample in the same run
@@ -199,12 +214,14 @@ export class InstructionListPage implements OnInit {
     this.pending = null;
     const runId = this.runId.trim();
     this.pendingSub = this.polling
-      .poll(() => this.api.listInstructions({
-        runId: runId === '' ? undefined : runId,
-        status: 'PENDING_CONFIRMATION',
-        limit: 5,
-        order: 'desc',
-      }))
+      .poll(() =>
+        this.api.listInstructions({
+          runId: runId === '' ? undefined : runId,
+          status: 'PENDING_CONFIRMATION',
+          limit: 5,
+          order: 'desc',
+        }),
+      )
       .subscribe((result) => {
         if (result.status === 'ok') this.pending = result.value;
         this.cdr.markForCheck();
@@ -285,10 +302,12 @@ export class InstructionListPage implements OnInit {
   // is genuinely awaiting worker-side evaluation. Anything else unassessed —
   // gate OFF, or past the gate already — keeps the honest dash.
   protected riskPending(item: InstructionView): boolean {
-    return this.riskMode !== null
-      && this.riskMode !== 'OFF'
-      && item.riskStatus == null
-      && item.status === 'RECEIVED';
+    return (
+      this.riskMode !== null &&
+      this.riskMode !== 'OFF' &&
+      item.riskStatus == null &&
+      item.status === 'RECEIVED'
+    );
   }
 
   protected loadMore(): void {
@@ -300,25 +319,27 @@ export class InstructionListPage implements OnInit {
     const filters = this.filters();
     const token = this.scope;
     this.loadMoreSub?.unsubscribe();
-    this.loadMoreSub = this.api.listInstructions({ ...filters, cursor: this.nextCursor }).subscribe({
-      next: (page) => {
-        // A rescope retired this request: the new scope owns the list now.
-        if (token !== this.scope) return;
-        const merged = [...(this.items ?? []), ...page.items].slice(0, MAX_LOADED_ROWS);
-        this.capped = (this.items?.length ?? 0) + page.items.length > MAX_LOADED_ROWS;
-        this.items = merged;
-        this.nextCursor = this.capped ? null : page.nextCursor;
-        this.loadingMore = false;
-        this.cdr.markForCheck();
-      },
-      error: (error: unknown) => {
-        if (token !== this.scope) return;
-        this.loadingMore = false;
-        this.fresh = false;
-        this.failure = this.polling.describeError(error);
-        this.cdr.markForCheck();
-      },
-    });
+    this.loadMoreSub = this.api
+      .listInstructions({ ...filters, cursor: this.nextCursor })
+      .subscribe({
+        next: (page) => {
+          // A rescope retired this request: the new scope owns the list now.
+          if (token !== this.scope) return;
+          const merged = [...(this.items ?? []), ...page.items].slice(0, MAX_LOADED_ROWS);
+          this.capped = (this.items?.length ?? 0) + page.items.length > MAX_LOADED_ROWS;
+          this.items = merged;
+          this.nextCursor = this.capped ? null : page.nextCursor;
+          this.loadingMore = false;
+          this.cdr.markForCheck();
+        },
+        error: (error: unknown) => {
+          if (token !== this.scope) return;
+          this.loadingMore = false;
+          this.fresh = false;
+          this.failure = this.polling.describeError(error);
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   protected scopeLabel(): string {

@@ -22,24 +22,85 @@ const METRICS: readonly MetricRow[] = [
   { label: 'Outbox pending', name: 'queuedesk.outbox.pending', format: 'count' },
   { label: 'Outbox oldest age', name: 'queuedesk.outbox.oldest.age.seconds', format: 'seconds' },
   { label: 'Pending confirmations', name: 'queuedesk.pending.confirmation.count', format: 'count' },
-  { label: 'Pending oldest age', name: 'queuedesk.pending.confirmation.oldest.age.seconds', format: 'seconds' },
+  {
+    label: 'Pending oldest age',
+    name: 'queuedesk.pending.confirmation.oldest.age.seconds',
+    format: 'seconds',
+  },
   { label: 'Quarantined events', name: 'queuedesk.quarantine.count', format: 'count' },
-  { label: 'Quarantine projection age', name: 'queuedesk.quarantine.freshness.age.seconds', format: 'seconds' },
+  {
+    label: 'Quarantine projection age',
+    name: 'queuedesk.quarantine.freshness.age.seconds',
+    format: 'seconds',
+  },
   { label: 'MQ backlog estimate', name: 'queuedesk.mq.backlog.estimate.count', format: 'count' },
-  { label: 'MQ backlog oldest age', name: 'queuedesk.mq.backlog.estimate.oldest.age.seconds', format: 'seconds' },
-  { label: 'Admissions accepted', name: 'queuedesk.admissions.total', tag: { key: 'decision', value: 'accepted' }, format: 'count' },
-  { label: 'Admissions repeated', name: 'queuedesk.admissions.total', tag: { key: 'decision', value: 'repeated' }, format: 'count' },
-  { label: 'Admissions invalid', name: 'queuedesk.admissions.total', tag: { key: 'decision', value: 'invalid' }, format: 'count' },
-  { label: 'Outcomes completed', name: 'queuedesk.outcomes.total', tag: { key: 'result', value: 'COMPLETED_SIMULATED' }, format: 'count' },
-  { label: 'Outcomes rejected', name: 'queuedesk.outcomes.total', tag: { key: 'result', value: 'REJECTED' }, format: 'count' },
+  {
+    label: 'MQ backlog oldest age',
+    name: 'queuedesk.mq.backlog.estimate.oldest.age.seconds',
+    format: 'seconds',
+  },
+  {
+    label: 'Admissions accepted',
+    name: 'queuedesk.admissions.total',
+    tag: { key: 'decision', value: 'accepted' },
+    format: 'count',
+  },
+  {
+    label: 'Admissions repeated',
+    name: 'queuedesk.admissions.total',
+    tag: { key: 'decision', value: 'repeated' },
+    format: 'count',
+  },
+  {
+    label: 'Admissions invalid',
+    name: 'queuedesk.admissions.total',
+    tag: { key: 'decision', value: 'invalid' },
+    format: 'count',
+  },
+  {
+    label: 'Outcomes completed',
+    name: 'queuedesk.outcomes.total',
+    tag: { key: 'result', value: 'COMPLETED_SIMULATED' },
+    format: 'count',
+  },
+  {
+    label: 'Outcomes rejected',
+    name: 'queuedesk.outcomes.total',
+    tag: { key: 'result', value: 'REJECTED' },
+    format: 'count',
+  },
   { label: 'Redeliveries absorbed', name: 'queuedesk.dedup.total', format: 'count' },
   { label: 'Tasks reconciled', name: 'queuedesk.reconciled.total', format: 'count' },
-  { label: 'Telemetry spans failed', name: 'queuedesk.telemetry.export.spans.failed', format: 'count' },
+  {
+    label: 'Telemetry spans failed',
+    name: 'queuedesk.telemetry.export.spans.failed',
+    format: 'count',
+  },
   { label: 'Telemetry dropped', name: 'queuedesk.telemetry.buffer.dropped', format: 'count' },
-  { label: 'Risk holds (REVIEW)', name: 'queuedesk.risk.holds.total', tag: { key: 'result', value: 'REVIEW' }, format: 'count' },
-  { label: 'Risk holds (NOT_ASSESSED)', name: 'queuedesk.risk.holds.total', tag: { key: 'result', value: 'NOT_ASSESSED' }, format: 'count' },
-  { label: 'Risk provider calls (OK)', name: 'queuedesk.risk.provider.calls.total', tag: { key: 'status', value: 'OK' }, format: 'count' },
-  { label: 'Risk provider calls (TIMEOUT)', name: 'queuedesk.risk.provider.calls.total', tag: { key: 'status', value: 'TIMEOUT' }, format: 'count' },
+  {
+    label: 'Risk holds (REVIEW)',
+    name: 'queuedesk.risk.holds.total',
+    tag: { key: 'result', value: 'REVIEW' },
+    format: 'count',
+  },
+  {
+    label: 'Risk holds (NOT_ASSESSED)',
+    name: 'queuedesk.risk.holds.total',
+    tag: { key: 'result', value: 'NOT_ASSESSED' },
+    format: 'count',
+  },
+  {
+    label: 'Risk provider calls (OK)',
+    name: 'queuedesk.risk.provider.calls.total',
+    tag: { key: 'status', value: 'OK' },
+    format: 'count',
+  },
+  {
+    label: 'Risk provider calls (TIMEOUT)',
+    name: 'queuedesk.risk.provider.calls.total',
+    tag: { key: 'status', value: 'TIMEOUT' },
+    format: 'count',
+  },
 ];
 
 interface OpsSnapshot {
@@ -55,7 +116,14 @@ interface OpsSnapshot {
 // with no reading say "no reading" — a series that never recorded is not zero.
 @Component({
   selector: 'qd-ops',
-  imports: [CommonModule, RouterLink, TimeAgoPipe, RefreshNoteComponent, StateMessageComponent, StatusBadgeComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    TimeAgoPipe,
+    RefreshNoteComponent,
+    StateMessageComponent,
+    StatusBadgeComponent,
+  ],
   templateUrl: './ops.page.html',
 })
 export class OpsPage {

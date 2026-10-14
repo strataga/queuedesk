@@ -7,17 +7,30 @@ import { PollingService } from '../../core/polling.service';
 import { TelemetrySummary } from '../../core/models';
 
 const summary: TelemetrySummary = {
-  asOf: '2026-10-04T10:15:00Z', windowMinutes: 15,
+  asOf: '2026-10-04T10:15:00Z',
+  windowMinutes: 15,
   admission: { p95Ms: 22, n: 1240, note: 'ends at HTTP 202' },
   completion: { p95Ms: 420, n: 1208, note: 'ends at durable outcome commit; unresolved excluded' },
   riskProvider: { p95Ms: 95, n: 1226, mode: 'RULES_PLUS_MOCK' },
   sampling: { percent: 10, sampledInstructions: 124 },
-  exporter: { status: 'HEALTHY', lastExportAt: '2026-10-04T10:14:58Z', spansSent15Min: 3684, spansDropped: 0, bufferedSpans: 0 },
+  exporter: {
+    status: 'HEALTHY',
+    lastExportAt: '2026-10-04T10:14:58Z',
+    spansSent15Min: 3684,
+    spansDropped: 0,
+    bufferedSpans: 0,
+  },
 };
 
 const traces = {
   items: [
-    { instructionId: 'iid-1', clientReference: 'SYN-1048', traceId: 'trc-1048-a7', outcome: 'COMPLETED_SIMULATED', elapsedMs: 386 },
+    {
+      instructionId: 'iid-1',
+      clientReference: 'SYN-1048',
+      traceId: 'trc-1048-a7',
+      outcome: 'COMPLETED_SIMULATED',
+      elapsedMs: 386,
+    },
   ],
   nextCursor: null,
 };
@@ -25,9 +38,16 @@ const traces = {
 const logs = {
   items: [
     { at: '2026-10-06T03:00:00Z', level: 'INFO', logger: 'dev.queuedesk.App', message: 'booted' },
-    { at: '2026-10-06T03:01:00Z', level: 'WARN', logger: 'dev.queuedesk.App', message: 'slow drain' },
+    {
+      at: '2026-10-06T03:01:00Z',
+      level: 'WARN',
+      logger: 'dev.queuedesk.App',
+      message: 'slow drain',
+    },
   ],
-  dropped: 0, capacity: 500, note: 'live ring',
+  dropped: 0,
+  capacity: 500,
+  note: 'live ring',
 };
 
 function setup(summaryOverride = summary) {
@@ -37,7 +57,11 @@ function setup(summaryOverride = summary) {
       provideRouter([]),
       {
         provide: ApiService,
-        useValue: { getTelemetrySummary: () => of(summaryOverride), listTraces: () => of(traces), listLogs: () => of(logs) },
+        useValue: {
+          getTelemetrySummary: () => of(summaryOverride),
+          listTraces: () => of(traces),
+          listLogs: () => of(logs),
+        },
       },
       {
         provide: PollingService,
@@ -99,7 +123,9 @@ describe('TelemetryPage', () => {
     await fixture.whenStable();
     expect(el.textContent).toContain('booted');
     expect(el.textContent).toContain('slow drain');
-    const select = el.querySelector('section[aria-label="Process logs"] select') as HTMLSelectElement;
+    const select = el.querySelector(
+      'section[aria-label="Process logs"] select',
+    ) as HTMLSelectElement;
     select.value = 'WARN';
     select.dispatchEvent(new Event('change'));
     fixture.detectChanges();
@@ -109,21 +135,31 @@ describe('TelemetryPage', () => {
   });
 
   it('shows dashes instead of the -1 sentinel when a side has no samples', async () => {
-    await setup({ ...summary,
+    await setup({
+      ...summary,
       admission: { p95Ms: -1, n: 0, note: 'ends at HTTP 202' },
-      completion: { p95Ms: -1, n: 0, note: 'ends at durable outcome commit; unresolved excluded' } });
+      completion: { p95Ms: -1, n: 0, note: 'ends at durable outcome commit; unresolved excluded' },
+    });
     const fixture = TestBed.createComponent(TelemetryPage);
     fixture.detectChanges();
     await fixture.whenStable();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).not.toContain('-1');
-    expect(el.querySelector('section[aria-label="HTTP admission p95"]')?.textContent).toContain('—');
-    expect(el.querySelector('section[aria-label="End-to-end completion p95"]')?.textContent).toContain('—');
+    expect(el.querySelector('section[aria-label="HTTP admission p95"]')?.textContent).toContain(
+      '—',
+    );
+    expect(
+      el.querySelector('section[aria-label="End-to-end completion p95"]')?.textContent,
+    ).toContain('—');
     expect(el.textContent).toContain('Collecting samples');
   });
 
   it('renders honest fallbacks when provider readings and exports are absent', async () => {
-    await setup({ ...summary, riskProvider: null, exporter: { ...summary.exporter, lastExportAt: null } });
+    await setup({
+      ...summary,
+      riskProvider: null,
+      exporter: { ...summary.exporter, lastExportAt: null },
+    });
     const fixture = TestBed.createComponent(TelemetryPage);
     fixture.detectChanges();
     await fixture.whenStable();

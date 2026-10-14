@@ -16,7 +16,13 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
 // "no such trace", never a guess. Selecting a row shows its span attributes.
 @Component({
   selector: 'qd-trace-detail',
-  imports: [CommonModule, RouterLink, RefreshNoteComponent, StateMessageComponent, StatusBadgeComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    RefreshNoteComponent,
+    StateMessageComponent,
+    StatusBadgeComponent,
+  ],
   templateUrl: './trace-detail.page.html',
 })
 export class TraceDetailPage {

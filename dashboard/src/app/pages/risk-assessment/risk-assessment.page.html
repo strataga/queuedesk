@@ -1,7 +1,12 @@
-<p class="text-sm"><a routerLink="/risk" class="text-sky-800 underline hover:text-sky-600">← Back to risk review</a></p>
+<p class="text-sm">
+  <a routerLink="/risk" class="text-sky-800 underline hover:text-sky-600">← Back to risk review</a>
+</p>
 @let id = (id$ | async) ?? '';
 <h1 class="mt-1 text-2xl font-semibold tracking-tight">Risk assessment</h1>
-<p class="mt-1 text-sm text-slate-600">Read-only lab · Synthetic assessment output. It explains the hold; it is not a fraud determination.</p>
+<p class="mt-1 text-sm text-slate-600">
+  Read-only lab · Synthetic assessment output. It explains the hold; it is not a fraud
+  determination.
+</p>
 
 @if (view$ | async; as r) {
   @let v = toView(r);
@@ -17,7 +22,9 @@
       </div>
       <div class="rounded-lg border border-slate-200 bg-white p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-slate-600">Amount</p>
-        <p class="mt-1 text-xl font-semibold tabular-nums">{{ detail.amountMinor | minorCurrency: detail.currency }}</p>
+        <p class="mt-1 text-xl font-semibold tabular-nums">
+          {{ detail.amountMinor | minorCurrency: detail.currency }}
+        </p>
         <p class="mt-1 text-xs text-slate-600">{{ detail.currency }} · synthetic</p>
       </div>
       <div class="rounded-lg border border-slate-200 bg-white p-4">
@@ -27,18 +34,25 @@
       </div>
       <div class="rounded-lg border border-slate-200 bg-white p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-slate-600">Assessment output</p>
-        <p class="mt-2"><qd-status-badge [value]="detail.riskOutput" kind="risk"></qd-status-badge></p>
+        <p class="mt-2">
+          <qd-status-badge [value]="detail.riskOutput" kind="risk"></qd-status-badge>
+        </p>
         <p class="mt-1 text-xs text-slate-600">{{ detail.riskOutputText }}</p>
       </div>
     </div>
 
     <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-      <section aria-label="Features and deterministic rules" class="rounded-lg border border-slate-200 bg-white p-4">
+      <section
+        aria-label="Features and deterministic rules"
+        class="rounded-lg border border-slate-200 bg-white p-4"
+      >
         <h2 class="text-lg font-semibold">Features &amp; deterministic rules</h2>
         <p class="text-xs text-slate-600">Synthetic fixture facts, frozen at assessment time.</p>
         <dl class="mt-2 space-y-1 text-sm">
           @for (row of featureRows(detail.features); track row.key) {
-            <div class="flex items-baseline justify-between gap-2 border-b border-slate-100 py-1 last:border-0">
+            <div
+              class="flex items-baseline justify-between gap-2 border-b border-slate-100 py-1 last:border-0"
+            >
               <dt class="font-mono text-xs text-slate-600">{{ row.key }}</dt>
               <dd class="font-mono text-xs tabular-nums">{{ row.value }}</dd>
             </div>
@@ -51,23 +65,29 @@
           <ul class="mt-1 space-y-1 text-sm">
             @for (rule of detail.matchedRules; track rule.code) {
               <li>
-                <span class="font-mono text-xs font-semibold">{{ rule.code }}</span><br />
+                <span class="font-mono text-xs font-semibold">{{ rule.code }}</span
+                ><br />
                 <span class="font-mono text-xs text-slate-600">{{ rule.detail }}</span>
               </li>
             }
           </ul>
         }
-        <p class="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <p
+          class="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+        >
           <strong class="font-semibold">Deterministic policy:</strong> {{ detail.policy }}
         </p>
       </section>
 
-      <section aria-label="Mock typed signals" class="rounded-lg border border-slate-200 bg-white p-4">
+      <section
+        aria-label="Mock typed signals"
+        class="rounded-lg border border-slate-200 bg-white p-4"
+      >
         <h2 class="text-lg font-semibold">Mock typed signals</h2>
         @if (detail.signals.length === 0) {
           <p class="mt-2 text-sm text-slate-600">
-            No provider signals recorded for this assessment (rules-only evaluation).
-            Mock answers provide context; matched rules drive this policy.
+            No provider signals recorded for this assessment (rules-only evaluation). Mock answers
+            provide context; matched rules drive this policy.
           </p>
         } @else {
           <p class="mt-2 rounded-md border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-900">
@@ -76,32 +96,53 @@
           <ul class="mt-2 space-y-3">
             @for (signal of detail.signals; track signal.questionId) {
               <li class="border-b border-slate-100 pb-3 last:border-0">
-                <p class="font-mono text-xs text-slate-600">{{ signal.questionId }} · {{ signal.type }}</p>
+                <p class="font-mono text-xs text-slate-600">
+                  {{ signal.questionId }} · {{ signal.type }}
+                </p>
                 <p class="text-sm font-medium">{{ signal.question }}</p>
                 <p class="mt-1 text-sm">
                   Answer:
                   @if (signal.answer === null) {
                     <span class="font-mono text-xs text-slate-600">no answer recorded</span>
                   } @else {
-                    <span class="rounded bg-emerald-100 px-2 py-0.5 font-mono text-xs font-semibold text-emerald-900">{{ signal.answer }}</span>
+                    <span
+                      class="rounded bg-emerald-100 px-2 py-0.5 font-mono text-xs font-semibold text-emerald-900"
+                      >{{ signal.answer }}</span
+                    >
                   }
-                  <span class="ml-3 text-xs text-slate-600">question confidence: <strong class="tabular-nums">{{ confidencePct(signal.confidence) }}</strong></span>
+                  <span class="ml-3 text-xs text-slate-600"
+                    >question confidence:
+                    <strong class="tabular-nums">{{
+                      confidencePct(signal.confidence)
+                    }}</strong></span
+                  >
                 </p>
                 @if (signal.confidence !== null) {
-                  <div class="mt-1 h-2 w-full overflow-hidden rounded bg-slate-100" role="img"
-                    [attr.aria-label]="'confidence ' + confidencePct(signal.confidence)">
-                    <span class="block h-full bg-emerald-500" [style.width.%]="signal.confidence * 100"></span>
+                  <div
+                    class="mt-1 h-2 w-full overflow-hidden rounded bg-slate-100"
+                    role="img"
+                    [attr.aria-label]="'confidence ' + confidencePct(signal.confidence)"
+                  >
+                    <span
+                      class="block h-full bg-emerald-500"
+                      [style.width.%]="signal.confidence * 100"
+                    ></span>
                   </div>
                 }
               </li>
             }
           </ul>
-          <p class="mt-2 text-xs text-slate-600">Mock answers provide context; matched rules drive this policy.</p>
+          <p class="mt-2 text-xs text-slate-600">
+            Mock answers provide context; matched rules drive this policy.
+          </p>
         }
       </section>
     </div>
 
-    <section aria-label="Assessment timeline" class="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+    <section
+      aria-label="Assessment timeline"
+      class="mt-4 rounded-lg border border-slate-200 bg-white p-4"
+    >
       <div class="flex flex-wrap items-baseline justify-between gap-2">
         <h2 class="text-lg font-semibold">Assessment timeline</h2>
         <p class="text-sm text-slate-600">
@@ -110,7 +151,10 @@
           } @else {
             {{ detail.totalMs }} ms
           }
-          · assessed <time [attr.datetime]="detail.assessedAt" [attr.title]="detail.assessedAt">{{ detail.assessedAt | timeAgo }} ({{ detail.assessedAt }})</time>
+          · assessed
+          <time [attr.datetime]="detail.assessedAt" [attr.title]="detail.assessedAt"
+            >{{ detail.assessedAt | timeAgo }} ({{ detail.assessedAt }})</time
+          >
         </p>
       </div>
       @if (detail.timeline.length === 0) {
@@ -119,8 +163,11 @@
         <ol class="mt-2 flex flex-wrap items-center gap-2 text-sm">
           @for (stage of detail.timeline; track stage.stage; let last = $last) {
             <li class="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5">
-              <span class="font-mono text-xs font-semibold">{{ stage.stage }}</span><br />
-              <span class="text-xs text-slate-600">{{ stage.durationMs === null ? 'unknown' : stage.durationMs + ' ms' }}</span>
+              <span class="font-mono text-xs font-semibold">{{ stage.stage }}</span
+              ><br />
+              <span class="text-xs text-slate-600">{{
+                stage.durationMs === null ? 'unknown' : stage.durationMs + ' ms'
+              }}</span>
             </li>
             @if (!last) {
               <li aria-hidden="true" class="text-slate-400">→</li>
@@ -131,28 +178,60 @@
       <p class="mt-2 text-sm">
         Trace:
         @if (detail.traceId) {
-          <a [routerLink]="['/telemetry/traces', detail.traceId]" class="font-mono text-xs text-sky-800 underline hover:text-sky-600">{{ detail.traceId }}</a>
+          <a
+            [routerLink]="['/telemetry/traces', detail.traceId]"
+            class="font-mono text-xs text-sky-800 underline hover:text-sky-600"
+            >{{ detail.traceId }}</a
+          >
         } @else {
-          <span class="text-xs text-slate-600">no sampled trace — sampled diagnostics are not a durable audit trail.</span>
+          <span class="text-xs text-slate-600"
+            >no sampled trace — sampled diagnostics are not a durable audit trail.</span
+          >
         }
       </p>
     </section>
 
-    <section aria-label="Assessment versions" class="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+    <section
+      aria-label="Assessment versions"
+      class="mt-4 rounded-lg border border-slate-200 bg-white p-4"
+    >
       <h2 class="text-lg font-semibold">Versions</h2>
       <dl class="mt-2 grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
-        <div><dt class="font-medium text-slate-600">Feature schema</dt><dd class="font-mono text-xs">{{ detail.versions.featureSchema }}</dd></div>
-        <div><dt class="font-medium text-slate-600">Rules</dt><dd class="font-mono text-xs">{{ detail.versions.rules }}</dd></div>
-        <div><dt class="font-medium text-slate-600">Policy</dt><dd class="font-mono text-xs">{{ detail.versions.policy }}</dd></div>
-        <div><dt class="font-medium text-slate-600">Question set</dt><dd class="font-mono text-xs">{{ detail.versions.questions }}</dd></div>
+        <div>
+          <dt class="font-medium text-slate-600">Feature schema</dt>
+          <dd class="font-mono text-xs">{{ detail.versions.featureSchema }}</dd>
+        </div>
+        <div>
+          <dt class="font-medium text-slate-600">Rules</dt>
+          <dd class="font-mono text-xs">{{ detail.versions.rules }}</dd>
+        </div>
+        <div>
+          <dt class="font-medium text-slate-600">Policy</dt>
+          <dd class="font-mono text-xs">{{ detail.versions.policy }}</dd>
+        </div>
+        <div>
+          <dt class="font-medium text-slate-600">Question set</dt>
+          <dd class="font-mono text-xs">{{ detail.versions.questions }}</dd>
+        </div>
       </dl>
       <p class="mt-3 text-sm">
-        <a [routerLink]="['/payments', detail.instructionId]" class="text-sky-800 underline hover:text-sky-600">Durable audit trail →</a>
+        <a
+          [routerLink]="['/payments', detail.instructionId]"
+          class="text-sky-800 underline hover:text-sky-600"
+          >Durable audit trail →</a
+        >
       </p>
     </section>
     <qd-refresh-note [at]="v.at" [stale]="!v.fresh"></qd-refresh-note>
   } @else if (isUnknownId(v.error)) {
-    <qd-state-message state="empty" [message]="'No risk assessment for instruction ' + id + ' exists. Unknown ids are reported, never guessed.'" />
+    <qd-state-message
+      state="empty"
+      [message]="
+        'No risk assessment for instruction ' +
+        id +
+        ' exists. Unknown ids are reported, never guessed.'
+      "
+    />
   } @else {
     <qd-state-message state="unavailable" [message]="describe(v.error)" />
   }

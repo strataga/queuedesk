@@ -1,5 +1,8 @@
 <h1 class="text-2xl font-semibold tracking-tight">Operations</h1>
-<p class="mt-1 text-sm text-slate-600">Backlog, dependency health, quarantine and safeguards. Refreshes every 5 seconds while this tab is visible.</p>
+<p class="mt-1 text-sm text-slate-600">
+  Backlog, dependency health, quarantine and safeguards. Refreshes every 5 seconds while this tab is
+  visible.
+</p>
 
 @if (view$ | async; as r) {
   @let v = toView(r);
@@ -8,7 +11,10 @@
       <qd-state-message state="error" [message]="describe(v.error)" />
     }
     @if (snap.guards.haltTraffic) {
-      <div role="alert" class="mt-3 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900">
+      <div
+        role="alert"
+        class="mt-3 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900"
+      >
         <p class="font-semibold">✕ New generated traffic halted</p>
         <ul class="mt-1 list-disc pl-5">
           @for (reason of snap.guards.reasons; track reason) {
@@ -19,16 +25,23 @@
     }
 
     <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-      <section aria-label="Process and dependencies" class="rounded-lg border border-slate-200 bg-white p-4">
+      <section
+        aria-label="Process and dependencies"
+        class="rounded-lg border border-slate-200 bg-white p-4"
+      >
         <h2 class="text-lg font-semibold">Health</h2>
         <dl class="mt-2 space-y-2 text-sm">
           <div class="flex items-center justify-between gap-2">
             <dt class="font-medium">Process liveness</dt>
-            <dd><qd-status-badge [value]="snap.liveness.status" kind="health"></qd-status-badge></dd>
+            <dd>
+              <qd-status-badge [value]="snap.liveness.status" kind="health"></qd-status-badge>
+            </dd>
           </div>
           <div class="flex items-center justify-between gap-2">
             <dt class="font-medium">Readiness (db + mq)</dt>
-            <dd><qd-status-badge [value]="snap.readiness.status" kind="health"></qd-status-badge></dd>
+            <dd>
+              <qd-status-badge [value]="snap.readiness.status" kind="health"></qd-status-badge>
+            </dd>
           </div>
           @for (entry of healthEntries(snap.readiness); track entry.name) {
             <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
@@ -37,7 +50,9 @@
             </div>
           }
         </dl>
-        <p class="mt-2 text-xs text-slate-600">An MQ outage marks dependencies down without restarting a live process.</p>
+        <p class="mt-2 text-xs text-slate-600">
+          An MQ outage marks dependencies down without restarting a live process.
+        </p>
       </section>
 
       <section aria-label="Safeguards" class="rounded-lg border border-slate-200 bg-white p-4">
@@ -45,11 +60,16 @@
         <dl class="mt-2 space-y-2 text-sm">
           <div class="flex items-center justify-between gap-2">
             <dt class="font-medium">Outbox backlog</dt>
-            <dd class="tabular-nums">{{ snap.guards.outboxPending }} / limit {{ snap.guards.backlogLimit }}</dd>
+            <dd class="tabular-nums">
+              {{ snap.guards.outboxPending }} / limit {{ snap.guards.backlogLimit }}
+            </dd>
           </div>
           <div class="flex items-center justify-between gap-2">
             <dt class="font-medium">Free disk</dt>
-            <dd class="tabular-nums">{{ formatBytes(snap.guards.diskFreeBytes) }} / reserve {{ formatBytes(snap.guards.diskReserveBytes) }}</dd>
+            <dd class="tabular-nums">
+              {{ formatBytes(snap.guards.diskFreeBytes) }} / reserve
+              {{ formatBytes(snap.guards.diskReserveBytes) }}
+            </dd>
           </div>
           <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
             <dt class="font-medium">New traffic</dt>
@@ -62,24 +82,37 @@
             </dd>
           </div>
         </dl>
-        <p class="mt-2 text-xs text-slate-600">Guards stop new generated work only; pending work is never cleared to satisfy a guard.</p>
+        <p class="mt-2 text-xs text-slate-600">
+          Guards stop new generated work only; pending work is never cleared to satisfy a guard.
+        </p>
       </section>
     </div>
 
     <section aria-label="Quarantine" class="mt-4 rounded-lg border border-slate-200 bg-white p-4">
       <div class="flex flex-wrap items-center gap-2">
         <h2 class="text-lg font-semibold">Quarantine</h2>
-        <qd-status-badge [value]="snap.quarantine.stale ? 'STALE' : 'CURRENT'" kind="fresh"></qd-status-badge>
+        <qd-status-badge
+          [value]="snap.quarantine.stale ? 'STALE' : 'CURRENT'"
+          kind="fresh"
+        ></qd-status-badge>
         <span class="ml-auto text-xs text-slate-600">
           @if (snap.quarantine.lastReconciledAt) {
-            reconciler heartbeat <time [attr.datetime]="snap.quarantine.lastReconciledAt" [attr.title]="snap.quarantine.lastReconciledAt">{{ snap.quarantine.lastReconciledAt | timeAgo }}</time>
+            reconciler heartbeat
+            <time
+              [attr.datetime]="snap.quarantine.lastReconciledAt"
+              [attr.title]="snap.quarantine.lastReconciledAt"
+              >{{ snap.quarantine.lastReconciledAt | timeAgo }}</time
+            >
           } @else {
             reconciler has never reported
           }
         </span>
       </div>
       @if (snap.quarantine.lastError) {
-        <p role="alert" class="mt-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <p
+          role="alert"
+          class="mt-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+        >
           ⚠ Last reconciler error: {{ snap.quarantine.lastError }}
         </p>
       }
@@ -89,37 +122,60 @@
         <div class="mt-2 overflow-x-auto">
           <table class="w-full text-left text-sm">
             <thead class="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-600">
-              <tr><th scope="col" class="px-2 py-1">Event</th><th scope="col" class="px-2 py-1">Instruction</th><th scope="col" class="px-2 py-1">Reason</th><th scope="col" class="px-2 py-1">Last seen</th></tr>
+              <tr>
+                <th scope="col" class="px-2 py-1">Event</th>
+                <th scope="col" class="px-2 py-1">Instruction</th>
+                <th scope="col" class="px-2 py-1">Reason</th>
+                <th scope="col" class="px-2 py-1">Last seen</th>
+              </tr>
             </thead>
             <tbody>
               @for (held of snap.quarantine.items; track held.eventId) {
                 <tr class="border-b border-slate-100 last:border-0">
                   <td class="px-2 py-1 font-mono text-xs">{{ held.eventId }}</td>
                   <td class="px-2 py-1">
-                    <a [routerLink]="['/payments', held.instructionId]" class="font-mono text-xs text-sky-800 underline hover:text-sky-600">{{ held.instructionId }}</a>
+                    <a
+                      [routerLink]="['/payments', held.instructionId]"
+                      class="font-mono text-xs text-sky-800 underline hover:text-sky-600"
+                      >{{ held.instructionId }}</a
+                    >
                   </td>
                   <td class="px-2 py-1 font-mono text-xs">{{ held.reason }}</td>
-                  <td class="px-2 py-1 text-xs text-slate-600"><time [attr.datetime]="held.lastSeenAt" [attr.title]="held.lastSeenAt">{{ held.lastSeenAt | timeAgo }}</time></td>
+                  <td class="px-2 py-1 text-xs text-slate-600">
+                    <time [attr.datetime]="held.lastSeenAt" [attr.title]="held.lastSeenAt">{{
+                      held.lastSeenAt | timeAgo
+                    }}</time>
+                  </td>
                 </tr>
               }
             </tbody>
           </table>
         </div>
       }
-      <p class="mt-2 text-xs text-slate-600">Observing quarantine never authorizes replay; recovery stays in the runbooks.</p>
+      <p class="mt-2 text-xs text-slate-600">
+        Observing quarantine never authorizes replay; recovery stays in the runbooks.
+      </p>
     </section>
 
     <section aria-label="Metrics" class="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-      <h2 class="text-lg font-semibold">Metrics <span class="text-sm font-normal text-slate-600">(lab-wide, this process)</span></h2>
+      <h2 class="text-lg font-semibold">
+        Metrics <span class="text-sm font-normal text-slate-600">(lab-wide, this process)</span>
+      </h2>
       <dl class="mt-2 grid grid-cols-1 gap-x-6 text-sm md:grid-cols-2">
         @for (row of metricRows; track row.label; let i = $index) {
-          <div class="flex items-baseline justify-between gap-2 border-b border-slate-100 py-1.5 last:border-0">
+          <div
+            class="flex items-baseline justify-between gap-2 border-b border-slate-100 py-1.5 last:border-0"
+          >
             <dt class="font-medium">{{ row.label }}</dt>
-            <dd class="tabular-nums">{{ formatMetric(snap.metrics[i]?.value ?? null, row.format) }}</dd>
+            <dd class="tabular-nums">
+              {{ formatMetric(snap.metrics[i]?.value ?? null, row.format) }}
+            </dd>
           </div>
         }
       </dl>
-      <p class="mt-2 text-xs text-slate-600">Counters reset on process restart; gauges read the database live.</p>
+      <p class="mt-2 text-xs text-slate-600">
+        Counters reset on process restart; gauges read the database live.
+      </p>
     </section>
     <qd-refresh-note [at]="v.at" [stale]="!v.fresh"></qd-refresh-note>
   } @else {

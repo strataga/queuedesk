@@ -1,4 +1,7 @@
-<p class="text-sm text-slate-600"><a routerLink="/scenarios" class="text-sky-800 underline hover:text-sky-600">Scenarios</a> / Run report</p>
+<p class="text-sm text-slate-600">
+  <a routerLink="/scenarios" class="text-sky-800 underline hover:text-sky-600">Scenarios</a> / Run
+  report
+</p>
 <h1 class="mt-1 font-mono text-2xl font-semibold tracking-tight">{{ runId$ | async }}</h1>
 
 @if (view$ | async; as r) {
@@ -18,19 +21,23 @@
       <button
         type="button"
         (click)="exportReport(rep)"
-        class="rounded border border-sky-700 px-3 py-1.5 text-sm text-sky-800 hover:bg-sky-50 focus-visible:border-sky-600">
+        class="rounded border border-sky-700 px-3 py-1.5 text-sm text-sky-800 hover:bg-sky-50 focus-visible:border-sky-600"
+      >
         ⤓ Export report
       </button>
       <button
         type="button"
         (click)="copyCommand(rep.commandPreview)"
-        class="rounded border border-sky-700 px-3 py-1.5 text-sm text-sky-800 hover:bg-sky-50 focus-visible:border-sky-600">
+        class="rounded border border-sky-700 px-3 py-1.5 text-sm text-sky-800 hover:bg-sky-50 focus-visible:border-sky-600"
+      >
         {{ copied ? '✔ Copied' : '⧉ Copy command' }}
       </button>
     </p>
 
     <p class="mt-3 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700">
-      <time [attr.datetime]="rep.startedAt" [attr.title]="rep.startedAt">{{ rep.startedAt ?? 'start unknown' }}</time>
+      <time [attr.datetime]="rep.startedAt" [attr.title]="rep.startedAt">{{
+        rep.startedAt ?? 'start unknown'
+      }}</time>
       <span aria-hidden="true" class="mx-2 text-slate-300">|</span>
       Seed {{ rep.seed === null ? 'unknown (not recorded by the server)' : rep.seed }}
       <span aria-hidden="true" class="mx-2 text-slate-300">|</span>
@@ -44,7 +51,9 @@
         @if (rep.httpAttempts == null) {
           <p class="mt-1 text-xs text-slate-600">Not recorded by the server</p>
         } @else {
-          <p class="mt-1 text-xs text-slate-600">{{ rep.uniqueAdmitted }} unique + {{ rep.repeatResponses ?? '—' }} repeats</p>
+          <p class="mt-1 text-xs text-slate-600">
+            {{ rep.uniqueAdmitted }} unique + {{ rep.repeatResponses ?? '—' }} repeats
+          </p>
         }
       </section>
       <section aria-label="Unique admitted" class="rounded-lg border border-slate-200 bg-white p-4">
@@ -52,17 +61,28 @@
         <p class="mt-1 text-3xl font-semibold tabular-nums">{{ rep.uniqueAdmitted }}</p>
         <p class="mt-1 text-xs text-slate-600">Distinct instruction IDs</p>
       </section>
-      <section aria-label="Simulated completed" class="rounded-lg border border-slate-200 bg-white p-4">
+      <section
+        aria-label="Simulated completed"
+        class="rounded-lg border border-slate-200 bg-white p-4"
+      >
         <h2 class="text-sm font-medium text-slate-600">Simulated completed</h2>
         <p class="mt-1 text-3xl font-semibold tabular-nums">{{ rep.simulatedCompleted }}</p>
         <p class="mt-1 text-xs text-slate-600">Unique outcomes</p>
       </section>
-      <section aria-label="Unknown confirmation" class="rounded-lg border border-slate-200 bg-white p-4">
+      <section
+        aria-label="Unknown confirmation"
+        class="rounded-lg border border-slate-200 bg-white p-4"
+      >
         <h2 class="text-sm font-medium text-slate-600">Unknown confirmation</h2>
         <p class="mt-1 text-3xl font-semibold tabular-nums">{{ rep.unknownConfirmations }}</p>
-        <p class="mt-1 text-xs text-slate-600">{{ rep.unknownConfirmations === 0 ? 'No pending confirmations' : 'Pending confirmation' }}</p>
+        <p class="mt-1 text-xs text-slate-600">
+          {{ rep.unknownConfirmations === 0 ? 'No pending confirmations' : 'Pending confirmation' }}
+        </p>
       </section>
-      <section aria-label="Repeat responses" class="rounded-lg border border-slate-200 bg-white p-4">
+      <section
+        aria-label="Repeat responses"
+        class="rounded-lg border border-slate-200 bg-white p-4"
+      >
         <h2 class="text-sm font-medium text-slate-600">Repeat responses</h2>
         <p class="mt-1 text-3xl font-semibold tabular-nums">{{ rep.repeatResponses ?? '—' }}</p>
         @if (rep.repeatResponses == null) {
@@ -74,34 +94,69 @@
     </div>
 
     <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <section aria-label="Attempts and outcomes" class="rounded-lg border border-slate-200 bg-white p-4 lg:col-span-2">
+      <section
+        aria-label="Attempts and outcomes"
+        class="rounded-lg border border-slate-200 bg-white p-4 lg:col-span-2"
+      >
         <h2 class="text-lg font-semibold">Attempts and outcomes</h2>
         <p class="text-xs text-slate-600">Synthetic run totals</p>
         <dl class="mt-2 space-y-3 text-sm">
           <div>
-            <div class="flex items-baseline justify-between gap-2"><dt class="font-medium">HTTP attempts</dt><dd class="tabular-nums">{{ rep.httpAttempts ?? '—' }}</dd></div>
-            <dd class="mt-1 flex h-4 w-full overflow-hidden rounded-sm bg-slate-100" aria-hidden="true">
-              <span class="h-4 bg-sky-500" [style.width]="barWidth(rep.uniqueAdmitted, rep.httpAttempts)"></span>
-              <span class="h-4 bg-sky-200" [style.width]="barWidth(rep.repeatResponses, rep.httpAttempts)"></span>
+            <div class="flex items-baseline justify-between gap-2">
+              <dt class="font-medium">HTTP attempts</dt>
+              <dd class="tabular-nums">{{ rep.httpAttempts ?? '—' }}</dd>
+            </div>
+            <dd
+              class="mt-1 flex h-4 w-full overflow-hidden rounded-sm bg-slate-100"
+              aria-hidden="true"
+            >
+              <span
+                class="h-4 bg-sky-500"
+                [style.width]="barWidth(rep.uniqueAdmitted, rep.httpAttempts)"
+              ></span>
+              <span
+                class="h-4 bg-sky-200"
+                [style.width]="barWidth(rep.repeatResponses, rep.httpAttempts)"
+              ></span>
             </dd>
-            <p class="mt-1 text-xs text-slate-600">{{ rep.uniqueAdmitted }} first attempts · {{ rep.repeatResponses ?? '—' }} repeats</p>
+            <p class="mt-1 text-xs text-slate-600">
+              {{ rep.uniqueAdmitted }} first attempts · {{ rep.repeatResponses ?? '—' }} repeats
+            </p>
           </div>
           <div>
-            <div class="flex items-baseline justify-between gap-2"><dt class="font-medium">Unique admitted</dt><dd class="tabular-nums">{{ rep.uniqueAdmitted }}</dd></div>
+            <div class="flex items-baseline justify-between gap-2">
+              <dt class="font-medium">Unique admitted</dt>
+              <dd class="tabular-nums">{{ rep.uniqueAdmitted }}</dd>
+            </div>
             <dd class="mt-1 h-4 w-full rounded-sm bg-slate-100" aria-hidden="true">
-              <span class="block h-4 rounded-sm bg-teal-600" [style.width]="barWidth(rep.uniqueAdmitted, rep.httpAttempts)"></span>
+              <span
+                class="block h-4 rounded-sm bg-teal-600"
+                [style.width]="barWidth(rep.uniqueAdmitted, rep.httpAttempts)"
+              ></span>
             </dd>
           </div>
           <div>
-            <div class="flex items-baseline justify-between gap-2"><dt class="font-medium">Simulated completed</dt><dd class="tabular-nums">{{ rep.simulatedCompleted }}</dd></div>
+            <div class="flex items-baseline justify-between gap-2">
+              <dt class="font-medium">Simulated completed</dt>
+              <dd class="tabular-nums">{{ rep.simulatedCompleted }}</dd>
+            </div>
             <dd class="mt-1 h-4 w-full rounded-sm bg-slate-100" aria-hidden="true">
-              <span class="block h-4 rounded-sm bg-teal-600" [style.width]="barWidth(rep.simulatedCompleted, rep.httpAttempts)"></span>
+              <span
+                class="block h-4 rounded-sm bg-teal-600"
+                [style.width]="barWidth(rep.simulatedCompleted, rep.httpAttempts)"
+              ></span>
             </dd>
           </div>
         </dl>
-        <p class="mt-2 rounded bg-sky-50 px-3 py-2 text-xs text-sky-900">ⓘ HTTP acceptance is not a unique payment outcome. Repeat responses refer to the same {{ rep.uniqueAdmitted }} instruction IDs.</p>
+        <p class="mt-2 rounded bg-sky-50 px-3 py-2 text-xs text-sky-900">
+          ⓘ HTTP acceptance is not a unique payment outcome. Repeat responses refer to the same
+          {{ rep.uniqueAdmitted }} instruction IDs.
+        </p>
       </section>
-      <section aria-label="Result assertions" class="rounded-lg border border-slate-200 bg-white p-4">
+      <section
+        aria-label="Result assertions"
+        class="rounded-lg border border-slate-200 bg-white p-4"
+      >
         <h2 class="text-lg font-semibold">Result assertions</h2>
         @if (rep.assertions.length === 0) {
           <p class="mt-2 text-sm text-slate-600">No assertions recorded for this run.</p>
@@ -110,7 +165,8 @@
             @for (a of rep.assertions; track a.text) {
               <li
                 [attr.data-assertion]="a.passed ? 'pass' : 'fail'"
-                class="flex items-start gap-2 border-b border-slate-100 pb-2 last:border-0">
+                class="flex items-start gap-2 border-b border-slate-100 pb-2 last:border-0"
+              >
                 @if (a.passed) {
                   <span aria-hidden="true" class="font-semibold text-emerald-700">✔</span>
                   <span>{{ a.text }}</span>
@@ -122,29 +178,66 @@
             }
           </ul>
         }
-        <p class="mt-2 text-xs text-slate-600">Duplicate business outcomes: {{ rep.duplicateOutcomes }}</p>
+        <p class="mt-2 text-xs text-slate-600">
+          Duplicate business outcomes: {{ rep.duplicateOutcomes }}
+        </p>
       </section>
     </div>
 
     <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <section aria-label="Generator configuration" class="rounded-lg border border-slate-200 bg-white p-4">
+      <section
+        aria-label="Generator configuration"
+        class="rounded-lg border border-slate-200 bg-white p-4"
+      >
         <h2 class="text-lg font-semibold">Generator configuration</h2>
         <dl class="mt-2 space-y-2 text-sm">
-          <div class="flex items-center justify-between gap-2"><dt class="font-medium">Scenario</dt><dd class="font-mono text-xs">{{ rep.generator.scenario ?? 'unknown' }}</dd></div>
-          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2"><dt class="font-medium">Seed</dt><dd class="tabular-nums">{{ rep.generator.seed === null ? 'unknown' : rep.generator.seed }}</dd></div>
-          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2"><dt class="font-medium">Unique instructions</dt><dd class="tabular-nums">{{ rep.generator.unique }}</dd></div>
-          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2"><dt class="font-medium">Repeat attempts</dt><dd class="tabular-nums">{{ rep.generator.repeats }}</dd></div>
-          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2"><dt class="font-medium">Max attempts</dt><dd class="tabular-nums">{{ rep.generator.maxAttempts }}</dd></div>
-          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2"><dt class="font-medium">Risk mode</dt><dd class="font-mono text-xs">{{ rep.riskMode }}</dd></div>
-          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2"><dt class="font-medium">Participants</dt><dd class="font-mono text-xs">{{ rep.generator.participants }}</dd></div>
+          <div class="flex items-center justify-between gap-2">
+            <dt class="font-medium">Scenario</dt>
+            <dd class="font-mono text-xs">{{ rep.generator.scenario ?? 'unknown' }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+            <dt class="font-medium">Seed</dt>
+            <dd class="tabular-nums">
+              {{ rep.generator.seed === null ? 'unknown' : rep.generator.seed }}
+            </dd>
+          </div>
+          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+            <dt class="font-medium">Unique instructions</dt>
+            <dd class="tabular-nums">{{ rep.generator.unique }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+            <dt class="font-medium">Repeat attempts</dt>
+            <dd class="tabular-nums">{{ rep.generator.repeats }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+            <dt class="font-medium">Max attempts</dt>
+            <dd class="tabular-nums">{{ rep.generator.maxAttempts }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+            <dt class="font-medium">Risk mode</dt>
+            <dd class="font-mono text-xs">{{ rep.riskMode }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+            <dt class="font-medium">Participants</dt>
+            <dd class="font-mono text-xs">{{ rep.generator.participants }}</dd>
+          </div>
         </dl>
       </section>
-      <section aria-label="Reproducibility preview" class="rounded-lg border border-slate-200 bg-white p-4">
+      <section
+        aria-label="Reproducibility preview"
+        class="rounded-lg border border-slate-200 bg-white p-4"
+      >
         <h2 class="text-lg font-semibold">Reproducibility preview</h2>
         @if (rep.dryRunDefault) {
-          <p class="mt-1 inline-block rounded bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-900">ⓘ Dry run default — preview only</p>
+          <p
+            class="mt-1 inline-block rounded bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-900"
+          >
+            ⓘ Dry run default — preview only
+          </p>
         }
-        <pre class="mt-2 overflow-x-auto rounded bg-slate-900 p-3 font-mono text-xs text-slate-100">{{ rep.commandPreview }}</pre>
+        <pre
+          class="mt-2 overflow-x-auto rounded bg-slate-900 p-3 font-mono text-xs text-slate-100"
+          >{{ rep.commandPreview }}</pre>
         <p class="mt-2 text-xs text-slate-600">Finite, bounded CLI producer · Preview only.</p>
       </section>
     </div>

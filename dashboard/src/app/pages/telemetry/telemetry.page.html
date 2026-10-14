@@ -1,5 +1,7 @@
 <h1 class="text-2xl font-semibold tracking-tight">Telemetry</h1>
-<p class="mt-1 text-sm text-slate-600">Read-only lab · Synthetic observations. Refreshes every 5 seconds while this tab is visible.</p>
+<p class="mt-1 text-sm text-slate-600">
+  Read-only lab · Synthetic observations. Refreshes every 5 seconds while this tab is visible.
+</p>
 
 @if (view$ | async; as r) {
   @let v = toView(r);
@@ -7,165 +9,304 @@
     @if (!v.fresh) {
       <qd-state-message state="error" [message]="describe(v.error)" />
     }
-    <div role="tablist" aria-label="Telemetry views" class="mt-4 flex gap-1 border-b border-slate-200">
-      <button type="button" role="tab" [attr.aria-selected]="tab === 'metrics'" (click)="setTab('metrics')"
-        [class]="tab === 'metrics' ? 'border-b-2 border-sky-700 px-3 py-1.5 text-sm font-semibold text-sky-900' : 'px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900'">Metrics</button>
-      <button type="button" role="tab" [attr.aria-selected]="tab === 'traces'" (click)="setTab('traces')"
-        [class]="tab === 'traces' ? 'border-b-2 border-sky-700 px-3 py-1.5 text-sm font-semibold text-sky-900' : 'px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900'">Traces</button>
-      <button type="button" role="tab" [attr.aria-selected]="tab === 'logs'" (click)="setTab('logs')"
-        [class]="tab === 'logs' ? 'border-b-2 border-sky-700 px-3 py-1.5 text-sm font-semibold text-sky-900' : 'px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900'">Logs</button>
+    <div
+      role="tablist"
+      aria-label="Telemetry views"
+      class="mt-4 flex gap-1 border-b border-slate-200"
+    >
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="tab === 'metrics'"
+        (click)="setTab('metrics')"
+        [class]="
+          tab === 'metrics'
+            ? 'border-b-2 border-sky-700 px-3 py-1.5 text-sm font-semibold text-sky-900'
+            : 'px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900'
+        "
+      >
+        Metrics
+      </button>
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="tab === 'traces'"
+        (click)="setTab('traces')"
+        [class]="
+          tab === 'traces'
+            ? 'border-b-2 border-sky-700 px-3 py-1.5 text-sm font-semibold text-sky-900'
+            : 'px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900'
+        "
+      >
+        Traces
+      </button>
+      <button
+        type="button"
+        role="tab"
+        [attr.aria-selected]="tab === 'logs'"
+        (click)="setTab('logs')"
+        [class]="
+          tab === 'logs'
+            ? 'border-b-2 border-sky-700 px-3 py-1.5 text-sm font-semibold text-sky-900'
+            : 'px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900'
+        "
+      >
+        Logs
+      </button>
     </div>
     @if (tab === 'metrics') {
-    <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <section aria-label="HTTP admission p95" class="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 class="text-sm font-medium text-slate-600">HTTP admission p95</h2>
-        @if (t.summary.admission.n === 0) {
-          <p class="mt-1 text-3xl font-semibold text-slate-400">—</p>
-        } @else {
-          <p class="mt-1 text-3xl font-semibold tabular-nums">{{ t.summary.admission.p95Ms }} ms</p>
-        }
-        <p class="mt-1 text-xs text-slate-600">n={{ t.summary.admission.n }} accepted requests</p>
-      </section>
-      <section aria-label="End-to-end completion p95" class="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 class="text-sm font-medium text-slate-600">End-to-end completion p95</h2>
-        @if (t.summary.completion.n === 0) {
-          <p class="mt-1 text-3xl font-semibold text-slate-400">—</p>
-        } @else {
-          <p class="mt-1 text-3xl font-semibold tabular-nums">{{ t.summary.completion.p95Ms }} ms</p>
-        }
-        <p class="mt-1 text-xs text-slate-600">n={{ t.summary.completion.n }} completed instructions</p>
-      </section>
-      <section aria-label="Risk provider p95" class="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 class="text-sm font-medium text-slate-600">Risk provider p95</h2>
-        @if (t.summary.riskProvider?.p95Ms != null) {
-          <p class="mt-1 text-3xl font-semibold tabular-nums">{{ t.summary.riskProvider!.p95Ms }} ms</p>
-          <p class="mt-1 text-xs text-slate-600">n={{ t.summary.riskProvider!.n }} assessments · {{ t.summary.riskProvider!.mode }}</p>
-        } @else {
-          <p class="mt-1 text-3xl font-semibold text-slate-400">—</p>
-          <p class="mt-1 text-xs text-slate-600">{{ t.summary.riskProvider ? 'Gate ' + t.summary.riskProvider.mode + ' · no provider readings yet' : 'Risk gate off · no provider readings' }}</p>
-        }
-      </section>
-      <section aria-label="Trace sampling" class="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 class="text-sm font-medium text-slate-600">Trace sampling</h2>
-        <p class="mt-1 text-3xl font-semibold tabular-nums">{{ t.summary.sampling.percent }}%</p>
-        <p class="mt-1 text-xs text-slate-600">{{ t.summary.sampling.sampledInstructions }} sampled instructions</p>
-      </section>
-    </div>
-    <p class="mt-2 text-xs text-slate-600">Window: last {{ t.summary.windowMinutes }} min · Admission {{ t.summary.admission.note }}; completion {{ t.summary.completion.note }}.</p>
+      <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section
+          aria-label="HTTP admission p95"
+          class="rounded-lg border border-slate-200 bg-white p-4"
+        >
+          <h2 class="text-sm font-medium text-slate-600">HTTP admission p95</h2>
+          @if (t.summary.admission.n === 0) {
+            <p class="mt-1 text-3xl font-semibold text-slate-400">—</p>
+          } @else {
+            <p class="mt-1 text-3xl font-semibold tabular-nums">
+              {{ t.summary.admission.p95Ms }} ms
+            </p>
+          }
+          <p class="mt-1 text-xs text-slate-600">n={{ t.summary.admission.n }} accepted requests</p>
+        </section>
+        <section
+          aria-label="End-to-end completion p95"
+          class="rounded-lg border border-slate-200 bg-white p-4"
+        >
+          <h2 class="text-sm font-medium text-slate-600">End-to-end completion p95</h2>
+          @if (t.summary.completion.n === 0) {
+            <p class="mt-1 text-3xl font-semibold text-slate-400">—</p>
+          } @else {
+            <p class="mt-1 text-3xl font-semibold tabular-nums">
+              {{ t.summary.completion.p95Ms }} ms
+            </p>
+          }
+          <p class="mt-1 text-xs text-slate-600">
+            n={{ t.summary.completion.n }} completed instructions
+          </p>
+        </section>
+        <section
+          aria-label="Risk provider p95"
+          class="rounded-lg border border-slate-200 bg-white p-4"
+        >
+          <h2 class="text-sm font-medium text-slate-600">Risk provider p95</h2>
+          @if (t.summary.riskProvider?.p95Ms != null) {
+            <p class="mt-1 text-3xl font-semibold tabular-nums">
+              {{ t.summary.riskProvider!.p95Ms }} ms
+            </p>
+            <p class="mt-1 text-xs text-slate-600">
+              n={{ t.summary.riskProvider!.n }} assessments · {{ t.summary.riskProvider!.mode }}
+            </p>
+          } @else {
+            <p class="mt-1 text-3xl font-semibold text-slate-400">—</p>
+            <p class="mt-1 text-xs text-slate-600">
+              {{
+                t.summary.riskProvider
+                  ? 'Gate ' + t.summary.riskProvider.mode + ' · no provider readings yet'
+                  : 'Risk gate off · no provider readings'
+              }}
+            </p>
+          }
+        </section>
+        <section
+          aria-label="Trace sampling"
+          class="rounded-lg border border-slate-200 bg-white p-4"
+        >
+          <h2 class="text-sm font-medium text-slate-600">Trace sampling</h2>
+          <p class="mt-1 text-3xl font-semibold tabular-nums">{{ t.summary.sampling.percent }}%</p>
+          <p class="mt-1 text-xs text-slate-600">
+            {{ t.summary.sampling.sampledInstructions }} sampled instructions
+          </p>
+        </section>
+      </div>
+      <p class="mt-2 text-xs text-slate-600">
+        Window: last {{ t.summary.windowMinutes }} min · Admission {{ t.summary.admission.note }};
+        completion {{ t.summary.completion.note }}.
+      </p>
 
-    <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <section aria-label="Admission and completion latency" class="rounded-lg border border-slate-200 bg-white p-4 lg:col-span-2">
-        <h2 class="text-lg font-semibold">Admission &amp; completion latency</h2>
-        <p class="text-xs text-slate-600">p95 per refresh · ms · client-side samples, since page open · no server history · 0 marks a refresh with no samples on that side</p>
-        <qd-trend-chart [series]="admissionTrend()"></qd-trend-chart>
+      <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <section
+          aria-label="Admission and completion latency"
+          class="rounded-lg border border-slate-200 bg-white p-4 lg:col-span-2"
+        >
+          <h2 class="text-lg font-semibold">Admission &amp; completion latency</h2>
+          <p class="text-xs text-slate-600">
+            p95 per refresh · ms · client-side samples, since page open · no server history · 0
+            marks a refresh with no samples on that side
+          </p>
+          <qd-trend-chart [series]="admissionTrend()"></qd-trend-chart>
+        </section>
+        <section
+          aria-label="Provider latency"
+          class="rounded-lg border border-slate-200 bg-white p-4"
+        >
+          <h2 class="text-lg font-semibold">Risk provider latency</h2>
+          <p class="text-xs text-slate-600">
+            p95 per refresh · ms · client-side samples, since page open
+          </p>
+          @if (hasProvider(latency) || t.summary.riskProvider) {
+            <qd-trend-chart [series]="providerTrend()"></qd-trend-chart>
+            <p class="mt-1 text-xs text-slate-600">{{ t.summary.riskProvider?.mode ?? 'OFF' }}</p>
+          } @else {
+            <p class="mt-2 text-sm text-slate-600">No provider readings: the risk gate is off.</p>
+          }
+        </section>
+      </div>
+      <section
+        aria-label="Exporter health"
+        class="mt-4 rounded-lg border border-slate-200 bg-white p-4"
+      >
+        <h2 class="text-lg font-semibold">Exporter health</h2>
+        <p class="mt-2">
+          <qd-status-badge
+            [value]="t.summary.exporter.status === 'HEALTHY' ? 'UP' : t.summary.exporter.status"
+            kind="health"
+          ></qd-status-badge>
+          <span class="ml-1 text-xs text-slate-600">{{ t.summary.exporter.status }}</span>
+        </p>
+        <dl class="mt-2 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <div class="border-t border-slate-100 pt-2">
+            <dt class="font-medium">Last export</dt>
+            <dd class="text-xs text-slate-600">
+              @if (t.summary.exporter.lastExportAt) {
+                <time
+                  [attr.datetime]="t.summary.exporter.lastExportAt"
+                  [attr.title]="t.summary.exporter.lastExportAt"
+                  >{{ t.summary.exporter.lastExportAt | timeAgo }}</time
+                >
+              } @else {
+                never — no collector configured
+              }
+            </dd>
+          </div>
+          <div class="border-t border-slate-100 pt-2">
+            <dt class="font-medium">Last 15 min</dt>
+            <dd class="tabular-nums">{{ t.summary.exporter.spansSent15Min }} spans sent</dd>
+          </div>
+          <div class="border-t border-slate-100 pt-2">
+            <dt class="font-medium">Spans dropped</dt>
+            <dd class="tabular-nums">{{ t.summary.exporter.spansDropped }}</dd>
+          </div>
+          <div class="border-t border-slate-100 pt-2">
+            <dt class="font-medium">Buffer</dt>
+            <dd class="tabular-nums">{{ t.summary.exporter.bufferedSpans }} spans</dd>
+          </div>
+        </dl>
       </section>
-      <section aria-label="Provider latency" class="rounded-lg border border-slate-200 bg-white p-4">
-        <h2 class="text-lg font-semibold">Risk provider latency</h2>
-        <p class="text-xs text-slate-600">p95 per refresh · ms · client-side samples, since page open</p>
-        @if (hasProvider(latency) || t.summary.riskProvider) {
-          <qd-trend-chart [series]="providerTrend()"></qd-trend-chart>
-          <p class="mt-1 text-xs text-slate-600">{{ t.summary.riskProvider?.mode ?? 'OFF' }}</p>
-        } @else {
-          <p class="mt-2 text-sm text-slate-600">No provider readings: the risk gate is off.</p>
-        }
-      </section>
-    </div>
-    <section aria-label="Exporter health" class="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-      <h2 class="text-lg font-semibold">Exporter health</h2>
-      <p class="mt-2"><qd-status-badge [value]="t.summary.exporter.status === 'HEALTHY' ? 'UP' : t.summary.exporter.status" kind="health"></qd-status-badge>
-        <span class="ml-1 text-xs text-slate-600">{{ t.summary.exporter.status }}</span></p>
-      <dl class="mt-2 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
-        <div class="border-t border-slate-100 pt-2">
-          <dt class="font-medium">Last export</dt>
-          <dd class="text-xs text-slate-600">
-            @if (t.summary.exporter.lastExportAt) {
-              <time [attr.datetime]="t.summary.exporter.lastExportAt" [attr.title]="t.summary.exporter.lastExportAt">{{ t.summary.exporter.lastExportAt | timeAgo }}</time>
-            } @else {
-              never — no collector configured
-            }
-          </dd>
-        </div>
-        <div class="border-t border-slate-100 pt-2">
-          <dt class="font-medium">Last 15 min</dt>
-          <dd class="tabular-nums">{{ t.summary.exporter.spansSent15Min }} spans sent</dd>
-        </div>
-        <div class="border-t border-slate-100 pt-2">
-          <dt class="font-medium">Spans dropped</dt>
-          <dd class="tabular-nums">{{ t.summary.exporter.spansDropped }}</dd>
-        </div>
-        <div class="border-t border-slate-100 pt-2">
-          <dt class="font-medium">Buffer</dt>
-          <dd class="tabular-nums">{{ t.summary.exporter.bufferedSpans }} spans</dd>
-        </div>
-      </dl>
-    </section>
     } @else if (tab === 'traces') {
-    <section aria-label="Recent sampled traces" class="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+      <section
+        aria-label="Recent sampled traces"
+        class="mt-4 rounded-lg border border-slate-200 bg-white p-4"
+      >
         <h2 class="text-lg font-semibold">Recent sampled traces</h2>
         @if (t.traces.items.length === 0) {
           <p class="mt-2 text-sm text-slate-600">No sampled traces in this window.</p>
         } @else {
           <div class="mt-2 overflow-x-auto">
             <table class="w-full text-left text-sm">
-              <thead class="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-600">
-                <tr><th scope="col" class="px-2 py-1">Instruction</th><th scope="col" class="px-2 py-1">Trace ID</th><th scope="col" class="px-2 py-1">Outcome</th><th scope="col" class="px-2 py-1">Trace elapsed</th><th scope="col" class="px-2 py-1"><span class="sr-only">Open</span></th></tr>
+              <thead
+                class="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-600"
+              >
+                <tr>
+                  <th scope="col" class="px-2 py-1">Instruction</th>
+                  <th scope="col" class="px-2 py-1">Trace ID</th>
+                  <th scope="col" class="px-2 py-1">Outcome</th>
+                  <th scope="col" class="px-2 py-1">Trace elapsed</th>
+                  <th scope="col" class="px-2 py-1"><span class="sr-only">Open</span></th>
+                </tr>
               </thead>
               <tbody>
                 @for (trace of t.traces.items; track trace.traceId) {
                   <tr class="border-b border-slate-100 last:border-0">
                     <td class="px-2 py-1 font-mono text-xs">{{ trace.clientReference }}</td>
                     <td class="px-2 py-1 font-mono text-xs">{{ trace.traceId }}</td>
-                    <td class="px-2 py-1"><qd-status-badge [value]="trace.outcome" kind="business"></qd-status-badge></td>
+                    <td class="px-2 py-1">
+                      <qd-status-badge [value]="trace.outcome" kind="business"></qd-status-badge>
+                    </td>
                     <td class="px-2 py-1 tabular-nums">{{ trace.elapsedMs }} ms</td>
-                    <td class="px-2 py-1"><a [routerLink]="['/telemetry/traces', trace.traceId]" class="text-sky-800 underline hover:text-sky-600" aria-label="Open trace {{ trace.traceId }}">→</a></td>
+                    <td class="px-2 py-1">
+                      <a
+                        [routerLink]="['/telemetry/traces', trace.traceId]"
+                        class="text-sky-800 underline hover:text-sky-600"
+                        aria-label="Open trace {{ trace.traceId }}"
+                        >→</a
+                      >
+                    </td>
                   </tr>
                 }
               </tbody>
             </table>
           </div>
         }
-    </section>
+      </section>
     } @else {
-    <section aria-label="Process logs" class="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-      <div class="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 class="text-lg font-semibold">Process logs</h2>
-          <p class="text-xs text-slate-600">Live ring of this backend process · newest last · no stack traces · {{ t.logs.dropped }} dropped / {{ t.logs.capacity }} kept</p>
-        </div>
-        <label class="text-xs text-slate-600">Minimum level
-          <select [value]="logLevel" (change)="setLogLevel($any($event.target).value)" class="ml-2 rounded-md border border-slate-300 bg-white px-2 py-1 text-sm">
-            @for (level of logLevels; track level) {
-              <option [value]="level" [selected]="level === logLevel">{{ level }}</option>
-            }
-          </select>
-        </label>
-      </div>
-      @let rows = visibleLogs(t.logs.items);
-      @if (rows.length === 0) {
-        <p class="mt-2 text-sm text-slate-600">No log rows at this threshold.</p>
-      } @else {
-        <div class="mt-2 max-h-96 overflow-auto">
-          <table class="w-full text-left text-sm">
-            <thead class="sticky top-0 border-b border-slate-200 bg-white text-xs uppercase tracking-wide text-slate-600">
-              <tr><th scope="col" class="px-2 py-1">Time (UTC)</th><th scope="col" class="px-2 py-1">Level</th><th scope="col" class="px-2 py-1">Logger</th><th scope="col" class="px-2 py-1">Message</th></tr>
-            </thead>
-            <tbody>
-              @for (row of rows; track $index) {
-                <tr class="border-b border-slate-100 align-top last:border-0">
-                  <td class="whitespace-nowrap px-2 py-1 font-mono text-xs">{{ row.at }}</td>
-                  <td class="px-2 py-1 font-mono text-xs">{{ row.level }}</td>
-                  <td class="max-w-56 truncate px-2 py-1 font-mono text-xs" [attr.title]="row.logger">{{ row.logger }}</td>
-                  <td class="px-2 py-1 font-mono text-xs break-all">{{ row.message }}</td>
-                </tr>
+      <section
+        aria-label="Process logs"
+        class="mt-4 rounded-lg border border-slate-200 bg-white p-4"
+      >
+        <div class="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-semibold">Process logs</h2>
+            <p class="text-xs text-slate-600">
+              Live ring of this backend process · newest last · no stack traces ·
+              {{ t.logs.dropped }} dropped / {{ t.logs.capacity }} kept
+            </p>
+          </div>
+          <label class="text-xs text-slate-600"
+            >Minimum level
+            <select
+              [value]="logLevel"
+              (change)="setLogLevel($any($event.target).value)"
+              class="ml-2 rounded-md border border-slate-300 bg-white px-2 py-1 text-sm"
+            >
+              @for (level of logLevels; track level) {
+                <option [value]="level" [selected]="level === logLevel">{{ level }}</option>
               }
-            </tbody>
-          </table>
+            </select>
+          </label>
         </div>
-      }
-      <p class="mt-2 text-xs text-slate-600">{{ t.logs.note }}</p>
-    </section>
+        @let rows = visibleLogs(t.logs.items);
+        @if (rows.length === 0) {
+          <p class="mt-2 text-sm text-slate-600">No log rows at this threshold.</p>
+        } @else {
+          <div class="mt-2 max-h-96 overflow-auto">
+            <table class="w-full text-left text-sm">
+              <thead
+                class="sticky top-0 border-b border-slate-200 bg-white text-xs uppercase tracking-wide text-slate-600"
+              >
+                <tr>
+                  <th scope="col" class="px-2 py-1">Time (UTC)</th>
+                  <th scope="col" class="px-2 py-1">Level</th>
+                  <th scope="col" class="px-2 py-1">Logger</th>
+                  <th scope="col" class="px-2 py-1">Message</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of rows; track $index) {
+                  <tr class="border-b border-slate-100 align-top last:border-0">
+                    <td class="whitespace-nowrap px-2 py-1 font-mono text-xs">{{ row.at }}</td>
+                    <td class="px-2 py-1 font-mono text-xs">{{ row.level }}</td>
+                    <td
+                      class="max-w-56 truncate px-2 py-1 font-mono text-xs"
+                      [attr.title]="row.logger"
+                    >
+                      {{ row.logger }}
+                    </td>
+                    <td class="px-2 py-1 font-mono text-xs break-all">{{ row.message }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+        <p class="mt-2 text-xs text-slate-600">{{ t.logs.note }}</p>
+      </section>
     }
-    <p class="mt-2 text-xs text-slate-600">ⓘ Sampled diagnostics are not a durable audit trail. Bounded IDs and timings only; no raw payloads.</p>
+    <p class="mt-2 text-xs text-slate-600">
+      ⓘ Sampled diagnostics are not a durable audit trail. Bounded IDs and timings only; no raw
+      payloads.
+    </p>
     <qd-refresh-note [at]="v.at" [stale]="!v.fresh"></qd-refresh-note>
   } @else {
     <qd-state-message state="unavailable" [message]="describe(v.error)" />

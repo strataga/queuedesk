@@ -1,11 +1,15 @@
-<p class="text-sm"><a routerLink="/payments" class="text-sky-800 underline hover:text-sky-600">← Back to payments</a></p>
+<p class="text-sm">
+  <a routerLink="/payments" class="text-sky-800 underline hover:text-sky-600">← Back to payments</a>
+</p>
 @let id = (id$ | async) ?? '';
 
 @if (view$ | async; as r) {
   @let v = toView(r);
   @if (v.value; as item) {
     <div class="mt-1 flex flex-wrap items-baseline gap-3">
-      <h1 class="font-mono text-2xl font-semibold tracking-tight">{{ item.payload.clientReference }}</h1>
+      <h1 class="font-mono text-2xl font-semibold tracking-tight">
+        {{ item.payload.clientReference }}
+      </h1>
       <qd-status-badge [value]="item.status"></qd-status-badge>
       <qd-status-badge [value]="item.delivery" kind="delivery"></qd-status-badge>
       @if (item.reason) {
@@ -13,10 +17,22 @@
       }
     </div>
     <p class="mt-1 text-sm text-slate-600">
-      Synthetic instruction · <a [routerLink]="['/runs', item.payload.runId]" class="font-mono text-xs text-sky-800 underline hover:text-sky-600">{{ item.payload.runId }}</a> · Read-only detail
-      <span class="ml-1 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs">{{ item.status }}</span>
+      Synthetic instruction ·
+      <a
+        [routerLink]="['/runs', item.payload.runId]"
+        class="font-mono text-xs text-sky-800 underline hover:text-sky-600"
+        >{{ item.payload.runId }}</a
+      >
+      · Read-only detail
+      <span class="ml-1 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs">{{
+        item.status
+      }}</span>
       @if (item.traceId) {
-        <a [routerLink]="['/telemetry/traces', item.traceId]" class="ml-2 text-sky-800 underline hover:text-sky-600">View trace →</a>
+        <a
+          [routerLink]="['/telemetry/traces', item.traceId]"
+          class="ml-2 text-sky-800 underline hover:text-sky-600"
+          >View trace →</a
+        >
       }
     </p>
     @if (!v.fresh) {
@@ -24,15 +40,25 @@
     }
     @if (item.status === 'PENDING_CONFIRMATION') {
       <div role="alert" class="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3">
-        <p class="font-semibold text-amber-900">⚠ Outcome unknown. Reconcile the original instruction.</p>
-        <p class="mt-1 text-sm text-amber-900">A timeout does not mean rejection. Do not create a replacement payment.</p>
+        <p class="font-semibold text-amber-900">
+          ⚠ Outcome unknown. Reconcile the original instruction.
+        </p>
+        <p class="mt-1 text-sm text-amber-900">
+          A timeout does not mean rejection. Do not create a replacement payment.
+        </p>
       </div>
     }
     @if (item.status === 'RISK_HELD') {
       <div role="alert" class="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3">
-        <p class="font-semibold text-amber-900">◉ Risk held. Assessment output explains the hold; it is not a fraud determination.</p>
+        <p class="font-semibold text-amber-900">
+          ◉ Risk held. Assessment output explains the hold; it is not a fraud determination.
+        </p>
         <p class="mt-1 text-sm">
-          <a [routerLink]="['/risk/assessments', item.instructionId]" class="font-medium text-sky-800 underline hover:text-sky-600">View risk assessment →</a>
+          <a
+            [routerLink]="['/risk/assessments', item.instructionId]"
+            class="font-medium text-sky-800 underline hover:text-sky-600"
+            >View risk assessment →</a
+          >
         </p>
       </div>
     }
@@ -40,8 +66,12 @@
     <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
       <div class="rounded-lg border border-slate-200 bg-white p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-slate-600">Amount</p>
-        <p class="mt-1 text-xl font-semibold tabular-nums">{{ item.payload.amountMinor | minorCurrency: item.payload.currency }}</p>
-        <p class="mt-1 font-mono text-xs text-slate-600">{{ item.payload.senderParticipant }} → {{ item.payload.receiverParticipant }}</p>
+        <p class="mt-1 text-xl font-semibold tabular-nums">
+          {{ item.payload.amountMinor | minorCurrency: item.payload.currency }}
+        </p>
+        <p class="mt-1 font-mono text-xs text-slate-600">
+          {{ item.payload.senderParticipant }} → {{ item.payload.receiverParticipant }}
+        </p>
       </div>
       <div class="rounded-lg border border-slate-200 bg-white p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-slate-600">Risk assessment</p>
@@ -53,22 +83,36 @@
           }
         </p>
         @if (item.riskReasonCodes?.length) {
-          <p class="mt-1 font-mono text-xs text-slate-600">{{ item.riskReasonCodes!.join(', ') }}</p>
+          <p class="mt-1 font-mono text-xs text-slate-600">
+            {{ item.riskReasonCodes!.join(', ') }}
+          </p>
         }
         @if (item.riskStatus) {
           <p class="mt-1 text-sm">
-            <a [routerLink]="['/risk/assessments', item.instructionId]" class="text-sky-800 underline hover:text-sky-600">View risk assessment →</a>
+            <a
+              [routerLink]="['/risk/assessments', item.instructionId]"
+              class="text-sky-800 underline hover:text-sky-600"
+              >View risk assessment →</a
+            >
           </p>
         }
       </div>
       <div class="rounded-lg border border-slate-200 bg-white p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-slate-600">Delivery</p>
-        <p class="mt-2"><qd-status-badge [value]="item.delivery" kind="delivery"></qd-status-badge></p>
-        <p class="mt-1 text-xs text-slate-600">Transport marker, separate from the business outcome.</p>
+        <p class="mt-2">
+          <qd-status-badge [value]="item.delivery" kind="delivery"></qd-status-badge>
+        </p>
+        <p class="mt-1 text-xs text-slate-600">
+          Transport marker, separate from the business outcome.
+        </p>
       </div>
       <div class="rounded-lg border border-slate-200 bg-white p-4">
         <p class="text-xs font-medium uppercase tracking-wide text-slate-600">Admitted</p>
-        <p class="mt-1 text-sm"><time [attr.datetime]="item.receivedAt" [attr.title]="item.receivedAt">{{ item.receivedAt | timeAgo }}</time></p>
+        <p class="mt-1 text-sm">
+          <time [attr.datetime]="item.receivedAt" [attr.title]="item.receivedAt">{{
+            item.receivedAt | timeAgo
+          }}</time>
+        </p>
         <p class="mt-1 font-mono text-xs text-slate-600">{{ item.receivedAt }}</p>
       </div>
     </div>
@@ -77,20 +121,51 @@
     }
 
     <div class="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-      <div role="tablist" aria-label="Instruction evidence" class="flex gap-1 border-b border-slate-200">
-        <button type="button" role="tab" [attr.aria-selected]="tab === 'timeline'" (click)="selectTab('timeline')"
+      <div
+        role="tablist"
+        aria-label="Instruction evidence"
+        class="flex gap-1 border-b border-slate-200"
+      >
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="tab === 'timeline'"
+          (click)="selectTab('timeline')"
           class="border-b-2 px-4 py-2 text-sm font-medium"
-          [class]="tab === 'timeline' ? 'border-sky-700 text-sky-800' : 'border-transparent text-slate-600 hover:text-slate-900'">
+          [class]="
+            tab === 'timeline'
+              ? 'border-sky-700 text-sky-800'
+              : 'border-transparent text-slate-600 hover:text-slate-900'
+          "
+        >
           Timeline
         </button>
-        <button type="button" role="tab" [attr.aria-selected]="tab === 'request'" (click)="selectTab('request')"
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="tab === 'request'"
+          (click)="selectTab('request')"
           class="border-b-2 px-4 py-2 text-sm font-medium"
-          [class]="tab === 'request' ? 'border-sky-700 text-sky-800' : 'border-transparent text-slate-600 hover:text-slate-900'">
+          [class]="
+            tab === 'request'
+              ? 'border-sky-700 text-sky-800'
+              : 'border-transparent text-slate-600 hover:text-slate-900'
+          "
+        >
           Request
         </button>
-        <button type="button" role="tab" [attr.aria-selected]="tab === 'audit'" (click)="selectTab('audit')"
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="tab === 'audit'"
+          (click)="selectTab('audit')"
           class="border-b-2 px-4 py-2 text-sm font-medium"
-          [class]="tab === 'audit' ? 'border-sky-700 text-sky-800' : 'border-transparent text-slate-600 hover:text-slate-900'">
+          [class]="
+            tab === 'audit'
+              ? 'border-sky-700 text-sky-800'
+              : 'border-transparent text-slate-600 hover:text-slate-900'
+          "
+        >
           Audit
         </button>
       </div>
@@ -102,55 +177,119 @@
             <li class="flex gap-3">
               <span aria-hidden="true" class="mt-0.5 font-mono text-slate-400">●</span>
               <span>
-                <strong>Received</strong> — admitted for run <span class="font-mono text-xs">{{ item.payload.runId }}</span><br />
-                <time class="text-xs text-slate-600" [attr.datetime]="item.receivedAt" [attr.title]="item.receivedAt">{{ item.receivedAt | timeAgo }} ({{ item.receivedAt }})</time>
+                <strong>Received</strong> — admitted for run
+                <span class="font-mono text-xs">{{ item.payload.runId }}</span
+                ><br />
+                <time
+                  class="text-xs text-slate-600"
+                  [attr.datetime]="item.receivedAt"
+                  [attr.title]="item.receivedAt"
+                  >{{ item.receivedAt | timeAgo }} ({{ item.receivedAt }})</time
+                >
               </span>
             </li>
             @if (changedSinceAdmission(item)) {
               <li class="flex gap-3">
                 <span aria-hidden="true" class="mt-0.5 font-mono text-slate-400">●</span>
                 <span>
-                  <strong>Now {{ item.status }}</strong>@if (item.reason) { <span class="font-mono text-xs">({{ item.reason }})</span> }<br />
-                  <time class="text-xs text-slate-600" [attr.datetime]="item.updatedAt" [attr.title]="item.updatedAt">{{ item.updatedAt | timeAgo }} ({{ item.updatedAt }})</time>
+                  <strong>Now {{ item.status }}</strong>
+                  @if (item.reason) {
+                    <span class="font-mono text-xs">({{ item.reason }})</span>
+                  }
+                  <br />
+                  <time
+                    class="text-xs text-slate-600"
+                    [attr.datetime]="item.updatedAt"
+                    [attr.title]="item.updatedAt"
+                    >{{ item.updatedAt | timeAgo }} ({{ item.updatedAt }})</time
+                  >
                 </span>
               </li>
             }
           </ol>
-          <p class="mt-3 text-xs text-slate-600">Intermediate transitions live in the Audit tab when the backend serves it; otherwise only admission and the current state are known.</p>
+          <p class="mt-3 text-xs text-slate-600">
+            Intermediate transitions live in the Audit tab when the backend serves it; otherwise
+            only admission and the current state are known.
+          </p>
         </div>
       } @else if (tab === 'request') {
         <div role="tabpanel" aria-label="Immutable request" class="pt-3">
           <h2 class="text-lg font-semibold">Immutable request</h2>
           <p class="text-xs text-slate-600">Admitted exactly as sent; the lab never edits it.</p>
           <dl class="mt-2 grid grid-cols-1 gap-2 text-sm md:grid-cols-3">
-            <div><dt class="font-medium text-slate-600">Sender</dt><dd class="font-mono text-xs">{{ item.payload.senderParticipant }}</dd></div>
-            <div><dt class="font-medium text-slate-600">Receiver</dt><dd class="font-mono text-xs">{{ item.payload.receiverParticipant }}</dd></div>
-            <div><dt class="font-medium text-slate-600">Amount</dt><dd class="tabular-nums">{{ item.payload.amountMinor | minorCurrency: item.payload.currency }}</dd></div>
-            <div><dt class="font-medium text-slate-600">Client reference</dt><dd class="font-mono text-xs">{{ item.payload.clientReference }}</dd></div>
-            <div><dt class="font-medium text-slate-600">Run</dt><dd><a [routerLink]="['/runs', item.payload.runId]" class="font-mono text-xs text-sky-800 underline hover:text-sky-600">{{ item.payload.runId }}</a></dd></div>
-            <div><dt class="font-medium text-slate-600">Currency</dt><dd class="font-mono text-xs">{{ item.payload.currency }}</dd></div>
+            <div>
+              <dt class="font-medium text-slate-600">Sender</dt>
+              <dd class="font-mono text-xs">{{ item.payload.senderParticipant }}</dd>
+            </div>
+            <div>
+              <dt class="font-medium text-slate-600">Receiver</dt>
+              <dd class="font-mono text-xs">{{ item.payload.receiverParticipant }}</dd>
+            </div>
+            <div>
+              <dt class="font-medium text-slate-600">Amount</dt>
+              <dd class="tabular-nums">
+                {{ item.payload.amountMinor | minorCurrency: item.payload.currency }}
+              </dd>
+            </div>
+            <div>
+              <dt class="font-medium text-slate-600">Client reference</dt>
+              <dd class="font-mono text-xs">{{ item.payload.clientReference }}</dd>
+            </div>
+            <div>
+              <dt class="font-medium text-slate-600">Run</dt>
+              <dd>
+                <a
+                  [routerLink]="['/runs', item.payload.runId]"
+                  class="font-mono text-xs text-sky-800 underline hover:text-sky-600"
+                  >{{ item.payload.runId }}</a
+                >
+              </dd>
+            </div>
+            <div>
+              <dt class="font-medium text-slate-600">Currency</dt>
+              <dd class="font-mono text-xs">{{ item.payload.currency }}</dd>
+            </div>
           </dl>
         </div>
       } @else {
         <div role="tabpanel" aria-label="Durable audit trail" class="pt-3">
           <h2 class="text-lg font-semibold">Audit</h2>
-          <p class="text-xs text-slate-600">Durable business transitions in commit order — never transport retries.</p>
+          <p class="text-xs text-slate-600">
+            Durable business transitions in commit order — never transport retries.
+          </p>
           @if (audit$ | async; as ar) {
             @let av = toView(ar);
             @if (av.value; as audit) {
               @if (audit.items.length === 0) {
-                <p class="mt-2 text-sm text-slate-600">No audit rows recorded for this instruction yet.</p>
+                <p class="mt-2 text-sm text-slate-600">
+                  No audit rows recorded for this instruction yet.
+                </p>
               } @else {
                 <div class="mt-2 overflow-x-auto">
                   <table class="w-full text-left text-sm">
-                    <thead class="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-600">
-                      <tr><th scope="col" class="px-2 py-1">Recorded (UTC)</th><th scope="col" class="px-2 py-1">Transition</th><th scope="col" class="px-2 py-1">Reason</th><th scope="col" class="px-2 py-1">Actor</th></tr>
+                    <thead
+                      class="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-600"
+                    >
+                      <tr>
+                        <th scope="col" class="px-2 py-1">Recorded (UTC)</th>
+                        <th scope="col" class="px-2 py-1">Transition</th>
+                        <th scope="col" class="px-2 py-1">Reason</th>
+                        <th scope="col" class="px-2 py-1">Actor</th>
+                      </tr>
                     </thead>
                     <tbody>
                       @for (entry of audit.items; track entry.recordedAt) {
                         <tr class="border-b border-slate-100 last:border-0">
-                          <td class="px-2 py-1 font-mono text-xs"><time [attr.datetime]="entry.recordedAt" [attr.title]="entry.recordedAt">{{ entry.recordedAt }}</time></td>
-                          <td class="px-2 py-1 font-mono text-xs">{{ entry.oldState }} → {{ entry.newState }}</td>
+                          <td class="px-2 py-1 font-mono text-xs">
+                            <time
+                              [attr.datetime]="entry.recordedAt"
+                              [attr.title]="entry.recordedAt"
+                              >{{ entry.recordedAt }}</time
+                            >
+                          </td>
+                          <td class="px-2 py-1 font-mono text-xs">
+                            {{ entry.oldState }} → {{ entry.newState }}
+                          </td>
                           <td class="px-2 py-1 font-mono text-xs">{{ entry.reason ?? '—' }}</td>
                           <td class="px-2 py-1 font-mono text-xs">{{ entry.actor }}</td>
                         </tr>
@@ -169,34 +308,64 @@
       }
     </div>
 
-    <section aria-label="Transport events" class="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+    <section
+      aria-label="Transport events"
+      class="mt-4 rounded-lg border border-slate-200 bg-white p-4"
+    >
       <h2 class="text-lg font-semibold">Transport events</h2>
-      <p class="text-xs text-slate-600">Transport acknowledgement is separate from the business result.</p>
+      <p class="text-xs text-slate-600">
+        Transport acknowledgement is separate from the business result.
+      </p>
       @if (attempts$ | async; as tr) {
         @let tv = toView(tr);
         @if (tv.value; as attempts) {
           @if (attempts.items.length === 0) {
-            <p class="mt-2 text-sm text-slate-600">No worker attempts observed for this instruction.</p>
+            <p class="mt-2 text-sm text-slate-600">
+              No worker attempts observed for this instruction.
+            </p>
           } @else {
             <div class="mt-2 overflow-x-auto">
               <table class="w-full text-left text-sm">
-                <thead class="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-600">
-                  <tr><th scope="col" class="px-2 py-1">Started (UTC)</th><th scope="col" class="px-2 py-1">Event</th><th scope="col" class="px-2 py-1">Result</th><th scope="col" class="px-2 py-1">Deliveries</th></tr>
+                <thead
+                  class="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-600"
+                >
+                  <tr>
+                    <th scope="col" class="px-2 py-1">Started (UTC)</th>
+                    <th scope="col" class="px-2 py-1">Event</th>
+                    <th scope="col" class="px-2 py-1">Result</th>
+                    <th scope="col" class="px-2 py-1">Deliveries</th>
+                  </tr>
                 </thead>
                 <tbody>
                   @for (attempt of attempts.items; track attempt.eventId) {
                     <tr class="border-b border-slate-100 last:border-0">
-                      <td class="px-2 py-1 font-mono text-xs"><time [attr.datetime]="attempt.startedAt" [attr.title]="attempt.startedAt">{{ attempt.startedAt }}</time></td>
+                      <td class="px-2 py-1 font-mono text-xs">
+                        <time
+                          [attr.datetime]="attempt.startedAt"
+                          [attr.title]="attempt.startedAt"
+                          >{{ attempt.startedAt }}</time
+                        >
+                      </td>
                       <td class="px-2 py-1 font-mono text-xs">{{ attempt.eventId }}</td>
-                      <td class="px-2 py-1 font-mono text-xs">{{ attempt.result }}@if (attempt.reason) { ({{ attempt.reason }}) }</td>
-                      <td class="px-2 py-1 font-mono text-xs">{{ attempt.deliveryCount === null ? 'unknown' : attempt.deliveryCount }}</td>
+                      <td class="px-2 py-1 font-mono text-xs">
+                        {{ attempt.result }}
+                        @if (attempt.reason) {
+                          ({{ attempt.reason }})
+                        }
+                      </td>
+                      <td class="px-2 py-1 font-mono text-xs">
+                        {{ attempt.deliveryCount === null ? 'unknown' : attempt.deliveryCount }}
+                      </td>
                     </tr>
                   }
                 </tbody>
               </table>
             </div>
           }
-          <p class="mt-2 text-xs text-slate-600">Observed at the last refresh below. Transport detail never rewrites the business outcome.</p>
+          <p class="mt-2 text-xs text-slate-600">
+            Observed at the last refresh below. Transport detail never rewrites the business
+            outcome.
+          </p>
         } @else {
           <qd-state-message state="unavailable" [message]="describe(tv.error)" />
         }
@@ -207,10 +376,15 @@
 
     <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
       @if (item.status === 'PENDING_CONFIRMATION') {
-        <section aria-label="Reconciliation" class="rounded-lg border border-slate-200 bg-white p-4">
+        <section
+          aria-label="Reconciliation"
+          class="rounded-lg border border-slate-200 bg-white p-4"
+        >
           <div class="flex items-center justify-between gap-2">
             <h2 class="text-lg font-semibold">Reconciliation</h2>
-            <span class="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">Read-only evidence</span>
+            <span class="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600"
+              >Read-only evidence</span
+            >
           </div>
           <dl class="mt-2 space-y-1 text-sm">
             <div class="flex items-baseline justify-between gap-2 border-b border-slate-100 py-1">
@@ -219,14 +393,22 @@
             </div>
             <div class="flex items-baseline justify-between gap-2 border-b border-slate-100 py-1">
               <dt class="font-medium text-slate-600">Receiver result</dt>
-              <dd><span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-900">● Unknown</span></dd>
+              <dd>
+                <span
+                  class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-900"
+                  >● Unknown</span
+                >
+              </dd>
             </div>
             <div class="flex items-baseline justify-between gap-2 py-1">
               <dt class="font-medium text-slate-600">Next step</dt>
               <dd class="text-sm">Inspect receiver truth</dd>
             </div>
           </dl>
-          <p role="note" class="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          <p
+            role="note"
+            class="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+          >
             ⚠ No resubmit or retry action available.
           </p>
         </section>
@@ -237,45 +419,85 @@
           <div class="flex items-center justify-between gap-2 border-b border-slate-100 py-1">
             <dt class="font-medium text-slate-600">Instruction ID</dt>
             <dd class="flex items-center gap-2">
-              <span class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs break-all">{{ item.instructionId }}</span>
-              <button type="button" (click)="copyText(item.instructionId, 'instruction')" aria-label="Copy instruction id"
-                class="rounded border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-50">{{ copied === 'instruction' ? 'Copied' : 'Copy' }}</button>
+              <span class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs break-all">{{
+                item.instructionId
+              }}</span>
+              <button
+                type="button"
+                (click)="copyText(item.instructionId, 'instruction')"
+                aria-label="Copy instruction id"
+                class="rounded border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-50"
+              >
+                {{ copied === 'instruction' ? 'Copied' : 'Copy' }}
+              </button>
             </dd>
           </div>
           <div class="flex items-center justify-between gap-2 border-b border-slate-100 py-1">
             <dt class="font-medium text-slate-600">Client reference</dt>
             <dd class="flex items-center gap-2">
-              <span class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs">{{ item.payload.clientReference }}</span>
-              <button type="button" (click)="copyText(item.payload.clientReference, 'reference')" aria-label="Copy client reference"
-                class="rounded border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-50">{{ copied === 'reference' ? 'Copied' : 'Copy' }}</button>
+              <span class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs">{{
+                item.payload.clientReference
+              }}</span>
+              <button
+                type="button"
+                (click)="copyText(item.payload.clientReference, 'reference')"
+                aria-label="Copy client reference"
+                class="rounded border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-50"
+              >
+                {{ copied === 'reference' ? 'Copied' : 'Copy' }}
+              </button>
             </dd>
           </div>
           <div class="flex items-center justify-between gap-2 border-b border-slate-100 py-1">
             <dt class="font-medium text-slate-600">Correlation ID</dt>
             <dd class="flex items-center gap-2">
-              <span class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs break-all">{{ item.correlationId }}</span>
-              <button type="button" (click)="copyText(item.correlationId, 'correlation')" aria-label="Copy correlation id"
-                class="rounded border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-50">{{ copied === 'correlation' ? 'Copied' : 'Copy' }}</button>
+              <span class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs break-all">{{
+                item.correlationId
+              }}</span>
+              <button
+                type="button"
+                (click)="copyText(item.correlationId, 'correlation')"
+                aria-label="Copy correlation id"
+                class="rounded border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-50"
+              >
+                {{ copied === 'correlation' ? 'Copied' : 'Copy' }}
+              </button>
             </dd>
           </div>
           <div class="flex items-center justify-between gap-2 py-1">
             <dt class="font-medium text-slate-600">Run ID</dt>
             <dd class="flex items-center gap-2">
-              <a [routerLink]="['/runs', item.payload.runId]" class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-sky-800 underline hover:text-sky-600">{{ item.payload.runId }}</a>
-              <button type="button" (click)="copyText(item.payload.runId, 'run')" aria-label="Copy run id"
-                class="rounded border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-50">{{ copied === 'run' ? 'Copied' : 'Copy' }}</button>
+              <a
+                [routerLink]="['/runs', item.payload.runId]"
+                class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-sky-800 underline hover:text-sky-600"
+                >{{ item.payload.runId }}</a
+              >
+              <button
+                type="button"
+                (click)="copyText(item.payload.runId, 'run')"
+                aria-label="Copy run id"
+                class="rounded border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-50"
+              >
+                {{ copied === 'run' ? 'Copied' : 'Copy' }}
+              </button>
             </dd>
           </div>
         </dl>
       </section>
     </div>
 
-    <p role="note" class="mt-4 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
+    <p
+      role="note"
+      class="mt-4 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
+    >
       <strong class="font-semibold">Durable audit.</strong>
       @if (audit$ | async; as ar) {
         @let av = toView(ar);
         @if (av.value) {
-          {{ av.value.items.length }} business event{{ av.value.items.length === 1 ? '' : 's' }} recorded ·
+          {{ av.value.items.length }} business event{{
+            av.value.items.length === 1 ? '' : 's'
+          }}
+          recorded ·
         } @else {
           Audit-trail size unknown ·
         }
@@ -284,7 +506,12 @@
     </p>
     <qd-refresh-note [at]="v.at" [stale]="!v.fresh"></qd-refresh-note>
   } @else if (isUnknownId(v.error)) {
-    <qd-state-message state="empty" [message]="'No instruction with id ' + id + ' exists. Unknown ids are reported, never guessed.'" />
+    <qd-state-message
+      state="empty"
+      [message]="
+        'No instruction with id ' + id + ' exists. Unknown ids are reported, never guessed.'
+      "
+    />
   } @else {
     <qd-state-message state="unavailable" [message]="describe(v.error)" />
   }

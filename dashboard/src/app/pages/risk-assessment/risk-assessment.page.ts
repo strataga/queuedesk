@@ -21,8 +21,13 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
 @Component({
   selector: 'qd-risk-assessment',
   imports: [
-    CommonModule, RouterLink, MinorCurrencyPipe, TimeAgoPipe,
-    RefreshNoteComponent, StateMessageComponent, StatusBadgeComponent,
+    CommonModule,
+    RouterLink,
+    MinorCurrencyPipe,
+    TimeAgoPipe,
+    RefreshNoteComponent,
+    StateMessageComponent,
+    StatusBadgeComponent,
   ],
   templateUrl: './risk-assessment.page.html',
 })
@@ -43,9 +48,7 @@ export class RiskAssessmentPage {
 
   protected isUnknownId(error: unknown): boolean {
     return (
-      error !== null &&
-      typeof error === 'object' &&
-      (error as { status?: unknown }).status === 404
+      error !== null && typeof error === 'object' && (error as { status?: unknown }).status === 404
     );
   }
 

@@ -6,42 +6,69 @@ import { ApiService } from '../../core/api.service';
 import { PollingService } from '../../core/polling.service';
 
 const row = (id: string, riskStatus: string | null) => ({
-  instructionId: id, status: 'RISK_HELD', reason: null,
-  receivedAt: '2026-10-05T00:00:00Z', updatedAt: '2026-10-05T00:00:00Z',
-  statusUrl: `/api/v1/instructions/${id}`, correlationId: `corr-${id}`,
-  delivery: 'PUBLISHED', riskStatus, assessmentId: riskStatus ? 'aid-1' : null,
+  instructionId: id,
+  status: 'RISK_HELD',
+  reason: null,
+  receivedAt: '2026-10-05T00:00:00Z',
+  updatedAt: '2026-10-05T00:00:00Z',
+  statusUrl: `/api/v1/instructions/${id}`,
+  correlationId: `corr-${id}`,
+  delivery: 'PUBLISHED',
+  riskStatus,
+  assessmentId: riskStatus ? 'aid-1' : null,
   riskReasonCodes: riskStatus ? ['NEW_RECIPIENT'] : null,
-  payload: { clientReference: `SYN-${id}`, runId: 'A', senderParticipant: 'SENDER_A',
-    receiverParticipant: 'RECEIVER_B', amountMinor: 850000, currency: 'USD' },
+  payload: {
+    clientReference: `SYN-${id}`,
+    runId: 'A',
+    senderParticipant: 'SENDER_A',
+    receiverParticipant: 'RECEIVER_B',
+    amountMinor: 850000,
+    currency: 'USD',
+  },
 });
 
 const heldPage = {
-  items: [{
-    instructionId: 'iid-1047', clientReference: 'SYN-1047', amountMinor: 850000,
-    currency: 'USD', businessOutcome: 'RISK_HELD', riskOutput: 'REVIEW',
-    reasonCodes: ['NEW_RECIPIENT', 'UNUSUAL_AMOUNT'],
-  }],
+  items: [
+    {
+      instructionId: 'iid-1047',
+      clientReference: 'SYN-1047',
+      amountMinor: 850000,
+      currency: 'USD',
+      businessOutcome: 'RISK_HELD',
+      riskOutput: 'REVIEW',
+      reasonCodes: ['NEW_RECIPIENT', 'UNUSUAL_AMOUNT'],
+    },
+  ],
   nextCursor: null,
   mode: 'RULES_PLUS_MOCK',
 };
 
 const telemetry = {
-  asOf: '2026-10-04T10:15:00Z', windowMinutes: 15,
+  asOf: '2026-10-04T10:15:00Z',
+  windowMinutes: 15,
   admission: { p95Ms: 22, n: 1240, note: 'ends at HTTP 202' },
   completion: { p95Ms: 420, n: 1208, note: 'ends at durable outcome commit; unresolved excluded' },
   riskProvider: { p95Ms: 95, n: 1226, mode: 'RULES_PLUS_MOCK' },
   sampling: { percent: 10, sampledInstructions: 124 },
-  exporter: { status: 'HEALTHY', lastExportAt: '2026-10-04T10:14:58Z', spansSent15Min: 3684, spansDropped: 0, bufferedSpans: 0 },
+  exporter: {
+    status: 'HEALTHY',
+    lastExportAt: '2026-10-04T10:14:58Z',
+    spansSent15Min: 3684,
+    spansDropped: 0,
+    bufferedSpans: 0,
+  },
 };
 
 const throughput = {
-  metric: 'simulated_completions', bucketSeconds: 60,
+  metric: 'simulated_completions',
+  bucketSeconds: 60,
   points: [
     { at: '2026-10-04T10:00:00Z', count: 40 },
     { at: '2026-10-04T10:01:00Z', count: 90 },
     { at: '2026-10-04T10:02:00Z', count: 80 },
   ],
-  since: '2026-10-04T10:00:00Z', until: '2026-10-04T10:15:00Z',
+  since: '2026-10-04T10:00:00Z',
+  until: '2026-10-04T10:15:00Z',
 };
 
 let seenAssessmentFilter: unknown;
@@ -55,28 +82,84 @@ function setup(opts: { held?: typeof heldPage; telemetry?: typeof telemetry } = 
       {
         provide: ApiService,
         useValue: {
-          getRun: (runId: string) => of({
-            runId, admitted: 2,
-            byState: { RISK_HELD: 1, COMPLETED_SIMULATED: 1 },
-            outboxPending: 0, outboxPublished: 2, reconcileOpen: 0,
-          }),
-          listInstructions: () => of({ items: [row('1', 'REVIEW'), row('2', null)], nextCursor: null }),
-          getQuarantine: () => of({ lastReconciledAt: null, stale: false, lastError: null, items: [] }),
-          getGuards: () => of({ outboxPending: 0, backlogLimit: 100, backlogHalt: false,
-            diskFreeBytes: 1024, diskReserveBytes: 512, diskHalt: false, haltTraffic: false, reasons: [] }),
+          getRun: (runId: string) =>
+            of({
+              runId,
+              admitted: 2,
+              byState: { RISK_HELD: 1, COMPLETED_SIMULATED: 1 },
+              outboxPending: 0,
+              outboxPublished: 2,
+              reconcileOpen: 0,
+            }),
+          listInstructions: () =>
+            of({ items: [row('1', 'REVIEW'), row('2', null)], nextCursor: null }),
+          getQuarantine: () =>
+            of({ lastReconciledAt: null, stale: false, lastError: null, items: [] }),
+          getGuards: () =>
+            of({
+              outboxPending: 0,
+              backlogLimit: 100,
+              backlogHalt: false,
+              diskFreeBytes: 1024,
+              diskReserveBytes: 512,
+              diskHalt: false,
+              haltTraffic: false,
+              reasons: [],
+            }),
           getHealth: () => of({ status: 'UP' }),
-          getRiskSummary: () => of({ asOf: '2026-10-04T10:15:00Z', mode: 'RULES_PLUS_MOCK',
-            riskHeld: 1, reviewRequired: 1, notAssessed: 0,
-            note: 'Assessment output explains the hold. It is not a fraud determination.' }),
-          getOverview: () => of({ admitted: 1240,
-            byState: { COMPLETED_SIMULATED: 1208, RISK_HELD: 18, PENDING_CONFIRMATION: 4, REJECTED: 10 },
-            outboxPending: 0, outboxPublished: 1240, reconcileOpen: 4, since: null, until: null }),
-          getQueues: () => of({ asOf: '2026-10-04T10:15:00Z',
-            outbox: { pending: 0, oldestPendingAgeSeconds: 0, lastPublishedAt: '', dispatch: 'BOUNDED', lastEventId: '' },
-            mq: { connected: true, queueManager: 'QDESK', depthEstimate: 12, depthEstimateNote: '',
-              oldestEstimateAgeSeconds: 4, activeConsumers: 1, consumerState: 'LISTENING', lastSendAt: '' },
-            quarantine: { count: 0, lastObserved: 0, lastObservedAt: '', freshnessAgeSeconds: 2, stale: false },
-            dedupLast15Min: 0 }),
+          getRiskSummary: () =>
+            of({
+              asOf: '2026-10-04T10:15:00Z',
+              mode: 'RULES_PLUS_MOCK',
+              riskHeld: 1,
+              reviewRequired: 1,
+              notAssessed: 0,
+              note: 'Assessment output explains the hold. It is not a fraud determination.',
+            }),
+          getOverview: () =>
+            of({
+              admitted: 1240,
+              byState: {
+                COMPLETED_SIMULATED: 1208,
+                RISK_HELD: 18,
+                PENDING_CONFIRMATION: 4,
+                REJECTED: 10,
+              },
+              outboxPending: 0,
+              outboxPublished: 1240,
+              reconcileOpen: 4,
+              since: null,
+              until: null,
+            }),
+          getQueues: () =>
+            of({
+              asOf: '2026-10-04T10:15:00Z',
+              outbox: {
+                pending: 0,
+                oldestPendingAgeSeconds: 0,
+                lastPublishedAt: '',
+                dispatch: 'BOUNDED',
+                lastEventId: '',
+              },
+              mq: {
+                connected: true,
+                queueManager: 'QDESK',
+                depthEstimate: 12,
+                depthEstimateNote: '',
+                oldestEstimateAgeSeconds: 4,
+                activeConsumers: 1,
+                consumerState: 'LISTENING',
+                lastSendAt: '',
+              },
+              quarantine: {
+                count: 0,
+                lastObserved: 0,
+                lastObservedAt: '',
+                freshnessAgeSeconds: 2,
+                stale: false,
+              },
+              dedupLast15Min: 0,
+            }),
           getThroughput: () => of(throughput),
           getRecentPayments: () => of({ items: [row('9', 'REVIEW'), row('8', null)] }),
           getTelemetrySummary: () => of(opts.telemetry ?? telemetry),
@@ -122,7 +205,9 @@ describe('OverviewPage mockup parity', () => {
     const fixture = TestBed.createComponent(OverviewPage);
     fixture.detectChanges();
     await fixture.whenStable();
-    const panel = (fixture.nativeElement as HTMLElement).querySelector('section[aria-label="Risk review"]');
+    const panel = (fixture.nativeElement as HTMLElement).querySelector(
+      'section[aria-label="Risk review"]',
+    );
     expect(panel?.textContent).toContain('Gate OFF');
     expect(panel?.textContent).toContain('risk gate is off');
   });
@@ -157,7 +242,9 @@ describe('OverviewPage mockup parity', () => {
     expect(text).toContain('Risk held');
     // The unassessed row renders a dash with an explanatory title, never a badge.
     const scoped = el.querySelector('section[aria-label="Recent instructions"]');
-    const dashes = Array.from((scoped ?? el).querySelectorAll('span[title="No assessment recorded"]'));
+    const dashes = Array.from(
+      (scoped ?? el).querySelectorAll('span[title="No assessment recorded"]'),
+    );
     expect(dashes.length).toBe(1);
     expect(text).toContain('since page open');
   });
@@ -207,12 +294,22 @@ describe('OverviewPage mockup parity', () => {
   });
 
   it('shows a dash on the p95 card when nothing completed in the window', async () => {
-    await setup({ telemetry: { ...telemetry,
-      completion: { p95Ms: -1, n: 0, note: 'ends at durable outcome commit; unresolved excluded' } } });
+    await setup({
+      telemetry: {
+        ...telemetry,
+        completion: {
+          p95Ms: -1,
+          n: 0,
+          note: 'ends at durable outcome commit; unresolved excluded',
+        },
+      },
+    });
     const fixture = TestBed.createComponent(OverviewPage);
     fixture.detectChanges();
     await fixture.whenStable();
-    const census = (fixture.nativeElement as HTMLElement).querySelector('section[aria-label="Lab-wide census"]');
+    const census = (fixture.nativeElement as HTMLElement).querySelector(
+      'section[aria-label="Lab-wide census"]',
+    );
     expect(census?.textContent).not.toContain('-1');
     expect(census?.textContent).toContain('n=0');
   });
@@ -226,30 +323,105 @@ describe('OverviewPage mockup parity', () => {
         {
           provide: ApiService,
           useValue: {
-            getRun: () => of({ runId: 'A', admitted: 0, byState: {}, outboxPending: 0, outboxPublished: 0, reconcileOpen: 0 }),
+            getRun: () =>
+              of({
+                runId: 'A',
+                admitted: 0,
+                byState: {},
+                outboxPending: 0,
+                outboxPublished: 0,
+                reconcileOpen: 0,
+              }),
             listInstructions: () => of({ items: [], nextCursor: null }),
-            getQuarantine: () => of({ lastReconciledAt: null, stale: false, lastError: null, items: [] }),
-            getGuards: () => of({ outboxPending: 0, backlogLimit: 100, backlogHalt: false,
-              diskFreeBytes: 1024, diskReserveBytes: 512, diskHalt: false, haltTraffic: false, reasons: [] }),
+            getQuarantine: () =>
+              of({ lastReconciledAt: null, stale: false, lastError: null, items: [] }),
+            getGuards: () =>
+              of({
+                outboxPending: 0,
+                backlogLimit: 100,
+                backlogHalt: false,
+                diskFreeBytes: 1024,
+                diskReserveBytes: 512,
+                diskHalt: false,
+                haltTraffic: false,
+                reasons: [],
+              }),
             getHealth: () => of({ status: 'UP' }),
-            getRiskSummary: () => of({ asOf: '', mode: 'OFF', riskHeld: 0, reviewRequired: 0, notAssessed: 0, note: '' }),
+            getRiskSummary: () =>
+              of({
+                asOf: '',
+                mode: 'OFF',
+                riskHeld: 0,
+                reviewRequired: 0,
+                notAssessed: 0,
+                note: '',
+              }),
             getOverview: (since?: string) => {
               calls++;
-              return of({ admitted: since ? 7 : 9, byState: {}, outboxPending: 0,
-                outboxPublished: 0, reconcileOpen: 0, since: since ?? null, until: null });
+              return of({
+                admitted: since ? 7 : 9,
+                byState: {},
+                outboxPending: 0,
+                outboxPublished: 0,
+                reconcileOpen: 0,
+                since: since ?? null,
+                until: null,
+              });
             },
-            getQueues: () => of({ asOf: '', outbox: { pending: 0, oldestPendingAgeSeconds: 0,
-              lastPublishedAt: '', dispatch: '', lastEventId: '' }, mq: { connected: true,
-              queueManager: 'QDESK', depthEstimate: 0, depthEstimateNote: '', oldestEstimateAgeSeconds: 0,
-              activeConsumers: 1, consumerState: '', lastSendAt: '' }, quarantine: { count: 0,
-              lastObserved: 0, lastObservedAt: '', freshnessAgeSeconds: 0, stale: false }, dedupLast15Min: 0 }),
-            getThroughput: () => of({ metric: 'simulated_completions', bucketSeconds: 60,
-              points: [], since: '', until: '' }),
+            getQueues: () =>
+              of({
+                asOf: '',
+                outbox: {
+                  pending: 0,
+                  oldestPendingAgeSeconds: 0,
+                  lastPublishedAt: '',
+                  dispatch: '',
+                  lastEventId: '',
+                },
+                mq: {
+                  connected: true,
+                  queueManager: 'QDESK',
+                  depthEstimate: 0,
+                  depthEstimateNote: '',
+                  oldestEstimateAgeSeconds: 0,
+                  activeConsumers: 1,
+                  consumerState: '',
+                  lastSendAt: '',
+                },
+                quarantine: {
+                  count: 0,
+                  lastObserved: 0,
+                  lastObservedAt: '',
+                  freshnessAgeSeconds: 0,
+                  stale: false,
+                },
+                dedupLast15Min: 0,
+              }),
+            getThroughput: () =>
+              of({
+                metric: 'simulated_completions',
+                bucketSeconds: 60,
+                points: [],
+                since: '',
+                until: '',
+              }),
             getRecentPayments: () => of({ items: [] }),
-            getTelemetrySummary: () => of({ asOf: '', windowMinutes: 15,
-              admission: { p95Ms: -1, n: 0, note: '' }, completion: { p95Ms: -1, n: 0, note: '' },
-              riskProvider: null, sampling: { percent: 10, sampledInstructions: 0 },
-              exporter: { status: 'DOWN', lastExportAt: null, spansSent15Min: 0, spansDropped: 0, bufferedSpans: 0 } }),
+            getTelemetrySummary: () =>
+              of({
+                asOf: '',
+                windowMinutes: 15,
+                admission: { p95Ms: -1, n: 0, note: '' },
+                completion: { p95Ms: -1, n: 0, note: '' },
+                riskProvider: null,
+                sampling: { percent: 10, sampledInstructions: 0 },
+                exporter: {
+                  status: 'DOWN',
+                  lastExportAt: null,
+                  spansSent15Min: 0,
+                  spansDropped: 0,
+                  bufferedSpans: 0,
+                },
+              }),
             listRiskAssessments: () => of({ items: [], nextCursor: null, mode: 'OFF' }),
             getInstruction: () => of({ traceId: null }),
           },
@@ -269,7 +441,8 @@ describe('OverviewPage mockup parity', () => {
     await fixture.whenStable();
     expect(calls).toBe(1);
     const select = (fixture.nativeElement as HTMLElement).querySelector(
-      'select[aria-label="Census window"]') as HTMLSelectElement;
+      'select[aria-label="Census window"]',
+    ) as HTMLSelectElement;
     select.value = '0';
     select.dispatchEvent(new Event('change'));
     fixture.detectChanges();

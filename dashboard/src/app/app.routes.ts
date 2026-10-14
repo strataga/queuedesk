@@ -8,13 +8,16 @@ export const routes: Routes = [
   },
   {
     path: 'payments',
-    loadComponent: () => import('./pages/instruction-list/instruction-list.page').then((m) => m.InstructionListPage),
+    loadComponent: () =>
+      import('./pages/instruction-list/instruction-list.page').then((m) => m.InstructionListPage),
     title: 'Payments — QueueDesk lab',
   },
   {
     path: 'payments/:id',
     loadComponent: () =>
-      import('./pages/instruction-detail/instruction-detail.page').then((m) => m.InstructionDetailPage),
+      import('./pages/instruction-detail/instruction-detail.page').then(
+        (m) => m.InstructionDetailPage,
+      ),
     title: 'Payment detail — QueueDesk lab',
   },
   {
@@ -29,7 +32,8 @@ export const routes: Routes = [
   },
   {
     path: 'risk',
-    loadComponent: () => import('./pages/risk-review/risk-review.page').then((m) => m.RiskReviewPage),
+    loadComponent: () =>
+      import('./pages/risk-review/risk-review.page').then((m) => m.RiskReviewPage),
     title: 'Risk review — QueueDesk lab',
   },
   {
@@ -62,7 +66,9 @@ export const routes: Routes = [
   {
     path: 'scenarios/runs/:runId',
     loadComponent: () =>
-      import('./pages/scenario-run-detail/scenario-run-detail.page').then((m) => m.ScenarioRunDetailPage),
+      import('./pages/scenario-run-detail/scenario-run-detail.page').then(
+        (m) => m.ScenarioRunDetailPage,
+      ),
     title: 'Scenario run — QueueDesk lab',
   },
   // Pre-rename Payments URLs keep working (query params preserved).

@@ -1,5 +1,15 @@
 import { Injectable } from '@angular/core';
-import { Observable, catchError, exhaustMap, fromEvent, map, of, startWith, switchMap, timer } from 'rxjs';
+import {
+  Observable,
+  catchError,
+  exhaustMap,
+  fromEvent,
+  map,
+  of,
+  startWith,
+  switchMap,
+  timer,
+} from 'rxjs';
 
 export type PollResult<T> =
   | { status: 'ok'; value: T; at: number }
@@ -26,7 +36,10 @@ export class PollingService {
           );
   }
 
-  poll<T>(fetch: () => Observable<T>, intervalMs: number = POLL_INTERVAL_MS): Observable<PollResult<T>> {
+  poll<T>(
+    fetch: () => Observable<T>,
+    intervalMs: number = POLL_INTERVAL_MS,
+  ): Observable<PollResult<T>> {
     let lastOk: T | null = null;
     let lastOkAt: number | null = null;
     return this.visibility$.pipe(

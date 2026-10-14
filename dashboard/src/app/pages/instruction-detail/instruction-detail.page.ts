@@ -23,8 +23,13 @@ export type DetailTab = 'timeline' | 'request' | 'audit';
 @Component({
   selector: 'qd-instruction-detail',
   imports: [
-    CommonModule, RouterLink, MinorCurrencyPipe, TimeAgoPipe,
-    RefreshNoteComponent, StateMessageComponent, StatusBadgeComponent,
+    CommonModule,
+    RouterLink,
+    MinorCurrencyPipe,
+    TimeAgoPipe,
+    RefreshNoteComponent,
+    StateMessageComponent,
+    StatusBadgeComponent,
   ],
   templateUrl: './instruction-detail.page.html',
 })
@@ -60,9 +65,7 @@ export class InstructionDetailPage {
 
   protected isUnknownId(error: unknown): boolean {
     return (
-      error !== null &&
-      typeof error === 'object' &&
-      (error as { status?: unknown }).status === 404
+      error !== null && typeof error === 'object' && (error as { status?: unknown }).status === 404
     );
   }
 

@@ -8,9 +8,30 @@ import { QueuesView } from '../../core/models';
 
 const snap = (over: Partial<QueuesView> = {}): QueuesView => ({
   asOf: '2026-10-04T10:15:00Z',
-  outbox: { pending: 6, oldestPendingAgeSeconds: 250, lastPublishedAt: '2026-10-04T10:14:00Z', dispatch: 'BOUNDED', lastEventId: 'event-1050' },
-  mq: { connected: true, queueManager: 'QDESK', depthEstimate: 12, depthEstimateNote: 'APPLICATION_ESTIMATE', oldestEstimateAgeSeconds: 4.2, activeConsumers: 1, consumerState: 'LISTENING', lastSendAt: '2026-10-04T10:14:58Z' },
-  quarantine: { count: null, lastObserved: 0, lastObservedAt: '2026-10-04T10:12:30Z', freshnessAgeSeconds: 150, stale: true },
+  outbox: {
+    pending: 6,
+    oldestPendingAgeSeconds: 250,
+    lastPublishedAt: '2026-10-04T10:14:00Z',
+    dispatch: 'BOUNDED',
+    lastEventId: 'event-1050',
+  },
+  mq: {
+    connected: true,
+    queueManager: 'QDESK',
+    depthEstimate: 12,
+    depthEstimateNote: 'APPLICATION_ESTIMATE',
+    oldestEstimateAgeSeconds: 4.2,
+    activeConsumers: 1,
+    consumerState: 'LISTENING',
+    lastSendAt: '2026-10-04T10:14:58Z',
+  },
+  quarantine: {
+    count: null,
+    lastObserved: 0,
+    lastObservedAt: '2026-10-04T10:12:30Z',
+    freshnessAgeSeconds: 150,
+    stale: true,
+  },
   dedupLast15Min: 5,
   ...over,
 });

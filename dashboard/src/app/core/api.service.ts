@@ -2,10 +2,32 @@ import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, of } from 'rxjs';
 import {
-  Guards, Health, InstructionAudit, InstructionAttempts, InstructionPage, InstructionView,
-  LabSummary, LatencySeries, ListFilters, LogList, MetricValue, QuarantineView, QueuesView, RecentPayments,
-  RiskAssessmentDetail, RiskFilters, RiskHeldPage, RiskSummary, RunSummary, ScenarioCatalog, ScenarioRunPage,
-  ScenarioRunReport, TelemetrySummary, ThroughputView, TraceDetail, TracePage,
+  Guards,
+  Health,
+  InstructionAudit,
+  InstructionAttempts,
+  InstructionPage,
+  InstructionView,
+  LabSummary,
+  LatencySeries,
+  ListFilters,
+  LogList,
+  MetricValue,
+  QuarantineView,
+  QueuesView,
+  RecentPayments,
+  RiskAssessmentDetail,
+  RiskFilters,
+  RiskHeldPage,
+  RiskSummary,
+  RunSummary,
+  ScenarioCatalog,
+  ScenarioRunPage,
+  ScenarioRunReport,
+  TelemetrySummary,
+  ThroughputView,
+  TraceDetail,
+  TracePage,
 } from './models';
 
 // Read-only API client. Every call is a GET against the lab backend (same origin in
@@ -22,12 +44,14 @@ export class ApiService {
     if (filters.until) params = params.set('until', filters.until);
     if (filters.cursor) params = params.set('cursor', filters.cursor);
     if (filters.order) params = params.set('order', filters.order);
-    return this.http.get<InstructionView[]>('/api/v1/instructions', { observe: 'response', params }).pipe(
-      map((response: HttpResponse<InstructionView[]>) => ({
-        items: response.body ?? [],
-        nextCursor: response.headers.get('X-Next-Cursor'),
-      })),
-    );
+    return this.http
+      .get<InstructionView[]>('/api/v1/instructions', { observe: 'response', params })
+      .pipe(
+        map((response: HttpResponse<InstructionView[]>) => ({
+          items: response.body ?? [],
+          nextCursor: response.headers.get('X-Next-Cursor'),
+        })),
+      );
   }
 
   getInstruction(id: string): Observable<InstructionView> {
@@ -118,7 +142,9 @@ export class ApiService {
   }
 
   getAttempts(id: string): Observable<InstructionAttempts> {
-    return this.http.get<InstructionAttempts>(`/api/v1/instructions/${encodeURIComponent(id)}/attempts`);
+    return this.http.get<InstructionAttempts>(
+      `/api/v1/instructions/${encodeURIComponent(id)}/attempts`,
+    );
   }
 
   getRiskSummary(windowMinutes = 15): Observable<RiskSummary> {
@@ -132,17 +158,24 @@ export class ApiService {
     if (filters.reason) params = params.set('reason', filters.reason);
     if (filters.q) params = params.set('q', filters.q);
     if (filters.cursor) params = params.set('cursor', filters.cursor);
-    return this.http.get<{ items: RiskHeldPage['items']; mode: string }>('/api/v1/risk/assessments', { observe: 'response', params }).pipe(
-      map((response: HttpResponse<{ items: RiskHeldPage['items']; mode: string }>) => ({
-        items: response.body?.items ?? [],
-        nextCursor: response.headers.get('X-Next-Cursor'),
-        mode: response.body?.mode ?? '',
-      })),
-    );
+    return this.http
+      .get<{ items: RiskHeldPage['items']; mode: string }>('/api/v1/risk/assessments', {
+        observe: 'response',
+        params,
+      })
+      .pipe(
+        map((response: HttpResponse<{ items: RiskHeldPage['items']; mode: string }>) => ({
+          items: response.body?.items ?? [],
+          nextCursor: response.headers.get('X-Next-Cursor'),
+          mode: response.body?.mode ?? '',
+        })),
+      );
   }
 
   getRiskAssessment(instructionId: string): Observable<RiskAssessmentDetail> {
-    return this.http.get<RiskAssessmentDetail>(`/api/v1/risk/assessments/${encodeURIComponent(instructionId)}`);
+    return this.http.get<RiskAssessmentDetail>(
+      `/api/v1/risk/assessments/${encodeURIComponent(instructionId)}`,
+    );
   }
 
   // One gauge/counter reading. A missing metric is "no reading" (null), never zero:
@@ -150,12 +183,14 @@ export class ApiService {
   getMetric(name: string, tag?: { key: string; value: string }): Observable<MetricValue> {
     let params = new HttpParams();
     if (tag) params = params.set('tag', `${tag.key}:${tag.value}`);
-    return this.http.get<{ measurements?: Array<{ value?: number }> }>(
-      `/actuator/metrics/${encodeURIComponent(name)}`,
-      { params },
-    ).pipe(
-      map((body) => ({ name, value: body.measurements?.[0]?.value ?? null })),
-      catchError(() => of({ name, value: null })),
-    );
+    return this.http
+      .get<{ measurements?: Array<{ value?: number }> }>(
+        `/actuator/metrics/${encodeURIComponent(name)}`,
+        { params },
+      )
+      .pipe(
+        map((body) => ({ name, value: body.measurements?.[0]?.value ?? null })),
+        catchError(() => of({ name, value: null })),
+      );
   }
 }

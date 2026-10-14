@@ -8,7 +8,9 @@ describe('ApiService', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
     service = TestBed.inject(ApiService);
     http = TestBed.inject(HttpTestingController);
   });
@@ -18,7 +20,12 @@ describe('ApiService', () => {
   it('lists instructions with filters and reads the next cursor header', () => {
     const body = [{ instructionId: 'id-1' }];
     service
-      .listInstructions({ runId: 'run-1', status: 'RECEIVED', since: '2026-10-01T00:00:00Z', limit: 10 })
+      .listInstructions({
+        runId: 'run-1',
+        status: 'RECEIVED',
+        since: '2026-10-01T00:00:00Z',
+        limit: 10,
+      })
       .subscribe((page) => {
         expect(page.items).toEqual(body);
         expect(page.nextCursor).toBe('cursor-1');
@@ -63,14 +70,19 @@ describe('ApiService', () => {
     expect(queues.request.params.get('windowMinutes')).toBe('15');
     queues.flush({ dedupLast15Min: 5 });
     service.getTelemetrySummary().subscribe((s) => expect(s.windowMinutes).toBe(15));
-    http.expectOne((r) => r.method === 'GET' && r.url === '/api/v1/telemetry/summary')
+    http
+      .expectOne((r) => r.method === 'GET' && r.url === '/api/v1/telemetry/summary')
       .flush({ windowMinutes: 15 });
     service.getLatencySeries('admission').subscribe((s) => expect(s.metric).toBe('admission'));
-    const series = http.expectOne((r) => r.method === 'GET' && r.url === '/api/v1/telemetry/latency-series');
+    const series = http.expectOne(
+      (r) => r.method === 'GET' && r.url === '/api/v1/telemetry/latency-series',
+    );
     expect(series.request.params.get('metric')).toBe('admission');
     series.flush({ metric: 'admission', bucketSeconds: 60, points: [] });
     service.listTraces(5).subscribe((p) => expect(p.items).toEqual([]));
-    const traces = http.expectOne((r) => r.method === 'GET' && r.url === '/api/v1/telemetry/traces');
+    const traces = http.expectOne(
+      (r) => r.method === 'GET' && r.url === '/api/v1/telemetry/traces',
+    );
     expect(traces.request.params.get('limit')).toBe('5');
     traces.flush({ items: [], nextCursor: null });
     service.getTrace('trc-1').subscribe((d) => expect(d.traceId).toBe('trc-1'));
@@ -89,7 +101,9 @@ describe('ApiService', () => {
     service.getAudit('iid-1').subscribe((a) => expect(a.items).toEqual([]));
     http.expectOne('/api/v1/instructions/iid-1/audit').flush({ instructionId: 'iid-1', items: [] });
     service.getAttempts('iid-1').subscribe((a) => expect(a.items).toEqual([]));
-    http.expectOne('/api/v1/instructions/iid-1/attempts').flush({ instructionId: 'iid-1', items: [] });
+    http
+      .expectOne('/api/v1/instructions/iid-1/attempts')
+      .flush({ instructionId: 'iid-1', items: [] });
   });
 
   it('reads the risk summary with a bounded window', () => {
@@ -125,7 +139,9 @@ describe('ApiService', () => {
 
   it('returns null for a missing metric instead of inventing zero', () => {
     service.getMetric('queuedesk.outbox.pending').subscribe((m) => expect(m.value).toBe(7));
-    http.expectOne('/actuator/metrics/queuedesk.outbox.pending').flush({ measurements: [{ value: 7 }] });
+    http
+      .expectOne('/actuator/metrics/queuedesk.outbox.pending')
+      .flush({ measurements: [{ value: 7 }] });
     service.getMetric('nope').subscribe((m) => expect(m.value).toBeNull());
     http.expectOne('/actuator/metrics/nope').flush({}, { status: 404, statusText: 'Not Found' });
   });

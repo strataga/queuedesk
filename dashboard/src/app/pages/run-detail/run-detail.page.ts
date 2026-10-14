@@ -17,7 +17,13 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
 // with the reason, never as zero or a guess.
 @Component({
   selector: 'qd-run-detail',
-  imports: [CommonModule, RouterLink, RefreshNoteComponent, StateMessageComponent, StatusBadgeComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    RefreshNoteComponent,
+    StateMessageComponent,
+    StatusBadgeComponent,
+  ],
   templateUrl: './run-detail.page.html',
 })
 export class RunDetailPage {
@@ -53,8 +59,6 @@ export class RunDetailPage {
   }
 
   protected needsAttention(run: RunSummary): boolean {
-    return (
-      this.stateCount(run, 'PENDING_CONFIRMATION') + this.stateCount(run, 'RISK_HELD') > 0
-    );
+    return this.stateCount(run, 'PENDING_CONFIRMATION') + this.stateCount(run, 'RISK_HELD') > 0;
   }
 }

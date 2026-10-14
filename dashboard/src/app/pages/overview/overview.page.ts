@@ -4,7 +4,18 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { BehaviorSubject, Observable, catchError, forkJoin, map, of, switchMap, tap } from 'rxjs';
 import { ApiService } from '../../core/api.service';
-import { InstructionPage, KNOWN_STATES, LabSummary, QueuesView, RecentPayments, RiskHeldPage, RiskSummary, RunSummary, TelemetrySummary, ThroughputView } from '../../core/models';
+import {
+  InstructionPage,
+  KNOWN_STATES,
+  LabSummary,
+  QueuesView,
+  RecentPayments,
+  RiskHeldPage,
+  RiskSummary,
+  RunSummary,
+  TelemetrySummary,
+  ThroughputView,
+} from '../../core/models';
 import { PollResult, PollingService } from '../../core/polling.service';
 import { toView } from '../../core/poll-view';
 import { MinorCurrencyPipe } from '../../shared/minor-currency.pipe';
@@ -32,8 +43,15 @@ interface AccountingSample {
 @Component({
   selector: 'qd-overview',
   imports: [
-    CommonModule, FormsModule, RouterLink, MinorCurrencyPipe, TimeAgoPipe,
-    RefreshNoteComponent, StateMessageComponent, StatusBadgeComponent, TrendChartComponent,
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    MinorCurrencyPipe,
+    TimeAgoPipe,
+    RefreshNoteComponent,
+    StateMessageComponent,
+    StatusBadgeComponent,
+    TrendChartComponent,
     ThroughputChartComponent,
   ],
   templateUrl: './overview.page.html',
@@ -69,20 +87,29 @@ export class OverviewPage {
   protected readonly throughput$: Observable<PollResult<ThroughputView>> = this.window$.pipe(
     switchMap((minutes) => {
       const since = minutes > 0 ? new Date(Date.now() - minutes * 60_000).toISOString() : undefined;
-      return this.polling.poll(() => this.api.getThroughput(since, OverviewPage.bucketFor(minutes)));
+      return this.polling.poll(() =>
+        this.api.getThroughput(since, OverviewPage.bucketFor(minutes)),
+      );
     }),
   );
   protected readonly telemetry$: Observable<PollResult<TelemetrySummary>> = this.window$.pipe(
-    switchMap((minutes) => this.polling.poll(() =>
-      this.api.getTelemetrySummary(OverviewPage.telemetryWindowFor(minutes)))),
+    switchMap((minutes) =>
+      this.polling.poll(() =>
+        this.api.getTelemetrySummary(OverviewPage.telemetryWindowFor(minutes)),
+      ),
+    ),
   );
   protected readonly queues$: Observable<PollResult<QueuesView>> = this.polling.poll(() =>
     this.api.getQueues(),
   );
   // Newest-first lab-wide recents plus the sampled trace id of the head row
   // (one detail read per refresh; null when unsampled or failed, never fatal).
-  protected readonly recents$: Observable<{ recents: PollResult<RecentPayments>; traceId: string | null }> =
-    this.polling.poll(() => this.api.getRecentPayments(5)).pipe(
+  protected readonly recents$: Observable<{
+    recents: PollResult<RecentPayments>;
+    traceId: string | null;
+  }> = this.polling
+    .poll(() => this.api.getRecentPayments(5))
+    .pipe(
       switchMap((recents) => {
         const first = recents.status === 'ok' ? recents.value.items[0] : undefined;
         if (!first) return of({ recents, traceId: null });
@@ -103,18 +130,20 @@ export class OverviewPage {
     switchMap((runId) =>
       runId === ''
         ? new Observable<PollResult<RunSummary>>(() => {})
-        : this.polling.poll(() => this.api.getRun(runId)).pipe(
-          tap((r) => {
-            if (r.status === 'ok') {
-              this.accounting.push({
-                at: r.at,
-                admitted: r.value.admitted,
-                completed: r.value.byState['COMPLETED_SIMULATED'] ?? 0,
-              });
-              if (this.accounting.length > 60) this.accounting.shift();
-            }
-          }),
-        ),
+        : this.polling
+            .poll(() => this.api.getRun(runId))
+            .pipe(
+              tap((r) => {
+                if (r.status === 'ok') {
+                  this.accounting.push({
+                    at: r.at,
+                    admitted: r.value.admitted,
+                    completed: r.value.byState['COMPLETED_SIMULATED'] ?? 0,
+                  });
+                  if (this.accounting.length > 60) this.accounting.shift();
+                }
+              }),
+            ),
     ),
   );
   protected readonly recent$: Observable<PollResult<InstructionPage>> = this.runId$.pipe(
@@ -187,10 +216,14 @@ export class OverviewPage {
 
   protected bucketUnit(): string {
     switch (OverviewPage.bucketFor(this.windowMinutes)) {
-      case 60: return 'min';
-      case 120: return '2-min buckets';
-      case 600: return '10-min buckets';
-      default: return 'hour buckets';
+      case 60:
+        return 'min';
+      case 120:
+        return '2-min buckets';
+      case 600:
+        return '10-min buckets';
+      default:
+        return 'hour buckets';
     }
   }
 
@@ -211,16 +244,22 @@ export class OverviewPage {
   }
 
   protected unresolved(run: RunSummary): number {
-    return this.stateCount(run, 'RECEIVED')
-      + this.stateCount(run, 'BUSINESS_ACCEPTED')
-      + this.stateCount(run, 'PENDING_CONFIRMATION')
-      + this.stateCount(run, 'RISK_HELD');
+    return (
+      this.stateCount(run, 'RECEIVED') +
+      this.stateCount(run, 'BUSINESS_ACCEPTED') +
+      this.stateCount(run, 'PENDING_CONFIRMATION') +
+      this.stateCount(run, 'RISK_HELD')
+    );
   }
 
   protected accountingTrend(): TrendSeries[] {
     return [
       { label: 'Admitted', color: '#0369a1', values: this.accounting.map((s) => s.admitted) },
-      { label: 'Completed (sim)', color: '#0d9488', values: this.accounting.map((s) => s.completed) },
+      {
+        label: 'Completed (sim)',
+        color: '#0d9488',
+        values: this.accounting.map((s) => s.completed),
+      },
     ];
   }
 

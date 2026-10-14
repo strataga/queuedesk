@@ -6,13 +6,33 @@ import { ApiService } from '../../core/api.service';
 import { PollingService } from '../../core/polling.service';
 
 const detail = {
-  traceId: 'trc-1048-a7', instructionId: 'iid-1', clientReference: 'SYN-1048',
-  participants: 'SENDER_A → RECEIVER_B', sampledPercent: 10,
-  businessOutcome: 'COMPLETED_SIMULATED', riskDecision: 'ALLOW', riskMode: 'RULES_PLUS_MOCK',
-  endToEndMs: 364, admissionMs: 22,
+  traceId: 'trc-1048-a7',
+  instructionId: 'iid-1',
+  clientReference: 'SYN-1048',
+  participants: 'SENDER_A → RECEIVER_B',
+  sampledPercent: 10,
+  businessOutcome: 'COMPLETED_SIMULATED',
+  riskDecision: 'ALLOW',
+  riskMode: 'RULES_PLUS_MOCK',
+  endToEndMs: 364,
+  admissionMs: 22,
   spans: [
-    { spanId: 's1', parentSpanId: null, name: 'queuedesk.worker.attempt', startOffsetMs: 75, durationMs: 215, attributes: { 'messaging.event.id': 'msg-1048-01' } },
-    { spanId: 's2', parentSpanId: 's1', name: 'queuedesk.risk.evaluate', startOffsetMs: 87, durationMs: 95, attributes: {} },
+    {
+      spanId: 's1',
+      parentSpanId: null,
+      name: 'queuedesk.worker.attempt',
+      startOffsetMs: 75,
+      durationMs: 215,
+      attributes: { 'messaging.event.id': 'msg-1048-01' },
+    },
+    {
+      spanId: 's2',
+      parentSpanId: 's1',
+      name: 'queuedesk.risk.evaluate',
+      startOffsetMs: 87,
+      durationMs: 95,
+      attributes: {},
+    },
   ],
   asyncLinks: [{ fromSpanId: 's1', toSpanId: 's2', via: 'msg-1048-01' }],
   auditUrl: '/api/v1/instructions/iid-1',
@@ -31,7 +51,9 @@ describe('TraceDetailPage', () => {
         provideRouter([]),
         {
           provide: ActivatedRoute,
-          useValue: { paramMap: params$.pipe(map((m) => ({ get: (k: string) => m.get(k) ?? null }))) },
+          useValue: {
+            paramMap: params$.pipe(map((m) => ({ get: (k: string) => m.get(k) ?? null }))),
+          },
         },
         {
           provide: ApiService,

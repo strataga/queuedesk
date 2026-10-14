@@ -6,7 +6,10 @@ import { RouterLink } from '@angular/router';
 import { BehaviorSubject, Observable, Subscription, switchMap } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import {
-  KNOWN_REASON_CODES, KNOWN_RISK_RESULTS, RiskHeldItem, RiskSummary,
+  KNOWN_REASON_CODES,
+  KNOWN_RISK_RESULTS,
+  RiskHeldItem,
+  RiskSummary,
 } from '../../core/models';
 import { PollResult, PollingService } from '../../core/polling.service';
 import { toView } from '../../core/poll-view';
@@ -25,8 +28,13 @@ const MAX_LOADED_ROWS = 500;
 @Component({
   selector: 'qd-risk-review',
   imports: [
-    CommonModule, FormsModule, RouterLink, MinorCurrencyPipe,
-    RefreshNoteComponent, StateMessageComponent, StatusBadgeComponent,
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    MinorCurrencyPipe,
+    RefreshNoteComponent,
+    StateMessageComponent,
+    StatusBadgeComponent,
   ],
   templateUrl: './risk-review.page.html',
 })
@@ -121,24 +129,26 @@ export class RiskReviewPage implements OnInit {
     const filters = this.filters();
     const token = this.scope;
     this.loadMoreSub?.unsubscribe();
-    this.loadMoreSub = this.api.listRiskAssessments({ ...filters, cursor: this.nextCursor }).subscribe({
-      next: (page) => {
-        if (token !== this.scope) return;
-        const merged = [...(this.items ?? []), ...page.items].slice(0, MAX_LOADED_ROWS);
-        this.capped = (this.items?.length ?? 0) + page.items.length > MAX_LOADED_ROWS;
-        this.items = merged;
-        this.nextCursor = this.capped ? null : page.nextCursor;
-        this.loadingMore = false;
-        this.cdr.markForCheck();
-      },
-      error: (error: unknown) => {
-        if (token !== this.scope) return;
-        this.loadingMore = false;
-        this.fresh = false;
-        this.failure = this.polling.describeError(error);
-        this.cdr.markForCheck();
-      },
-    });
+    this.loadMoreSub = this.api
+      .listRiskAssessments({ ...filters, cursor: this.nextCursor })
+      .subscribe({
+        next: (page) => {
+          if (token !== this.scope) return;
+          const merged = [...(this.items ?? []), ...page.items].slice(0, MAX_LOADED_ROWS);
+          this.capped = (this.items?.length ?? 0) + page.items.length > MAX_LOADED_ROWS;
+          this.items = merged;
+          this.nextCursor = this.capped ? null : page.nextCursor;
+          this.loadingMore = false;
+          this.cdr.markForCheck();
+        },
+        error: (error: unknown) => {
+          if (token !== this.scope) return;
+          this.loadingMore = false;
+          this.fresh = false;
+          this.failure = this.polling.describeError(error);
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   protected reviewShare(sum: RiskSummary): number {

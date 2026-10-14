@@ -22,7 +22,14 @@ interface ScenariosSnapshot {
 // copies that string and never re-derives flags.
 @Component({
   selector: 'qd-scenarios',
-  imports: [CommonModule, FormsModule, RouterLink, TimeAgoPipe, RefreshNoteComponent, StateMessageComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    TimeAgoPipe,
+    RefreshNoteComponent,
+    StateMessageComponent,
+  ],
   templateUrl: './scenarios.page.html',
 })
 export class ScenariosPage {

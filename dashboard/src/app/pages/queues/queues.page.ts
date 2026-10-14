@@ -24,7 +24,14 @@ interface BacklogSample {
 // accumulates one sample per successful refresh and says "since page open".
 @Component({
   selector: 'qd-queues',
-  imports: [CommonModule, TimeAgoPipe, RefreshNoteComponent, StateMessageComponent, StatusBadgeComponent, TrendChartComponent],
+  imports: [
+    CommonModule,
+    TimeAgoPipe,
+    RefreshNoteComponent,
+    StateMessageComponent,
+    StatusBadgeComponent,
+    TrendChartComponent,
+  ],
   templateUrl: './queues.page.html',
 })
 export class QueuesPage {
@@ -37,7 +44,11 @@ export class QueuesPage {
     .pipe(
       tap((r) => {
         if (r.status === 'ok') {
-          this.backlog.push({ at: r.at, outbox: r.value.outbox.pending, mq: r.value.mq.depthEstimate });
+          this.backlog.push({
+            at: r.at,
+            outbox: r.value.outbox.pending,
+            mq: r.value.mq.depthEstimate,
+          });
           if (this.backlog.length > 60) this.backlog.shift();
         }
       }),

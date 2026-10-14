@@ -20,8 +20,12 @@ const summary = (over: Partial<RiskSummary> = {}): RiskSummary => ({
 const held: RiskHeldPage = {
   items: [
     {
-      instructionId: 'iid-1047', clientReference: 'SYN-1047', amountMinor: 850000,
-      currency: 'USD', businessOutcome: 'RISK_HELD', riskOutput: 'REVIEW',
+      instructionId: 'iid-1047',
+      clientReference: 'SYN-1047',
+      amountMinor: 850000,
+      currency: 'USD',
+      businessOutcome: 'RISK_HELD',
+      riskOutput: 'REVIEW',
       reasonCodes: ['NEW_RECIPIENT', 'UNUSUAL_AMOUNT'],
     },
   ],
@@ -69,7 +73,11 @@ describe('RiskReviewPage', () => {
   });
 
   it('explains an OFF gate instead of showing an empty queue', async () => {
-    await setup(summary({ mode: 'OFF', riskHeld: 0, reviewRequired: 0, notAssessed: 0 }), { items: [], nextCursor: null, mode: 'OFF' });
+    await setup(summary({ mode: 'OFF', riskHeld: 0, reviewRequired: 0, notAssessed: 0 }), {
+      items: [],
+      nextCursor: null,
+      mode: 'OFF',
+    });
     const fixture = TestBed.createComponent(RiskReviewPage);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -89,8 +97,19 @@ describe('RiskReviewPage', () => {
   });
 
   it('shows the Jev spend ledger and the exhausted alert in JEV mode', async () => {
-    await setup(summary({ mode: 'RULES_PLUS_JEV',
-      usage: { calls: 3, inputTokens: 1200, outputTokens: 180, costUsd: 0.0000504, budgetUsd: 1, exhausted: true } }));
+    await setup(
+      summary({
+        mode: 'RULES_PLUS_JEV',
+        usage: {
+          calls: 3,
+          inputTokens: 1200,
+          outputTokens: 180,
+          costUsd: 0.0000504,
+          budgetUsd: 1,
+          exhausted: true,
+        },
+      }),
+    );
     const fixture = TestBed.createComponent(RiskReviewPage);
     fixture.detectChanges();
     await fixture.whenStable();

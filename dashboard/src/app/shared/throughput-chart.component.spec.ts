@@ -5,7 +5,9 @@ describe('ThroughputChartComponent', () => {
   let fixture: ComponentFixture<ThroughputChartComponent>;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [ThroughputChartComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [ThroughputChartComponent],
+    }).compileComponents();
     fixture = TestBed.createComponent(ThroughputChartComponent);
   });
 

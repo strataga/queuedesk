@@ -14,12 +14,22 @@ describe('InstructionListPage rescope', () => {
   // Head polls answer immediately from the current scope page; loadMore pages
   // hang on a Subject so the test controls exactly when they arrive.
   const row = (id: string) => ({
-    instructionId: id, status: 'RECEIVED', reason: null,
-    receivedAt: '2026-10-05T00:00:00Z', updatedAt: '2026-10-05T00:00:00Z',
-    statusUrl: `/api/v1/instructions/${id}`, correlationId: `corr-${id}`,
+    instructionId: id,
+    status: 'RECEIVED',
+    reason: null,
+    receivedAt: '2026-10-05T00:00:00Z',
+    updatedAt: '2026-10-05T00:00:00Z',
+    statusUrl: `/api/v1/instructions/${id}`,
+    correlationId: `corr-${id}`,
     delivery: 'PENDING_PUBLISH',
-    payload: { clientReference: `ref-${id}`, runId: 'A', senderParticipant: 'SENDER_A',
-      receiverParticipant: 'RECEIVER_B', amountMinor: 100, currency: 'USD' },
+    payload: {
+      clientReference: `ref-${id}`,
+      runId: 'A',
+      senderParticipant: 'SENDER_A',
+      receiverParticipant: 'RECEIVER_B',
+      amountMinor: 100,
+      currency: 'USD',
+    },
   });
   let head: { items: unknown[]; nextCursor: string | null } = { items: [], nextCursor: null };
   let loadMore$: Subject<{ items: unknown[]; nextCursor: string | null }>;
@@ -38,14 +48,34 @@ describe('InstructionListPage rescope', () => {
           useValue: {
             listInstructions: (args: { cursor?: string }) =>
               args.cursor === undefined || args.cursor === null ? of(head) : loadMore$,
-            getRun: (runId: string) => of({
-              runId, admitted: 1, byState: { RECEIVED: 1 },
-              outboxPending: 0, outboxPublished: 0, reconcileOpen: 0,
-            }),
-            getOverview: () => of({ admitted: 0, byState: {}, outboxPending: 0,
-              outboxPublished: 0, reconcileOpen: 0, since: null, until: null }),
-            getRiskSummary: () => of({ asOf: '', mode: 'OFF', riskHeld: 0,
-              reviewRequired: 0, notAssessed: 0, note: '' }),
+            getRun: (runId: string) =>
+              of({
+                runId,
+                admitted: 1,
+                byState: { RECEIVED: 1 },
+                outboxPending: 0,
+                outboxPublished: 0,
+                reconcileOpen: 0,
+              }),
+            getOverview: () =>
+              of({
+                admitted: 0,
+                byState: {},
+                outboxPending: 0,
+                outboxPublished: 0,
+                reconcileOpen: 0,
+                since: null,
+                until: null,
+              }),
+            getRiskSummary: () =>
+              of({
+                asOf: '',
+                mode: 'OFF',
+                riskHeld: 0,
+                reviewRequired: 0,
+                notAssessed: 0,
+                note: '',
+              }),
           },
         },
         {
@@ -110,12 +140,25 @@ describe('InstructionListPage mockup parity', () => {
     queryParamMap: params$.pipe(map((m) => ({ get: (k: string) => m.get(k) ?? null }))),
   };
   const row = (id: string, status: string, riskStatus: string | null) => ({
-    instructionId: id, status, reason: null,
-    receivedAt: '2026-10-05T00:00:00Z', updatedAt: '2026-10-05T00:00:00Z',
-    statusUrl: `/api/v1/instructions/${id}`, correlationId: `corr-${id}`,
-    delivery: 'PUBLISHED', riskStatus, assessmentId: null, riskReasonCodes: null,
-    payload: { clientReference: `SYN-${id}`, runId: 'A', senderParticipant: 'SENDER_A',
-      receiverParticipant: 'RECEIVER_B', amountMinor: 100, currency: 'USD' },
+    instructionId: id,
+    status,
+    reason: null,
+    receivedAt: '2026-10-05T00:00:00Z',
+    updatedAt: '2026-10-05T00:00:00Z',
+    statusUrl: `/api/v1/instructions/${id}`,
+    correlationId: `corr-${id}`,
+    delivery: 'PUBLISHED',
+    riskStatus,
+    assessmentId: null,
+    riskReasonCodes: null,
+    payload: {
+      clientReference: `SYN-${id}`,
+      runId: 'A',
+      senderParticipant: 'SENDER_A',
+      receiverParticipant: 'RECEIVER_B',
+      amountMinor: 100,
+      currency: 'USD',
+    },
   });
   const items = [
     row('a1', 'COMPLETED_SIMULATED', 'ALLOW'),
@@ -148,20 +191,47 @@ describe('InstructionListPage mockup parity', () => {
                 ? of({ items: [items[2]], nextCursor: null })
                 : of({ items, nextCursor: null });
             },
-            getRun: (runId: string) => of({
-              runId, admitted: 4,
-              byState: { COMPLETED_SIMULATED: 1, RISK_HELD: 1, PENDING_CONFIRMATION: 1, RECEIVED: 1 },
-              outboxPending: 0, outboxPublished: 4, reconcileOpen: 1,
-            }),
+            getRun: (runId: string) =>
+              of({
+                runId,
+                admitted: 4,
+                byState: {
+                  COMPLETED_SIMULATED: 1,
+                  RISK_HELD: 1,
+                  PENDING_CONFIRMATION: 1,
+                  RECEIVED: 1,
+                },
+                outboxPending: 0,
+                outboxPublished: 4,
+                reconcileOpen: 1,
+              }),
             getOverview: (since?: string) => {
               overviewCalls++;
               lastOverviewSince = since;
-              return of({ admitted: 1240,
-                byState: { COMPLETED_SIMULATED: 1208, RISK_HELD: 18, RECEIVED: 10, PENDING_CONFIRMATION: 4 },
-                outboxPending: 0, outboxPublished: 1240, reconcileOpen: 4, since: since ?? null, until: null });
+              return of({
+                admitted: 1240,
+                byState: {
+                  COMPLETED_SIMULATED: 1208,
+                  RISK_HELD: 18,
+                  RECEIVED: 10,
+                  PENDING_CONFIRMATION: 4,
+                },
+                outboxPending: 0,
+                outboxPublished: 1240,
+                reconcileOpen: 4,
+                since: since ?? null,
+                until: null,
+              });
             },
-            getRiskSummary: () => of({ asOf: '', mode: gateMode, riskHeld: 0,
-              reviewRequired: 0, notAssessed: 0, note: '' }),
+            getRiskSummary: () =>
+              of({
+                asOf: '',
+                mode: gateMode,
+                riskHeld: 0,
+                reviewRequired: 0,
+                notAssessed: 0,
+                note: '',
+              }),
           },
         },
         {
@@ -200,7 +270,9 @@ describe('InstructionListPage mockup parity', () => {
     await fixture.whenStable();
     expect(overviewCalls).toBe(1);
     expect(lastOverviewSince).toBeDefined();
-    const census = (fixture.nativeElement as HTMLElement).querySelector('section[aria-label="Payment census"]');
+    const census = (fixture.nativeElement as HTMLElement).querySelector(
+      'section[aria-label="Payment census"]',
+    );
     expect(census?.textContent).toContain('1,240');
     expect(census?.textContent).toContain('Last 15 minutes · lab-wide');
   });
@@ -212,7 +284,8 @@ describe('InstructionListPage mockup parity', () => {
     await fixture.whenStable();
     expect(overviewCalls).toBe(1);
     const select = (fixture.nativeElement as HTMLElement).querySelector(
-      'select[aria-label="Census window"]') as HTMLSelectElement;
+      'select[aria-label="Census window"]',
+    ) as HTMLSelectElement;
     select.value = '0';
     select.dispatchEvent(new Event('change'));
     fixture.detectChanges();
@@ -278,7 +351,9 @@ describe('InstructionListPage mockup parity', () => {
     const recon = el.querySelector('section[aria-label="Reconciliation"]');
     expect(results).not.toBeNull();
     expect(recon).not.toBeNull();
-    expect(results!.compareDocumentPosition(recon!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      results!.compareDocumentPosition(recon!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it('filters loaded rows by search and says the search is client-side', async () => {
