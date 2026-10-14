@@ -1,3 +1,9 @@
+/**
+ * Risk review queue: held counts, gate mode, and the hold note render
+ * verbatim; an OFF gate is explained instead of showing an empty queue;
+ * review actions are stated deferred and the panel read-only; the Jev
+ * spend ledger and exhausted alert appear in live mode.
+ */
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { map, of } from 'rxjs';

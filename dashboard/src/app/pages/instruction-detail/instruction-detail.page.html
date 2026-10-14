@@ -1,3 +1,9 @@
+<!--
+  Instruction detail: stat cards, Timeline/Request/Audit tabs, transport
+  events, reconciliation panel (unknown confirmations), risk summary, and
+  copyable identifiers. Business and delivery states render separately so
+  a lagging delivery marker never overwrites the business outcome.
+-->
 <p class="text-sm">
   <a routerLink="/payments" class="text-sky-800 underline hover:text-sky-600">← Back to payments</a>
 </p>
@@ -494,9 +500,7 @@
       @if (audit$ | async; as ar) {
         @let av = toView(ar);
         @if (av.value) {
-          {{ av.value.items.length }} business event{{
-            av.value.items.length === 1 ? '' : 's'
-          }}
+          {{ av.value.items.length }} business event{{ av.value.items.length === 1 ? '' : 's' }}
           recorded ·
         } @else {
           Audit-trail size unknown ·

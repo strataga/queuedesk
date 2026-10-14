@@ -1,3 +1,9 @@
+/**
+ * Overview rendering: KPI cards, server-bucket throughput graph, newest-
+ * first recents with trace/audit links and honest risk dashes, and the risk
+ * panel (latest hold with reasons, or an OFF-gate explanation instead of a
+ * misleading row).
+ */
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { map, of } from 'rxjs';

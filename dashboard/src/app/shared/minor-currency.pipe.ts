@@ -1,8 +1,11 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
-// Integer minor-unit currency (UI-06): formats without floating point, so
-// 12500 minor USD is always $125.00 and never $124.99(9). Unknown currencies
-// fall back to "12500 XXX minor" rather than inventing a symbol.
+/**
+ * Formats integer minor-unit money without floating point, so 12500 minor
+ * USD is always $125.00 and never $124.99(9). Unknown currencies fall back
+ * to "12500 XXX minor" rather than inventing a symbol, and non-integer
+ * input renders as "unknown amount".
+ */
 @Pipe({ name: 'minorCurrency' })
 export class MinorCurrencyPipe implements PipeTransform {
   transform(amountMinor: number | null | undefined, currency: string | null | undefined): string {

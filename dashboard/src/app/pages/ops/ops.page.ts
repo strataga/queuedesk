@@ -111,9 +111,12 @@ interface OpsSnapshot {
   metrics: MetricValue[];
 }
 
-// Operations (UI-05): backlog, MQ availability, quarantine freshness and safeguard
-// state with distinct loading/empty/unavailable/stale presentations. Metric rows
-// with no reading say "no reading" — a series that never recorded is not zero.
+/**
+ * Operations page: safeguard state, liveness/readiness per dependency,
+ * quarantine freshness, and the full metric table in one polled snapshot.
+ * Metric rows with no reading say "no reading" — a series that never
+ * recorded is not zero.
+ */
 @Component({
   selector: 'qd-ops',
   imports: [
@@ -144,6 +147,7 @@ export class OpsPage {
   protected describe = (error: unknown): string => this.polling.describeError(error);
   protected readonly toView = toView;
 
+  /** Formats one metric cell; null reads "no reading" rather than a fake zero. */
   protected formatMetric(value: number | null, format: 'count' | 'seconds'): string {
     if (value === null || Number.isNaN(value)) return 'no reading';
     if (format === 'seconds') {
@@ -155,6 +159,7 @@ export class OpsPage {
     return Math.round(value).toLocaleString('en-US');
   }
 
+  /** Human byte size for the disk-guard figures. */
   protected formatBytes(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
     const units = ['KB', 'MB', 'GB', 'TB'];
@@ -168,6 +173,7 @@ export class OpsPage {
     return `${scaled.toFixed(1)} ${unit}`;
   }
 
+  /** Flattens actuator health components to name/status rows. */
   protected healthEntries(health: Health): Array<{ name: string; status: string }> {
     return Object.entries(health.components ?? {}).map(([name, component]) => ({
       name,

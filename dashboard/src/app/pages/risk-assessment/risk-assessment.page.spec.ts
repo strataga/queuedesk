@@ -1,3 +1,8 @@
+/**
+ * Risk assessment detail: output text, matched rules, and the confidence
+ * note render verbatim; rules-only assessments say so; unsampled traces
+ * get no link.
+ */
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { map, of } from 'rxjs';

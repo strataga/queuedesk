@@ -17,11 +17,14 @@ interface BacklogSample {
   mq: number;
 }
 
-// Queues (mockup 06): transport health from GET /api/v1/ops/queues. MQ depth is an
-// application estimate (labeled as such, never a broker probe); a stale
-// quarantine projection renders its last observation with an "unavailable"
-// current count, never zero. The trend chart has no server history source, so it
-// accumulates one sample per successful refresh and says "since page open".
+/**
+ * Queues page: transport health in one read — outbox backlog, the MQ depth
+ * estimate (labeled as an estimate, never a broker probe), consumer state,
+ * quarantine freshness, and dedup activity. A stale quarantine projection
+ * shows its last observation with the live count unavailable, never zero.
+ * The trend chart has no server history, so it accumulates one sample per
+ * refresh and says "since page open".
+ */
 @Component({
   selector: 'qd-queues',
   imports: [
@@ -57,6 +60,7 @@ export class QueuesPage {
   protected describe = (error: unknown): string => this.polling.describeError(error);
   protected readonly toView = toView;
 
+  /** Backlog trend series from samples accumulated since page open (capped at 60). */
   protected trend(): TrendSeries[] {
     return [
       { label: 'Outbox pending', color: '#0369a1', values: this.backlog.map((s) => s.outbox) },
@@ -64,6 +68,7 @@ export class QueuesPage {
     ];
   }
 
+  /** Compact human age for backlog-age seconds (`<1s`, `42s`, `3m 5s`, `2h`). */
   protected formatAge(seconds: number): string {
     if (seconds < 1) return '<1s';
     if (seconds < 90) return `${Math.round(seconds)}s`;

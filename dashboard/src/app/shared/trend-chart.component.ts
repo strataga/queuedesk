@@ -1,16 +1,20 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
+/** One sparkline series: legend label, stroke color, and raw sample values in time order. */
 export interface TrendSeries {
   label: string;
   color: string;
   values: number[];
 }
 
-// Minimal client-side trend chart. The backend keeps no latency/backlog history,
-// so pages accumulate one sample per successful refresh and pass the raw values
-// here; the caption naming that source stays in the page template, next to the
-// chart, so it can never drift from the data it describes.
+/**
+ * Minimal client-side trend chart (SVG sparkline per series, shared scale).
+ * The backend keeps no history for these series, so pages accumulate one
+ * sample per successful refresh and pass raw values here. The caption
+ * naming that source ("since page open") stays in the page template, next
+ * to the chart, so it can never drift from the data it describes.
+ */
 @Component({
   selector: 'qd-trend-chart',
   imports: [CommonModule],
@@ -56,6 +60,7 @@ export interface TrendSeries {
   `,
 })
 export class TrendChartComponent {
+  /** Series to draw on one shared scale. Fewer than two points renders the collecting state. */
   @Input() series: TrendSeries[] = [];
 
   protected get pointCount(): number {

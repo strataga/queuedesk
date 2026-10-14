@@ -1,3 +1,9 @@
+/**
+ * Payments list behavior: URL rescopes reset local filters, late load-more
+ * pages from a retired scope are ignored, the census row follows run scope
+ * (lab-wide fallback, window-aware), and unassessed RECEIVED rows read
+ * Pending only while the risk gate is on.
+ */
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { BehaviorSubject, Subject, map, of } from 'rxjs';

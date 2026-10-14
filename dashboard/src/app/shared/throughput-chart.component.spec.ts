@@ -1,3 +1,7 @@
+/**
+ * Throughput chart: area rendering with max/time labels, a flat zero line
+ * instead of a collapsed scale, and guidance when buckets are too few.
+ */
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ThroughputChartComponent } from './throughput-chart.component';
 

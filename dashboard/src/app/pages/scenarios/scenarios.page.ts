@@ -16,10 +16,12 @@ interface ScenariosSnapshot {
   runs: ScenarioRunPage;
 }
 
-// Scenarios (mockup 09): catalog + recent run reports from GET /api/v1/scenarios
-// and /scenarios/runs. The UI executes nothing. Command previews are rendered
-// verbatim from the backend's REAL CLI template (design §8); the copy button
-// copies that string and never re-derives flags.
+/**
+ * Scenarios page: the failure-drill catalog plus recent runs discovered
+ * from durable state. The UI executes nothing. Command previews render
+ * verbatim from the backend's real CLI template; the copy button copies
+ * that string and never re-derives flags.
+ */
 @Component({
   selector: 'qd-scenarios',
   imports: [
@@ -50,6 +52,7 @@ export class ScenariosPage {
   protected describe = (error: unknown): string => this.polling.describeError(error);
   protected readonly toView = toView;
 
+  /** Client-side catalog search over ID, title, blurb, and group. */
   protected filtered(items: ScenarioItem[]): ScenarioItem[] {
     const q = this.query.trim().toLowerCase();
     if (q === '') return items;
@@ -68,6 +71,7 @@ export class ScenariosPage {
     this.copied = false;
   }
 
+  /** Copies the backend-rendered command verbatim; flags are never re-derived here. */
   protected copyCommand(preview: string): void {
     const done = () => {
       this.copied = true;

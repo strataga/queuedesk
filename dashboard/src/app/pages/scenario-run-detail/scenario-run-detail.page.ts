@@ -9,10 +9,12 @@ import { toView } from '../../core/poll-view';
 import { RefreshNoteComponent } from '../../shared/refresh-note.component';
 import { StateMessageComponent } from '../../shared/state-message.component';
 
-// Scenario run detail (mockup 10): run report from GET /api/v1/scenarios/runs/{id}.
-// Unknown run ids report zeros, never 404 (RunController convention). The
-// reproducibility preview and copy button use the backend's REAL CLI template
-// verbatim; Export report re-serves this JSON with an exportedAt stamp.
+/**
+ * Scenario run detail: server-derived evidence for one run. Unknown run
+ * IDs report zeros, never 404. The reproducibility preview and copy button
+ * use the backend's real CLI template verbatim, and Export re-serves this
+ * JSON with an export timestamp (no server-side PDF/CSV).
+ */
 @Component({
   selector: 'qd-scenario-run-detail',
   imports: [CommonModule, RouterLink, RefreshNoteComponent, StateMessageComponent],
@@ -35,6 +37,7 @@ export class ScenarioRunDetailPage {
   protected describe = (error: unknown): string => this.polling.describeError(error);
   protected readonly toView = toView;
 
+  /** Progress-bar width for part/total counters; nulls (unavailable facts) render empty. */
   protected barWidth(part: number | null, total: number | null): string {
     if (part == null || total == null || total <= 0) return '0%';
     return `${Math.min(100, (part / total) * 100)}%`;
@@ -60,6 +63,7 @@ export class ScenarioRunDetailPage {
     this.copied = false;
   }
 
+  /** Downloads this run's JSON with an export timestamp (client-side; no server rendering). */
   protected exportReport(report: ScenarioRunReport): void {
     const payload = JSON.stringify({ ...report, exportedAt: new Date().toISOString() }, null, 2);
     const url = URL.createObjectURL(new Blob([payload], { type: 'application/json' }));

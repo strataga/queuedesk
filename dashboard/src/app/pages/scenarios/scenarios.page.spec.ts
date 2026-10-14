@@ -1,3 +1,7 @@
+/**
+ * Scenarios page: the backend command preview is shown verbatim (flags are
+ * never re-derived client-side) and the search box filters the catalog.
+ */
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { map, of } from 'rxjs';

@@ -10,10 +10,13 @@ import { RefreshNoteComponent } from '../../shared/refresh-note.component';
 import { StateMessageComponent } from '../../shared/state-message.component';
 import { StatusBadgeComponent } from '../../shared/status-badge.component';
 
-// Trace detail (mockup 08): sampled waterfall from GET /api/v1/telemetry/traces/{id}.
-// Span names are the real queuedesk.* names; offsets are relative to request start
-// and durations are not additive. An unknown or ring-evicted trace id reports
-// "no such trace", never a guess. Selecting a row shows its span attributes.
+/**
+ * Trace detail: the sampled span waterfall for one payment, with business
+ * outcome and risk decision joined in. Span names are the real
+ * `queuedesk.*` names; offsets are relative to trace start and durations
+ * are not additive. An unknown or ring-evicted trace ID reports "no such
+ * trace", never a guess. Selecting a row shows its span attributes.
+ */
 @Component({
   selector: 'qd-trace-detail',
   imports: [
@@ -42,6 +45,7 @@ export class TraceDetailPage {
   protected describe = (error: unknown): string => this.polling.describeError(error);
   protected readonly toView = toView;
 
+  /** Toggles the attribute panel for one waterfall row. */
   protected selectSpan(spanId: string): void {
     this.selectedSpanId = this.selectedSpanId === spanId ? null : spanId;
   }
@@ -54,14 +58,17 @@ export class TraceDetailPage {
     return Object.entries(span.attributes ?? {}).map(([key, value]) => ({ key, value }));
   }
 
+  /** Waterfall bar start position as a CSS percent of total trace time. */
   protected barLeft(span: TraceSpan, totalMs: number): string {
     return `${totalMs <= 0 ? 0 : (span.startOffsetMs / totalMs) * 100}%`;
   }
 
+  /** Waterfall bar width as a CSS percent (minimum 1.5% so instant spans stay visible). */
   protected barWidth(span: TraceSpan, totalMs: number): string {
     return `${totalMs <= 0 ? 0 : Math.max(1.5, (span.durationMs / totalMs) * 100)}%`;
   }
 
+  /** Whether this span is the risk-evaluation stage (highlighted in the waterfall). */
   protected isRiskSpan(span: TraceSpan): boolean {
     return span.name === 'queuedesk.risk.evaluate';
   }

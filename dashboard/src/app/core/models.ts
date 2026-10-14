@@ -1,7 +1,14 @@
-// API read models. Shapes mirror the backend records exactly (InstructionController.View,
-// RunController.RunSummary, QuarantineController.QuarantineView, OpsController.Guards);
-// the dashboard never invents fields the API did not send.
+/**
+ * API read models: TypeScript mirrors of the backend response records.
+ *
+ * Shapes follow the Java records exactly (InstructionController.View,
+ * RunController.RunSummary, and friends). The dashboard never invents
+ * fields the API did not send; optional fields (`riskStatus`, `traceId`)
+ * exist so older backends that omit them still type-check. Amounts stay
+ * integer minor units end-to-end and are formatted only at render time.
+ */
 
+/** The payment payload exactly as admitted (echoed back on every instruction read). */
 export interface PaymentInstructionPayload {
   clientReference: string;
   runId: string;
@@ -11,6 +18,7 @@ export interface PaymentInstructionPayload {
   currency: string;
 }
 
+/** Business lifecycle states. Delivery progress is a separate axis (see DeliveryMarker). */
 export type BusinessState =
   | 'RECEIVED'
   | 'BUSINESS_ACCEPTED'
@@ -19,8 +27,10 @@ export type BusinessState =
   | 'REJECTED'
   | 'RISK_HELD';
 
+/** Derived delivery state (outbox/queue progress). May lag the business outcome. */
 export type DeliveryMarker = 'PENDING_PUBLISH' | 'PUBLISHED' | 'RETRYING' | 'QUARANTINED';
 
+/** One instruction as the API returns it: business state, delivery state, payload, latest risk verdict. */
 export interface InstructionView {
   instructionId: string;
   status: BusinessState | string;
@@ -41,8 +51,10 @@ export interface InstructionView {
   traceId?: string | null;
 }
 
-// Durable business audit trail (mockup 03 Audit tab): instruction_audit rows in
-// commit order — business transitions only, never transport retries.
+/**
+ * One durable business transition from the audit trail, in commit order.
+ * Business transitions only, never transport retries.
+ */
 export interface AuditEvent {
   oldState: string;
   newState: string;
@@ -51,13 +63,16 @@ export interface AuditEvent {
   recordedAt: string;
 }
 
+/** Audit-timeline response for one instruction. */
 export interface InstructionAudit {
   instructionId: string;
   items: AuditEvent[];
 }
 
-// Transport attempt evidence (mockup 03 transport section): processing_attempt
-// rows in write order. Telemetry, never business truth.
+/**
+ * One worker processing attempt in write order. Telemetry, never business
+ * truth: a rolled-back attempt leaves no row.
+ */
 export interface AttemptView {
   eventId: string;
   result: string;
@@ -67,16 +82,19 @@ export interface AttemptView {
   endedAt: string | null;
 }
 
+/** Attempt-evidence response for one instruction. */
 export interface InstructionAttempts {
   instructionId: string;
   items: AttemptView[];
 }
 
+/** One cursor page of instructions (`nextCursor` null on the last page). */
 export interface InstructionPage {
   items: InstructionView[];
   nextCursor: string | null;
 }
 
+/** Instruction-list query filters; every field except `limit` is optional. */
 export interface ListFilters {
   runId?: string;
   status?: string;
@@ -89,9 +107,11 @@ export interface ListFilters {
   order?: 'asc' | 'desc';
 }
 
-// Lab-wide overview census: windowed instruction counts plus current
-// outbox/reconcile gauges (never windowed). since/until echo the applied
-// window, null when unbounded.
+/**
+ * Lab-wide overview census: windowed instruction counts plus current
+ * outbox/reconciliation gauges (gauges are never windowed). `since`/`until`
+ * echo the applied window, null when unbounded.
+ */
 export interface LabSummary {
   admitted: number;
   byState: Record<string, number>;
@@ -102,13 +122,13 @@ export interface LabSummary {
   until: string | null;
 }
 
-// Mockup 01 throughput graph: durable per-bucket completion counts,
-// zero-filled across [since, until] so the chart is contiguous.
+/** One throughput bucket: completions counted from the bucket start instant. */
 export interface ThroughputPoint {
   at: string;
   count: number;
 }
 
+/** Throughput series, zero-filled across [since, until] so the chart is contiguous. */
 export interface ThroughputView {
   metric: string;
   bucketSeconds: number;
@@ -117,10 +137,12 @@ export interface ThroughputView {
   until: string;
 }
 
+/** Newest lab-wide payments for the overview table. */
 export interface RecentPayments {
   items: InstructionView[];
 }
 
+/** One run's accounting: admitted total, counts by state, and delivery gauges. */
 export interface RunSummary {
   runId: string;
   admitted: number;
@@ -130,6 +152,7 @@ export interface RunSummary {
   reconcileOpen: number;
 }
 
+/** One quarantined event and why it is held. */
 export interface HeldItem {
   eventId: string;
   instructionId: string;
@@ -138,6 +161,7 @@ export interface HeldItem {
   lastSeenAt: string;
 }
 
+/** Quarantine projection plus freshness (`stale` when the heartbeat is old). */
 export interface QuarantineView {
   lastReconciledAt: string | null;
   stale: boolean;
@@ -145,6 +169,7 @@ export interface QuarantineView {
   items: HeldItem[];
 }
 
+/** Laboratory safeguard status: backlog/disk checks, combined halt, and reasons. */
 export interface Guards {
   outboxPending: number;
   backlogLimit: number;
@@ -156,25 +181,32 @@ export interface Guards {
   reasons: string[];
 }
 
+/** One actuator health contributor (db, diskSpace, mq, ping, …). */
 export interface HealthComponent {
   status: string;
   details?: Record<string, unknown>;
 }
 
+/** Actuator health response (whole app or one probe group). */
 export interface Health {
   status: string;
   components?: Record<string, HealthComponent>;
 }
 
+/** One metric reading; `value` null means "no reading", never zero. */
 export interface MetricValue {
   name: string;
   value: number | null;
 }
 
+/** Final business states that never change again. */
 export const TERMINAL_STATES: ReadonlySet<string> = new Set(['COMPLETED_SIMULATED', 'REJECTED']);
 
-// §9.1 Queues page (mockup 06). mq.depthEstimate is an application estimate
-// (never a broker probe); quarantine.count is null while the projection is stale.
+/**
+ * Queues-page snapshot. `mq.depthEstimate` is an application estimate from
+ * durable tables, never a broker probe; `quarantine.count` is null while
+ * the projection is stale (last observed value kept separately).
+ */
 export interface QueuesView {
   asOf: string;
   outbox: {
@@ -204,8 +236,11 @@ export interface QueuesView {
   dedupLast15Min: number;
 }
 
-// §9.2 Telemetry page (mockup 07). riskProvider is null and lastExportAt is null
-// (no collector yet) when the risk gate is off / nothing has been exported.
+/**
+ * Telemetry summary. `riskProvider` is null when the gate is off, and
+ * `exporter.lastExportAt` is null until something has been exported.
+ * Empty latency windows report p95 -1 with n 0.
+ */
 export interface TelemetrySummary {
   asOf: string;
   windowMinutes: number;
@@ -222,18 +257,21 @@ export interface TelemetrySummary {
   };
 }
 
+/** One per-minute latency point (p95 over observed samples, plus the sample count). */
 export interface LatencyPoint {
   at: string;
   p95Ms: number;
   n: number;
 }
 
+/** Latency series for one metric. */
 export interface LatencySeries {
   metric: string;
   bucketSeconds: number;
   points: LatencyPoint[];
 }
 
+/** One sampled trace row, joined to its instruction where possible. */
 export interface TraceItem {
   instructionId: string;
   clientReference: string;
@@ -242,12 +280,13 @@ export interface TraceItem {
   elapsedMs: number;
 }
 
+/** Trace-list response. */
 export interface TracePage {
   items: TraceItem[];
   nextCursor: string | null;
 }
 
-// Live process log ring (mockup 07 Logs tab): newest last, no stack traces.
+/** One retained log event from the backend's live ring (no stack traces). */
 export interface LogEntry {
   at: string;
   level: string;
@@ -255,6 +294,7 @@ export interface LogEntry {
   message: string;
 }
 
+/** Log-ring response with eviction accounting. */
 export interface LogList {
   items: LogEntry[];
   dropped: number;
@@ -262,8 +302,10 @@ export interface LogList {
   note: string;
 }
 
-// §9.3 Trace detail (mockup 08). Span names are the real queuedesk.* names;
-// offsets are relative to request start and durations are not additive.
+/**
+ * One waterfall span. Names are the real `queuedesk.*` span names; offsets
+ * are relative to trace start and durations are not additive.
+ */
 export interface TraceSpan {
   spanId: string;
   parentSpanId: string | null;
@@ -273,12 +315,14 @@ export interface TraceSpan {
   attributes: Record<string, string>;
 }
 
+/** A cross-boundary span link (reserved; currently always an empty list). */
 export interface AsyncLink {
   fromSpanId: string;
   toSpanId: string;
   via: string;
 }
 
+/** Trace detail: business context plus the full span waterfall. */
 export interface TraceDetail {
   traceId: string;
   instructionId: string;
@@ -295,8 +339,11 @@ export interface TraceDetail {
   auditUrl: string;
 }
 
-// §9.4 Scenarios + run detail (mockups 09/10). commandPreview is pre-rendered by
-// the backend from the REAL CLI template; the UI copy button never re-derives flags.
+/**
+ * One scenario catalog entry. `commandPreview` is pre-rendered by the
+ * backend from the real CLI template; the copy button copies it verbatim
+ * and never re-derives flags.
+ */
 export interface ScenarioItem {
   id: string;
   title: string;
@@ -312,10 +359,12 @@ export interface ScenarioItem {
   dryRunDefault: boolean;
 }
 
+/** Scenario catalog response. */
 export interface ScenarioCatalog {
   items: ScenarioItem[];
 }
 
+/** One discovered run (from stored instructions, not report files). */
 export interface ScenarioRunItem {
   runId: string;
   scenarioId: string | null;
@@ -325,16 +374,23 @@ export interface ScenarioRunItem {
   summary: string;
 }
 
+/** Run-history page (offset cursor in `nextCursor`). */
 export interface ScenarioRunPage {
   items: ScenarioRunItem[];
   nextCursor: string | null;
 }
 
+/** One outcome line with its pass/fail verdict. */
 export interface RunReportAssertion {
   text: string;
   passed: boolean;
 }
 
+/**
+ * Server-derived run evidence. Nullable counters (`httpAttempts`,
+ * `repeatResponses`) mean "not persisted server-side" — unavailable, never
+ * zero-masked.
+ */
 export interface ScenarioRunReport {
   runId: string;
   scenarioId: string | null;
@@ -362,6 +418,7 @@ export interface ScenarioRunReport {
   dryRunDefault: boolean;
 }
 
+/** Every business state the filter dropdowns offer, in lifecycle order. */
 export const KNOWN_STATES: readonly string[] = [
   'RECEIVED',
   'BUSINESS_ACCEPTED',
@@ -371,9 +428,10 @@ export const KNOWN_STATES: readonly string[] = [
   'RISK_HELD',
 ];
 
-// §9.5 Risk UI (mockups 04/05). Shapes mirror RiskController exactly: the held
-// list body carries items only (the cursor rides the X-Next-Cursor header like
-// the instruction list); amounts stay integer minor units end-to-end.
+/**
+ * Jev metered-usage ledger. All zeros unless live calls happened; amounts
+ * elsewhere in the risk views stay integer minor units end-to-end.
+ */
 export interface RiskUsage {
   calls: number;
   inputTokens: number;
@@ -383,6 +441,7 @@ export interface RiskUsage {
   exhausted: boolean;
 }
 
+/** Risk summary: gate mode, hold counters, and the usage ledger. */
 export interface RiskSummary {
   asOf: string;
   mode: string;
@@ -393,6 +452,7 @@ export interface RiskSummary {
   usage: RiskUsage;
 }
 
+/** One held-list row: the payment, its business outcome, and why the gate held it. */
 export interface RiskHeldItem {
   instructionId: string;
   clientReference: string;
@@ -403,12 +463,14 @@ export interface RiskHeldItem {
   reasonCodes: string[];
 }
 
+/** Held-list page; `mode` rides along so an empty OFF-mode list explains itself. */
 export interface RiskHeldPage {
   items: RiskHeldItem[];
   nextCursor: string | null;
   mode: string;
 }
 
+/** Held-list query filters; every field except `limit` is optional. */
 export interface RiskFilters {
   assessment?: string;
   reason?: string;
@@ -417,11 +479,17 @@ export interface RiskFilters {
   cursor?: string;
 }
 
+/** One rule that fired, with the feature evidence that tripped it. */
 export interface RiskMatchedRule {
   code: string;
   detail: string;
 }
 
+/**
+ * One provider answer (or abstention when `answer` is null). `confidence`
+ * is confidence in the answer to the exact question — see `confidenceNote`,
+ * always rendered with it; never a probability of fraud.
+ */
 export interface RiskSignal {
   questionId: string;
   question: string;
@@ -431,11 +499,13 @@ export interface RiskSignal {
   confidenceNote: string;
 }
 
+/** One timed stage of an assessment, for the detail timeline. */
 export interface RiskStage {
   stage: string;
   durationMs: number | null;
 }
 
+/** The exact versions that produced an assessment. */
 export interface RiskVersions {
   featureSchema: string;
   rules: string;
@@ -443,6 +513,7 @@ export interface RiskVersions {
   questions: string;
 }
 
+/** Full assessment detail: features seen, rules matched, signals, timing, versions. */
 export interface RiskAssessmentDetail {
   instructionId: string;
   clientReference: string;
@@ -463,8 +534,10 @@ export interface RiskAssessmentDetail {
   versions: RiskVersions;
 }
 
+/** Every policy verdict the risk filters offer. */
 export const KNOWN_RISK_RESULTS: readonly string[] = ['ALLOW', 'REVIEW', 'NOT_ASSESSED', 'REJECT'];
 
+/** Every predefined reason code the policy can emit (never model prose). */
 export const KNOWN_REASON_CODES: readonly string[] = [
   'NEW_RECIPIENT',
   'UNUSUAL_AMOUNT',

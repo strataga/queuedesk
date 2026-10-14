@@ -20,11 +20,13 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
 
 const MAX_LOADED_ROWS = 500;
 
-// Risk review (mockup 04): read-only held queue from GET /api/v1/risk/summary
-// and /risk/assessments. Filters map 1:1 onto real query params (assessment,
-// reason, q); paging uses the X-Next-Cursor header like the instruction list,
-// and paging deeper pauses auto-refresh for the same reason. Review ACTIONS
-// stay deferred: this page links to assessments and audit trails only.
+/**
+ * Risk review queue (read-only): held payments with verdict, reason, and
+ * full-text filters that map 1:1 onto real query parameters, paged by the
+ * same cursor contract as the payments list (paging deeper pauses
+ * auto-refresh). Review actions are deliberately deferred: this page links
+ * to assessments and audit trails only and changes nothing.
+ */
 @Component({
   selector: 'qd-risk-review',
   imports: [
@@ -151,11 +153,13 @@ export class RiskReviewPage implements OnInit {
       });
   }
 
+  /** REVIEW holds as a rounded percent of all risk holds. */
   protected reviewShare(sum: RiskSummary): number {
     if (sum.riskHeld <= 0) return 0;
     return Math.round((sum.reviewRequired / sum.riskHeld) * 100);
   }
 
+  /** Sanity check shown in the UI: held must equal review-required plus not-assessed. */
   protected equationHolds(sum: RiskSummary): boolean {
     return sum.riskHeld === sum.reviewRequired + sum.notAssessed;
   }

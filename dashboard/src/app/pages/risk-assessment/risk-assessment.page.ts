@@ -12,12 +12,13 @@ import { RefreshNoteComponent } from '../../shared/refresh-note.component';
 import { StateMessageComponent } from '../../shared/state-message.component';
 import { StatusBadgeComponent } from '../../shared/status-badge.component';
 
-// Risk assessment detail (mockup 05): one held instruction's frozen features,
-// matched deterministic rules, mock typed signals and evaluation timeline from
-// GET /api/v1/risk/assessments/{instructionId}. Confidence is always quoted
-// with the backend's own note — it is never the probability of fraud. A
-// rules-only assessment has no signals and no provider stage; a null traceId
-// means the trace was never sampled, never a link to nowhere.
+/**
+ * Risk assessment detail: one held instruction's frozen features, matched
+ * deterministic rules, typed provider signals, and evaluation timeline.
+ * Confidence is always quoted with the backend's own note — it is never
+ * the probability of fraud. A rules-only assessment has no signals and no
+ * provider stage; a null traceId means unsampled, never a dead link.
+ */
 @Component({
   selector: 'qd-risk-assessment',
   imports: [
@@ -52,6 +53,7 @@ export class RiskAssessmentPage {
     );
   }
 
+  /** Flattens the frozen feature snapshot to display rows (values stringified, never reinterpreted). */
   protected featureRows(features: Record<string, unknown>): Array<{ key: string; value: string }> {
     return Object.entries(features).map(([key, value]) => ({
       key,
@@ -59,6 +61,7 @@ export class RiskAssessmentPage {
     }));
   }
 
+  /** Formats provider confidence verbatim (two decimals), or "unknown". Never relabeled as risk. */
   protected confidencePct(confidence: number | null): string {
     if (confidence === null || Number.isNaN(confidence)) return 'unknown';
     return confidence.toFixed(2);

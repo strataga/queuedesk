@@ -1,3 +1,7 @@
+/**
+ * Scenario run detail: polls the routed run ID, marks failed assertions
+ * distinctly from passed ones, and labels catalog-less runs as ad-hoc.
+ */
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { BehaviorSubject, map, of } from 'rxjs';

@@ -1,7 +1,11 @@
 import { Component, Input } from '@angular/core';
 
-// One place for the four non-data panel states (UI-05): loading, empty, error and
-// unavailable stay visually and textually distinct.
+/**
+ * The four non-data panel states in one component: loading, empty, error
+ * ("showing last good reading"), and unavailable (nothing has succeeded
+ * yet). Keeping them visually and textually distinct is the point — a
+ * backend outage must never look like an empty result.
+ */
 @Component({
   selector: 'qd-state-message',
   template: `
@@ -44,6 +48,12 @@ import { Component, Input } from '@angular/core';
   `,
 })
 export class StateMessageComponent {
+  /**
+   * Which non-data state to render: `error` means "last good reading is
+   * shown but refresh is failing"; `unavailable` means nothing has
+   * succeeded yet. The distinction is user-visible on purpose.
+   */
   @Input() state: 'loading' | 'empty' | 'error' | 'unavailable' = 'loading';
+  /** Optional detail line; each state has an honest default. */
   @Input() message: string | null = null;
 }

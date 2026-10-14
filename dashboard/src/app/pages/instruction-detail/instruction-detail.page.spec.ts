@@ -1,3 +1,9 @@
+/**
+ * Instruction detail rendering: Timeline/Request/Audit tabs with audit rows
+ * and transport events, the reconciliation panel for unknown confirmations,
+ * risk-held links to the assessment, trace links only when sampled, and
+ * copy buttons for every identifier.
+ */
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { map, of } from 'rxjs';

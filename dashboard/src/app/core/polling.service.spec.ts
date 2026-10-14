@@ -1,3 +1,8 @@
+/**
+ * Polling behavior with fake timers: fetch immediately, then per tick;
+ * errors keep polling alive with the last good value attached; hidden tabs
+ * stop and resume; transport failures are described in plain language.
+ */
 import { of, throwError } from 'rxjs';
 import { PollingService } from './polling.service';
 

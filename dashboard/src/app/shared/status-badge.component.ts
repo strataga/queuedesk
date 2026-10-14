@@ -1,9 +1,14 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-// Status pill (UI-06): every state carries a text label plus a marker glyph, so
-// meaning never depends on color alone. Unknown tokens render verbatim with a "?"
-// marker rather than silently mapping to a known style.
+/**
+ * Status pill for business, delivery, health, freshness, and risk tokens.
+ * Every state carries a text label plus a marker glyph, so meaning never
+ * depends on color alone. Unknown tokens render verbatim with a "?"
+ * marker rather than silently mapping to a known style. Risk labels keep
+ * the backend's exact wording: assessment output explains a hold; it is
+ * never presented as a fraud determination.
+ */
 @Component({
   selector: 'qd-status-badge',
   imports: [CommonModule],
@@ -19,7 +24,9 @@ import { CommonModule } from '@angular/common';
   `,
 })
 export class StatusBadgeComponent {
+  /** Raw status token from the API (matched case-insensitively; unknown tokens render verbatim). */
   @Input({ required: true }) value: string | null | undefined = null;
+  /** Which token vocabulary to label from. */
   @Input() kind: 'business' | 'delivery' | 'health' | 'fresh' | 'risk' = 'business';
 
   private static readonly BUSINESS: Record<
@@ -151,14 +158,17 @@ export class StatusBadgeComponent {
     );
   }
 
+  /** Human-readable label (also the tooltip; meaning never rides on color alone). */
   get label(): string {
     return this.entry().label;
   }
 
+  /** Marker glyph shown beside the label (decorative; hidden from assistive tech). */
   get marker(): string {
     return this.entry().marker;
   }
 
+  /** Tailwind tone classes for this state. */
   get tone(): string {
     return this.entry().tone;
   }

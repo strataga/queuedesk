@@ -1,7 +1,10 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
-// Relative age for timestamps ("3m ago"). Invalid input renders as "unknown age"
-// instead of NaN text; callers keep the absolute UTC time in the title attribute.
+/**
+ * Relative age for timestamps ("3m ago"). Invalid input renders as
+ * "unknown age" instead of NaN text; callers keep the absolute UTC time in
+ * the title attribute for precision.
+ */
 @Pipe({ name: 'timeAgo' })
 export class TimeAgoPipe implements PipeTransform {
   transform(value: string | number | null | undefined, now: number = Date.now()): string {

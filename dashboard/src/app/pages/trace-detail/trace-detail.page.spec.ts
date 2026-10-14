@@ -1,3 +1,7 @@
+/**
+ * Trace detail: polls the routed trace ID and re-polls when it changes;
+ * renders real span names with the non-additive-durations caption.
+ */
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { BehaviorSubject, map, of } from 'rxjs';

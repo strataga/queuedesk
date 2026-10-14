@@ -1,3 +1,8 @@
+/**
+ * Run detail routing: navigating /runs/A to /runs/B follows the param
+ * observable (no stale snapshot polling), and pending or risk-held work
+ * raises the needs-attention panel.
+ */
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { BehaviorSubject, map, of } from 'rxjs';

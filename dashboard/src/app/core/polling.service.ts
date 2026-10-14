@@ -11,16 +11,24 @@ import {
   timer,
 } from 'rxjs';
 
+/**
+ * One poll emission. Errors are values, not stream deaths: a failed refresh
+ * still carries the last good reading (and when it succeeded) so views can
+ * say "showing last good reading" instead of going blank.
+ */
 export type PollResult<T> =
   | { status: 'ok'; value: T; at: number }
   | { status: 'error'; error: unknown; at: number; lastOk: T | null; lastOkAt: number | null };
 
+/** Default refresh cadence for every polled panel: 5 seconds. */
 export const POLL_INTERVAL_MS = 5000;
 
-// Visibility-aware polling (UI-05): fetch immediately, then every 5s while the page
-// is visible. Hidden tabs stop polling entirely and resume on return; an in-flight
-// request is never overlapped by the next tick. Errors are values, not stream
-// deaths: the last good reading stays available so views can say "stale".
+/**
+ * Visibility-aware polling: fetch immediately, then on the interval while
+ * the page is visible. Hidden tabs stop polling entirely and resume on
+ * return, and an in-flight request is never overlapped by the next tick
+ * (`exhaustMap`), so a slow backend cannot queue up duplicate work.
+ */
 @Injectable({ providedIn: 'root' })
 export class PollingService {
   private readonly visibility$: Observable<boolean>;
@@ -36,6 +44,11 @@ export class PollingService {
           );
   }
 
+  /**
+   * Polls `fetch` on the interval while the page is visible. The
+   * stream never errors and never completes; unsubscribing stops all work.
+   * Each call creates an independent poll (cold), so pages subscribe once.
+   */
   poll<T>(
     fetch: () => Observable<T>,
     intervalMs: number = POLL_INTERVAL_MS,
@@ -64,6 +77,11 @@ export class PollingService {
     );
   }
 
+  /**
+   * Turns an unknown failure into one user-facing sentence. Status 0 means
+   * unreachable (not "HTTP 0"), 404 gets its own wording, and the backend's
+   * stable error code is included when present. Never dumps raw objects.
+   */
   describeError(error: unknown): string {
     if (error !== null && typeof error === 'object') {
       const maybe = error as { status?: unknown; error?: unknown; message?: unknown };

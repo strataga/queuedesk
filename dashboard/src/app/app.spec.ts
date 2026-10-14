@@ -1,3 +1,8 @@
+/**
+ * App shell smoke tests: the root component creates, and the simulation
+ * banner plus read-only note are always visible (the lab must never look
+ * like a production console).
+ */
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { App } from './app';

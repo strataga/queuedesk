@@ -34,12 +34,14 @@ interface AccountingSample {
   completed: number;
 }
 
-// Overview (UI-01, mockup 01): lab-wide KPI cards, the throughput graph, recent
-// payments, the risk panel and the instruction path, then the run-scope
-// accounting and safeguards below. Every figure names its scope (the window,
-// the run id or "lab-wide") and its last refresh; unknown runs report zeros,
-// never errors. Each stream below has exactly one template subscription — the
-// polls are cold, so a second `| async` would double the request rate.
+/**
+ * Overview home page: lab-wide KPI cards, the throughput graph, recent
+ * payments, the risk panel, and run-scoped accounting with safeguards.
+ * Every figure names its scope (time window, run ID, or "lab-wide") and
+ * its last refresh; unknown runs report zeros, never errors. Each stream
+ * has exactly one template subscription — the polls are cold, so a second
+ * async pipe would double the request rate.
+ */
 @Component({
   selector: 'qd-overview',
   imports: [
@@ -170,6 +172,11 @@ export class OverviewPage {
   protected describe = (error: unknown): string => this.polling.describeError(error);
   protected readonly toView = toView;
 
+  /**
+   * Scopes the run-accounting panels to one run and remembers it (best
+   * effort) for the recent-runs list. Previous samples are dropped so two
+   * runs never splice into one trend line.
+   */
   protected openRun(runId: string): void {
     const id = runId.trim();
     if (id === '') return;
@@ -194,6 +201,7 @@ export class OverviewPage {
     return lab.byState[state] ?? 0;
   }
 
+  /** Applies a new census window; windowed polls restart with a fresh window edge. */
   protected setWindow(minutes: string): void {
     const parsed = Number(minutes);
     if (!Number.isInteger(parsed) || parsed < 0) return;

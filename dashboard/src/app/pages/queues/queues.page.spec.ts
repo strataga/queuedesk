@@ -1,3 +1,7 @@
+/**
+ * Queues page honesty: a stale quarantine count renders unavailable (never
+ * zero), and the backlog trend is labeled as samples since page open.
+ */
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { map, of } from 'rxjs';

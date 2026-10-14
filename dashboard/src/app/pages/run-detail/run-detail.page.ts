@@ -10,11 +10,13 @@ import { RefreshNoteComponent } from '../../shared/refresh-note.component';
 import { StateMessageComponent } from '../../shared/state-message.component';
 import { StatusBadgeComponent } from '../../shared/status-badge.component';
 
-// Run detail (UI-04): expected/admitted/completed/rejected/duplicate/unresolved
-// accounting from API evidence. Two rows are honestly unknown: the generator does
-// not persist an "expected unique" manifest, and repeat admissions reuse the
-// existing row without leaving a per-run repeat count — so both render as unknown
-// with the reason, never as zero or a guess.
+/**
+ * Run detail: admitted/completed/rejected/unresolved accounting from API
+ * evidence. Two figures are honestly unknown: the generator persists no
+ * "expected unique" manifest, and repeat admissions reuse the existing row
+ * without a per-run repeat count — both render as unknown with the reason,
+ * never as zero or a guess.
+ */
 @Component({
   selector: 'qd-run-detail',
   imports: [
@@ -45,10 +47,12 @@ export class RunDetailPage {
   protected describe = (error: unknown): string => this.polling.describeError(error);
   protected readonly toView = toView;
 
+  /** Count for one business state in this run (0 when absent). */
   protected stateCount(run: RunSummary, state: string): number {
     return run.byState[state] ?? 0;
   }
 
+  /** Payments not yet in a terminal state (received, accepted, pending, or risk-held). */
   protected unresolved(run: RunSummary): number {
     return (
       this.stateCount(run, 'RECEIVED') +
@@ -58,6 +62,7 @@ export class RunDetailPage {
     );
   }
 
+  /** Whether anything awaits confirmation or risk review in this run. */
   protected needsAttention(run: RunSummary): boolean {
     return this.stateCount(run, 'PENDING_CONFIRMATION') + this.stateCount(run, 'RISK_HELD') > 0;
   }

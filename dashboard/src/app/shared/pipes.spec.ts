@@ -1,3 +1,8 @@
+/**
+ * Formatting pipes: minor-unit currency uses integer math and never
+ * invents a symbol or value; relative time renders ages and guards bad
+ * input as "unknown age".
+ */
 import { MinorCurrencyPipe } from './minor-currency.pipe';
 import { TimeAgoPipe } from './time-ago.pipe';
 

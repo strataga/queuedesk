@@ -20,15 +20,16 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
 
 const MAX_LOADED_ROWS = 500;
 
-// Payments list (UI-02, mockup 02): run/status/time filters with bounded
-// cursor paging, a scope-aware census row (run accounting when a run id is set,
-// the lab-wide overview census otherwise), client-side search and risk
-// narrowing, and a reconciliation panel. The first page auto-refreshes every
-// 5s; paging deeper pauses auto-refresh (the list says so) because a moving
-// cursor plus a re-polled head would silently drop or duplicate rows. Loaded
-// rows are capped at 500 with an explicit note. The list API has no server
-// search or risk filter, so search and risk narrowing apply to loaded rows
-// only — and say so.
+/**
+ * Payments list: run/status/time filters with bounded cursor paging, a
+ * scope-aware census row (run accounting when a run ID is set, the
+ * lab-wide census otherwise), client-side search and risk narrowing, and
+ * a reconciliation watch panel. The first page auto-refreshes every 5s;
+ * paging deeper pauses auto-refresh (and says so), because a moving cursor
+ * plus a re-polled head would silently drop or duplicate rows. Loaded rows
+ * are capped at 500 with an explicit note. The list API has no server-side
+ * search or risk filter, so those narrow loaded rows only — labeled as such.
+ */
 @Component({
   selector: 'qd-instruction-list',
   imports: [
@@ -127,6 +128,11 @@ export class InstructionListPage implements OnInit {
 
   protected describe = (error: unknown): string => this.polling.describeError(error);
 
+  /**
+   * (Re)starts the scoped first-page poll plus census, pending-watch, and
+   * gate-mode polls. Bumping the scope token retires any in-flight
+   * load-more response from the previous scope.
+   */
   protected applyFilters(): void {
     this.pollSub?.unsubscribe();
     this.loadMoreSub?.unsubscribe();
@@ -310,6 +316,11 @@ export class InstructionListPage implements OnInit {
     );
   }
 
+  /**
+   * Fetches the next cursor page and pauses live polling: a moving cursor
+   * over a re-polled head would drop or duplicate rows. Stops at the
+   * 500-row cap with the cap made visible.
+   */
   protected loadMore(): void {
     if (this.nextCursor === null || this.loadingMore || this.items === null) return;
     this.loadingMore = true;
@@ -342,6 +353,7 @@ export class InstructionListPage implements OnInit {
       });
   }
 
+  /** Human label of the active filter scope ("all runs" when unfiltered). */
   protected scopeLabel(): string {
     const parts: string[] = [];
     if (this.runId.trim() !== '') parts.push(`run ${this.runId.trim()}`);

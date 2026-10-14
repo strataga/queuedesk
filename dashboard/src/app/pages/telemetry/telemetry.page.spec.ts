@@ -1,3 +1,9 @@
+/**
+ * Telemetry page: latency cards with honest window notes (dashes, never
+ * the -1 sentinel), trace rows linking to detail, tab-gated traces/logs,
+ * level-filtered log rows, and honest fallbacks when provider readings or
+ * exports are absent.
+ */
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { map, of } from 'rxjs';

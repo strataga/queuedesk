@@ -14,12 +14,15 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
 
 export type DetailTab = 'timeline' | 'request' | 'audit';
 
-// Instruction detail (UI-03, mockup 03): stat cards, Timeline/Request/Audit tabs,
-// transport events, a reconciliation panel for unknown confirmations, and
-// copyable identifiers. The audit trail and transport attempts ride their own
-// polls: a backend without those sub-resources degrades those panels alone,
-// never the admission + current-state core. A lagging delivery marker can never
-// overwrite the completed business outcome: the two render in separate sections.
+/**
+ * Instruction detail: stat cards, Timeline/Request/Audit tabs, transport
+ * attempt events, a reconciliation panel for unknown confirmations, and
+ * copyable identifiers. Audit and attempts ride their own polls, so a
+ * backend without those sub-resources degrades those panels alone, never
+ * the admission-and-current-state core. Business outcome and delivery
+ * marker render in separate sections: a lagging delivery marker can never
+ * overwrite a completed business result.
+ */
 @Component({
   selector: 'qd-instruction-detail',
   imports: [
@@ -59,20 +62,24 @@ export class InstructionDetailPage {
   protected describe = (error: unknown): string => this.polling.describeError(error);
   protected readonly toView = toView;
 
+  /** Switches the visible detail tab (timeline, request, or audit). */
   protected selectTab(tab: DetailTab): void {
     this.tab = tab;
   }
 
+  /** True when the failure is a genuine 404 (render "no such payment", not an outage banner). */
   protected isUnknownId(error: unknown): boolean {
     return (
       error !== null && typeof error === 'object' && (error as { status?: unknown }).status === 404
     );
   }
 
+  /** Whether the instruction has transitioned at least once since admission. */
   protected changedSinceAdmission(item: InstructionView): boolean {
     return item.updatedAt !== item.receivedAt;
   }
 
+  /** Copies an identifier and marks which control succeeded; failure gives no false feedback. */
   protected copyText(value: string, which: string): void {
     try {
       const clipboard = navigator.clipboard;

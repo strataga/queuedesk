@@ -1,3 +1,9 @@
+/**
+ * Route table. Every page is lazy-loaded, so first paint ships only the
+ * shell. Unknown paths fall back to the overview; pre-rename
+ * `/instructions` URLs redirect to their `/payments`
+ * equivalents with query parameters preserved.
+ */
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [

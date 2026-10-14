@@ -1,3 +1,9 @@
+/**
+ * ApiService contract tests against HttpTestingController: filters become
+ * the right query params (unset ones omitted), the next-page cursor is read
+ * from the X-Next-Cursor header, and every endpoint group (instructions,
+ * runs, queues, telemetry, scenarios, risk) hits its documented path.
+ */
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';

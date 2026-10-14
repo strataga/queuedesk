@@ -27,11 +27,14 @@ interface LatencySample {
   provider: number | null;
 }
 
-// Telemetry (mockup 07): Metrics/Traces/Logs tabs from summary + traces + the
-// live log ring. Percentile charts have no server history source, so they
-// accumulate one sample per successful refresh and say "since page open".
-// Traces carry bounded IDs + timings only, no raw payloads; the log ring is
-// newest-last, threshold-filtered client-side, and never holds stack traces.
+/**
+ * Telemetry page with Metrics, Traces, and Logs tabs. Percentile charts
+ * have no server history source, so they accumulate one sample per
+ * successful refresh and say "since page open" (the per-minute series API
+ * exists separately). Traces carry bounded IDs and timings only, no raw
+ * payloads; the log ring is newest-last, threshold-filtered client-side,
+ * and never contains stack traces.
+ */
 @Component({
   selector: 'qd-telemetry',
   imports: [
@@ -126,6 +129,7 @@ export class TelemetryPage {
     return ['DEBUG', 'INFO', 'WARN', 'ERROR'].indexOf(level);
   }
 
+  /** Applies the minimum-level threshold client-side (the API returns the raw ring tail). */
   protected visibleLogs(items: LogEntry[]): LogEntry[] {
     const threshold = TelemetryPage.levelRank(this.logLevel);
     return items.filter((e) => TelemetryPage.levelRank(e.level) >= threshold);

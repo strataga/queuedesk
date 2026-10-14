@@ -2,10 +2,13 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ThroughputPoint } from '../core/models';
 
-// Overview throughput graph (mockup 01): durable server buckets rendered as an
-// area chart with axis labels. Unlike qd-trend-chart (client-side samples since
-// page open), these points are backend history — zero-filled across the window,
-// so gaps are real zeros. Times are bucket starts, UTC; the page caption says so.
+/**
+ * Overview throughput graph: durable server-side completion buckets
+ * rendered as an SVG area chart with axis labels. Unlike the trend chart
+ * (client-side samples since page open), these points are backend history,
+ * zero-filled across the window, so gaps are real zeros. Bucket times are
+ * UTC; the page caption names the bucket width.
+ */
 @Component({
   selector: 'qd-throughput-chart',
   imports: [CommonModule],
@@ -60,6 +63,7 @@ import { ThroughputPoint } from '../core/models';
   `,
 })
 export class ThroughputChartComponent {
+  /** Zero-filled completion buckets from the API. Fewer than two renders guidance text. */
   @Input() points: ThroughputPoint[] = [];
 
   private readonly plotLeft = 44;
