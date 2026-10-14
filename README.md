@@ -60,7 +60,7 @@ A payment passes through seven stages. Each stage either saves its result or lea
 6. **Cashier.** A mock receiver completes the payment, rejects it, or gives an uncertain answer. If its reply is lost, QueueDesk reconciles from the receiver result it stored. If the receiver is truly unknown, the payment stays visibly pending with an open task instead of pretending to be done.
 7. **Receipt filed.** The final state and a full audit trail land in Postgres, and the dashboard shows every step.
 
-Prefer pictures? Start with the [one-page infographic](docs/QueueDesk_Infographic.html) ([PNG version](docs/images/QueueDesk_How_It_Works.png)) or the [slide deck](docs/QueueDesk_Slidedeck.html) ([PDF](docs/QueueDesk_Slidedeck.pdf)).
+Prefer pictures? Start with the [one-page infographic](docs/QueueDesk_Infographic.html) ([PNG version](docs/images/QueueDesk_How_It_Works.png)).
 
 ## Everyday commands
 
@@ -159,8 +159,8 @@ reports/  generated scenario and evaluation reports (gitignored)
 
 ## Read next
 
-- [Full PRD](docs/QueueDesk_PRD.md) ([PDF](docs/QueueDesk_PRD.pdf)) is the authoritative spec. If an implementation note disagrees with it, the PRD wins.
-- [How-it-works infographic](docs/QueueDesk_Infographic.html) and [slide deck](docs/QueueDesk_Slidedeck.html) explain the same flow in plain language.
+- [Full PRD](docs/QueueDesk_PRD.md) is the authoritative spec. If an implementation note disagrees with it, the PRD wins.
+- [How-it-works infographic](docs/QueueDesk_Infographic.html) explains the same flow in plain language.
 - Runbooks: [L1 admission](docs/RUNBOOK-L1.md), [L2 outbox and MQ](docs/RUNBOOK-L2.md), [L3 retry and quarantine](docs/RUNBOOK-L3.md), [recovery](docs/RUNBOOK-RECOVERY.md), [risk and live Jev](docs/RUNBOOK-RISK.md), [dashboard](docs/RUNBOOK-UI.md), and [kind](docs/RUNBOOK-K8S.md).
 - [Milestones](docs/MILESTONES.md), the [verification log](docs/VERIFICATION.md), and the [dashboard mockups](docs/images/ui/) (ten PNGs that the implementation matches).
 - Diagrams: [learning path](docs/images/QueueDesk_Learning_Path.png), [Spring layers](docs/images/QueueDesk_Spring_Layers.png), [architecture](docs/images/QueueDesk_Architecture.png), [mock participants](docs/images/QueueDesk_Mock_Participants.png), [data model](docs/images/QueueDesk_Data_Model.png), [status model](docs/images/QueueDesk_Status_Model.png), [outbox recovery](docs/images/QueueDesk_Outbox_Recovery.png), and [risk gate](docs/images/QueueDesk_Risk_Gate.png).
