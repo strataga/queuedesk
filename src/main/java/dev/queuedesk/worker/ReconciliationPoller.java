@@ -15,11 +15,18 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import java.time.Instant;
 
-// Bounded reconciliation poller (REC-02, REC-03): claims due tasks in small
-// batches and settles each in its own transaction. Definitive receiver
-// evidence resolves the ORIGINAL instruction; unknown stays pending with
-// visible attempts/due time; reissue happens only after a lookup found no
-// definitive result (D-05). Never creates a replacement instruction.
+/**
+ * Bounded reconciliation poller: settles payments whose receiver answer was
+ * lost or uncertain, from stored receiver evidence.
+ *
+ * <p>Each pass claims a small batch of due tasks and settles each in its
+ * own transaction. The order is strict: look up stored receiver truth
+ * first; only when no definitive result exists may the gateway reissue.
+ * Definitive evidence resolves the <em>original</em> instruction. This
+ * poller never creates a replacement instruction, and a receiver that
+ * still does not know leaves the payment visibly pending with its attempt
+ * count and next due time on record.
+ */
 @Component
 public class ReconciliationPoller {
     private static final Logger log = LoggerFactory.getLogger(ReconciliationPoller.class);
@@ -47,8 +54,17 @@ public class ReconciliationPoller {
         this.tx = new TransactionTemplate(txManager);
         this.enabled = enabled;
     }
+    /** Scheduled entry point: one bounded pass while enabled. */
     @Scheduled(fixedDelayString = "${queuedesk.reconcile.poll-delay-ms:10000}")
     public void poll() { if (enabled) reconcilePass(); }
+
+    /**
+     * Claims up to 10 due tasks and tries to settle each one. A task that
+     * fails or stays unknown is rescheduled with backoff; one bad task never
+     * blocks the rest of the batch.
+     *
+     * @return how many tasks resolved to a terminal state in this pass
+     */
     public int reconcilePass() {
         var due = tx.execute(s -> tasks.claimDue(10));
         int resolved = 0;

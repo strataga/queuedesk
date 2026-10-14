@@ -12,13 +12,23 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.Instant;
 import java.util.UUID;
 
-// Audited review fixture (RISK-04): the resume path the deferred operator UI
-// will call. RESUME returns RISK_HELD to RECEIVED and emits a NEW deduplicated
-// continuation event for the ORIGINAL instructionId through the outbox — the
-// gate sees the RESUME review and lets the continuation fall through to normal
-// processing instead of re-holding. REJECT ends the instruction. No review,
-// timeout, or score ever creates a replacement instruction. No HTTP surface in
-// this build: POST /api/v1/risk/reviews stays 404 until B01 lands.
+/**
+ * Audited human review of risk holds: the only way a held payment moves
+ * again.
+ *
+ * <p>{@code RESUME} returns the payment from {@code RISK_HELD} to
+ * {@code RECEIVED} and emits a new, deduplicated continuation event for the
+ * <em>original</em> instruction through the outbox. The gate sees the
+ * recorded RESUME review and lets that continuation fall through to normal
+ * processing instead of re-holding it. {@code REJECT} ends the instruction.
+ * Both decisions require a named actor and a written reason, recorded
+ * before the state moves, in one transaction.
+ *
+ * <p>No review, timeout, or score ever creates a replacement instruction.
+ * This build deliberately has no HTTP surface for reviews yet
+ * ({@code POST /api/v1/risk/reviews} answers 404); the service exists so
+ * the audited path is real, tested code the future operator UI will call.
+ */
 @Service
 public class RiskReviewService {
     // Distinct outbox label for continuations; the payload stays the standard
@@ -40,8 +50,16 @@ public class RiskReviewService {
         this.tx = new TransactionTemplate(txManager);
     }
 
+    /** Review outcome: the audit record's ID, the decision, and the continuation event when resumed. */
     public record ReviewResult(UUID reviewId, UUID instructionId, String decision, String continuationEventId) {}
 
+    /**
+     * Resumes a held instruction: records the audited RESUME, returns it to
+     * {@code RECEIVED}, and enqueues its continuation event, atomically.
+     *
+     * @throws IllegalArgumentException when the instruction is unknown or actor/reason are invalid
+     * @throws IllegalStateException when the instruction is not currently {@code RISK_HELD}
+     */
     public ReviewResult resume(UUID instructionId, String actor, String reason) {
         return tx.execute(s -> {
             StoredInstruction instruction = instructions.byId(instructionId)
@@ -64,6 +82,13 @@ public class RiskReviewService {
         });
     }
 
+    /**
+     * Rejects a held instruction for good: records the audited REJECT and
+     * moves it to the terminal {@code REJECTED} state, atomically.
+     *
+     * @throws IllegalArgumentException when the instruction is unknown or actor/reason are invalid
+     * @throws IllegalStateException when the instruction is not currently {@code RISK_HELD}
+     */
     public ReviewResult reject(UUID instructionId, String actor, String reason) {
         return tx.execute(s -> {
             StoredInstruction instruction = instructions.byId(instructionId)

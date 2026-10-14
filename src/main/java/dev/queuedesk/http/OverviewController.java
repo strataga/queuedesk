@@ -8,13 +8,20 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.Map;
 
-// Lab-wide overview census (mockup 01): instruction counts over all runs,
-// optionally windowed by admission time (inclusive both ends, like the list).
-// Outbox and reconcile figures are CURRENT gauges, never windowed: pending
-// work exists now or it does not. Unknown/empty labs report zeros, never 404.
+/**
+ * Lab-wide overview reads for the dashboard's home page: a census, a
+ * throughput history, and the most recent payments.
+ *
+ * <p>Instruction counts can be windowed by admission time (inclusive at
+ * both ends, like the instruction list). Outbox and reconciliation figures
+ * are current gauges and are never windowed: pending work exists now or it
+ * does not. An empty lab reports zeros, never a 404. These endpoints are
+ * read-only.
+ */
 @RestController
 @RequestMapping("/api/v1/overview")
 public class OverviewController {
+    /** Census response: totals by business state plus current backlog gauges. */
     public record LabSummary(long admitted, Map<String, Long> byState,
             long outboxPending, long outboxPublished, long reconcileOpen,
             Instant since, Instant until) {}
@@ -40,14 +47,20 @@ public class OverviewController {
                 byState, counts[0], counts[1], tasks.countOpen(), since, until);
     }
 
-    // Throughput history for the overview graph (mockup 01): durable
-    // per-bucket completion counts, zero-filled across the window so the chart
-    // is contiguous. until defaults to now; since defaults to the first
-    // non-empty bucket (an unbounded window cannot zero-fill from -infinity,
-    // and leading zeros before the first completion carry no signal).
+    /** One chart point: completions in the bucket starting at {@code at}. */
     public record ThroughputPoint(Instant at, long count) {}
+    /** Throughput response: a contiguous, zero-filled series for direct charting. */
     public record Throughput(String metric, long bucketSeconds, java.util.List<ThroughputPoint> points,
             Instant since, Instant until) {}
+
+    /**
+     * Throughput history for the overview graph: durable per-bucket
+     * completion counts, zero-filled across the window so the chart is
+     * contiguous. {@code until} defaults to now; {@code since} defaults to
+     * the first non-empty bucket, because an unbounded window cannot
+     * zero-fill from minus infinity and leading zeros before the first
+     * completion carry no signal. Windows over 2,000 buckets are refused.
+     */
     @GetMapping("/throughput")
     public Throughput throughput(@RequestParam(required = false) Instant since,
             @RequestParam(required = false) Instant until,
@@ -75,11 +88,16 @@ public class OverviewController {
         return Instant.ofEpochSecond(at.getEpochSecond() / bucketSeconds * bucketSeconds);
     }
 
-    // Lab-wide recent payments for the overview table (mockup 01): newest
-    // first, same View shape (and batched risk/delivery joins) as the list,
-    // first page only. traceId stays null like the list (no N+1); the detail
-    // view resolves it for the Trace link.
+    /** Recent-payments response for the overview table. */
     public record RecentList(java.util.List<InstructionController.View> items) {}
+
+    /**
+     * The newest payments across the whole lab, newest first, in the same
+     * view shape (with the same batched risk and delivery joins) as the
+     * instruction list. First page only. {@code traceId} stays {@code null}
+     * here, as in the list, to avoid an N+1 lookup; the detail view resolves
+     * it for the Trace link.
+     */
     @GetMapping("/recent")
     public RecentList recent(@RequestParam(defaultValue = "5") int limit) {
         var items = admission.recent(limit).stream().map(InstructionController.View::of).toList();

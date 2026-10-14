@@ -9,20 +9,31 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// Bounded in-memory latency history (DASH-02): per-minute buckets per metric,
-// at most 60 buckets x 3 metrics. Micrometer retains no history server-side,
-// so without this ring the UI could show only the current window — and the
-// ring never backfills what it did not observe. Samples per minute are capped;
-// drops stay visible in the dropped counter.
+/**
+ * Bounded in-memory latency history: per-minute sample buckets per metric,
+ * at most 60 buckets each.
+ *
+ * <p>Micrometer retains no history server-side, so without this ring the
+ * dashboard could show only the current instant. The ring never backfills
+ * what it did not observe: an empty window reports {@code p95 = -1} with
+ * {@code n = 0}. Samples per minute are capped, and overflow stays visible
+ * in the dropped counter instead of silently skewing percentiles.
+ * Process-local by design; a restart starts the history over.
+ */
 @Component
 public class LatencyBuckets {
+    /** Metric name: admission latency (request to HTTP 202). */
     public static final String ADMISSION = "admission";
+    /** Metric name: end-to-end completion latency (admission to durable outcome). */
     public static final String COMPLETION = "completion";
+    /** Metric name: risk-provider call latency. */
     public static final String RISK_PROVIDER = "riskProvider";
     private static final int MAX_BUCKETS = 60;
     private static final int MAX_SAMPLES_PER_MINUTE = 5000;
 
+    /** Window summary: p95, observed count, and dropped-sample count. {@code p95Ms} is -1 when empty. */
     public record Summary(double p95Ms, long n, long dropped) {}
+    /** One per-minute chart point. */
     public record Point(Instant at, double p95Ms, long n) {}
 
     private record Bucket(long minuteEpoch, List<Long> samplesMs, long dropped) {}
@@ -30,6 +41,7 @@ public class LatencyBuckets {
     private final Map<String, Deque<Bucket>> rings = new HashMap<>();
     private long droppedTotal = 0;
 
+    /** Records one latency sample into the current minute's bucket for a metric. */
     public synchronized void record(String metric, long latencyMs) {
         long minute = Instant.now().getEpochSecond() / 60;
         Deque<Bucket> ring = rings.computeIfAbsent(metric, m -> new ArrayDeque<>());
@@ -48,6 +60,7 @@ public class LatencyBuckets {
         }
     }
 
+    /** Summarizes the last {@code windowMinutes} of a metric (p95 over the raw samples, not bucket p95s). */
     public synchronized Summary summary(String metric, int windowMinutes) {
         long cutoff = Instant.now().getEpochSecond() / 60 - Math.max(1, windowMinutes) + 1;
         var all = new ArrayList<Long>();
@@ -60,6 +73,7 @@ public class LatencyBuckets {
         return new Summary(percentile(all, 0.95), all.size(), dropped);
     }
 
+    /** Returns per-minute p95 points for charting, oldest first, within the retained window. */
     public synchronized List<Point> series(String metric, int windowMinutes) {
         long nowMinute = Instant.now().getEpochSecond() / 60;
         long cutoff = nowMinute - Math.min(windowMinutes, MAX_BUCKETS) + 1;
@@ -74,6 +88,7 @@ public class LatencyBuckets {
         return points;
     }
 
+    /** Test seam: clear all rings and counters between tests sharing one context. */
     public synchronized void resetForTest() {
         rings.clear();
         droppedTotal = 0;

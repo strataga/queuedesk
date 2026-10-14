@@ -6,13 +6,18 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.List;
 
-// Builds frozen feature snapshots from durable state (RISK-01). Source queries
-// hit `instruction` (sender/amount/created_at) only; the dedup truth in
-// `processed_message` needs no join because retries/redeliveries never create
-// instruction rows. History scopes to the instruction's run_id: each run is an
-// independent synthetic actor history, so held-out suites (RS01-RS06) cannot
-// leak velocity across their disjoint seed sets. The as-of instant freezes at
-// extraction time.
+/**
+ * Builds frozen feature snapshots from durable state.
+ *
+ * <p>Source queries read the {@code instruction} table only; no dedup join
+ * is needed because retries and redeliveries never create instruction
+ * rows. History is scoped to the instruction's {@code run_id}: each run is
+ * an independent synthetic actor history, so evaluation suites cannot leak
+ * velocity across their disjoint seed sets. The history cutoff is the
+ * instruction's own admission instant, never the evaluation instant, so
+ * features cannot peek at payments admitted later (no future leak) and
+ * identical fixtures always compute identical features.
+ */
 @Component
 public class FeatureExtractor {
     private final JdbcClient jdbc;
@@ -23,6 +28,10 @@ public class FeatureExtractor {
         this.properties = properties;
     }
 
+    /**
+     * Extracts the snapshot for one instruction as of {@code asOf} (the
+     * evaluation instant, frozen into the snapshot for audit).
+     */
     public FeatureSnapshot extract(StoredInstruction instruction, Instant asOf) {
         String sender = instruction.payload().senderParticipant();
         String receiver = instruction.payload().receiverParticipant();

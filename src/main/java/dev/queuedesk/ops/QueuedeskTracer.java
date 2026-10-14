@@ -11,13 +11,19 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.Map;
 
-// Manual spans on the one OTel SDK (TEL-01): admission (SERVER, in the
-// filter), publish (PRODUCER, child of the stored outbox context), each
-// worker attempt (CONSUMER, child of the JMS-extracted context), receiver
-// calls (CLIENT), and reconciliation settles (child of the stored task
-// context). Documented single-message parent/child model across the durable
-// boundaries; redeliveries are siblings tagged with deliveryAttempt. Every
-// activation also sets MDC traceId/spanId for the JSON logs.
+/**
+ * Manual OpenTelemetry spans for the payment lifecycle, on the one SDK
+ * built in {@link OtelConfig}.
+ *
+ * <p>One trace follows one instruction across every durable boundary:
+ * admission (SERVER, in the servlet filter), publish (PRODUCER, child of
+ * the context stored on the outbox row), each worker attempt (CONSUMER,
+ * child of the context carried in JMS properties), receiver calls
+ * (CLIENT), and reconciliation settles (child of the context stored on the
+ * task). Redeliveries are sibling spans tagged with their delivery attempt,
+ * never a reopened span. Activating a span also sets the log MDC trace and
+ * span IDs, so JSON logs and traces join cleanly.
+ */
 @Component
 public class QueuedeskTracer {
     private static final TextMapGetter<Map<String, String>> GETTER = new TextMapGetter<>() {
@@ -36,9 +42,15 @@ public class QueuedeskTracer {
         this.openTelemetry = openTelemetry;
         this.tracer = openTelemetry.getTracer("queuedesk", "0.1.0");
     }
+    /** Starts a root SERVER span (the admission trace root). Close the returned scope to end it. */
     public SpanScope server(String name) {
         return start(name, SpanKind.SERVER, Context.root(), Map.of());
     }
+    /**
+     * Starts a span as a child of a stored or transported W3C context. A
+     * {@code null} traceparent starts an honest new trace instead of
+     * inventing a parent.
+     */
     public SpanScope child(String name, SpanKind kind, String traceparent, String tracestate,
             Map<String, String> attrs) {
         if (traceparent == null) return start(name, kind, Context.root(), attrs);
@@ -52,9 +64,11 @@ public class QueuedeskTracer {
                 .extract(Context.root(), carrier, GETTER);
         return start(name, kind, extracted, attrs);
     }
+    /** Starts an INTERNAL span under the current context (in-process work such as risk evaluation). */
     public SpanScope internal(String name, Map<String, String> attrs) {
         return start(name, SpanKind.INTERNAL, Context.current(), attrs);
     }
+    /** Starts a CLIENT span under the current context (outbound calls such as the receiver gateway). */
     public SpanScope client(String name, Map<String, String> attrs) {
         return start(name, SpanKind.CLIENT, Context.current(), attrs);
     }
@@ -84,16 +98,22 @@ public class QueuedeskTracer {
             }
         };
     }
-    // W3C traceparent of the current span, or null outside tracing — stored
-    // with the outbox row at admission so context survives dispatch + restart.
+    /**
+     * Returns the W3C traceparent of the current span, or {@code null}
+     * outside tracing. Stored with the outbox row at admission so context
+     * survives dispatch and restarts.
+     */
     public static String currentTraceparent() {
         var context = Span.current().getSpanContext();
         if (!context.isValid()) return null;
         return "00-" + context.getTraceId() + "-" + context.getSpanId()
                 + "-" + (context.isSampled() ? "01" : "00");
     }
+    /** An active span plus its context and log scopes; closing ends all three together. */
     public interface SpanScope extends AutoCloseable {
+        /** The underlying span, for attributes beyond the string map. */
         Span span();
+        /** Adds a named event (a point-in-time marker) to the span. */
         void event(String name);
         @Override void close();
     }

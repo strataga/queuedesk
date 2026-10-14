@@ -12,9 +12,20 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 
-// Postgres adapter: explicit SQL, no ORM magic. save() writes the instruction row
-// plus its audit row; the caller (service) owns the transaction boundary, so the
-// two inserts commit or roll back together.
+/**
+ * Postgres implementation of {@link InstructionRepository} with explicit SQL
+ * and no ORM.
+ *
+ * <p>{@link #save} writes the instruction row plus its opening audit row;
+ * the caller (the service) owns the transaction boundary, so the two
+ * inserts commit or roll back together. The same pattern applies to
+ * {@link #transition}: the state update is conditional on the expected
+ * current state, and the audit row only follows a successful move.
+ *
+ * <p>Dynamic {@code WHERE} clauses are assembled only from fixed fragments
+ * written in this class; every caller-supplied value travels as a bound
+ * parameter.
+ */
 @Repository
 public class JdbcInstructionRepository implements InstructionRepository {
     private static final String COLUMNS = """

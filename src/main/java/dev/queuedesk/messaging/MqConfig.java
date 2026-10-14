@@ -13,12 +13,20 @@ import org.springframework.jms.connection.CachingConnectionFactory;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-// Every messaging bean is declared here explicitly: no IBM Spring starter, so
-// there is no auto-configuration magic to explain away in LEARN-02.
+/**
+ * IBM MQ wiring, declared explicitly bean by bean.
+ *
+ * <p>There is no IBM Spring starter on the classpath, so there is no
+ * auto-configuration magic to explain away: connection factory, caching
+ * wrapper, send template, and listener factory are all visible here. Sends
+ * are transacted and persistent. The worker listener runs with concurrency
+ * 1 on its own transacted JMS session (see {@code workerListenerFactory}).
+ */
 @Configuration
 @EnableScheduling
 @EnableJms
 public class MqConfig {
+    /** Raw MQ client connection factory, pointed at the lab queue manager from configuration. */
     @Bean
     public MQConnectionFactory mqConnectionFactory(
             @Value("${queuedesk.mq.host}") String host,
@@ -37,6 +45,7 @@ public class MqConfig {
         factory.setStringProperty(WMQConstants.PASSWORD, password);
         return factory;
     }
+    /** Caching wrapper for sends: reuses sessions and reconnects after broker outages. */
     @Bean
     public ConnectionFactory connectionFactory(MQConnectionFactory mq) {
         var caching = new CachingConnectionFactory(mq);
@@ -44,6 +53,7 @@ public class MqConfig {
         caching.setReconnectOnException(true);
         return caching;
     }
+    /** Send template: transacted sessions and persistent delivery, so a confirmed send survives a broker restart. */
     @Bean
     public JmsTemplate mqJmsTemplate(ConnectionFactory connectionFactory) {
         var template = new JmsTemplate(connectionFactory);
@@ -52,10 +62,14 @@ public class MqConfig {
         template.setDeliveryMode(DeliveryMode.PERSISTENT);
         return template;
     }
-    // One worker consumer: concurrency 1, LOCAL transacted JMS session. The DB
-    // transaction lives inside ProcessingService (separate boundary); the JMS
-    // session commits only after the listener returns. Uses the raw MQ factory:
-    // listener containers manage their own consumer caching.
+    /**
+     * The worker's single consumer: concurrency 1 on a local transacted JMS
+     * session. The database transaction lives inside the processing service
+     * (a separate boundary); the JMS session commits only after the listener
+     * returns normally, so a crash mid-processing redelivers instead of
+     * losing the message. Uses the raw MQ factory because listener
+     * containers manage their own consumer caching.
+     */
     @Bean
     public DefaultJmsListenerContainerFactory workerListenerFactory(MQConnectionFactory mq,
             @Value("${queuedesk.worker.enabled:true}") boolean workerEnabled) {

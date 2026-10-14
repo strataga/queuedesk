@@ -15,9 +15,23 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.transaction.TransactionSystemException;
 
+/**
+ * One place that turns failures into the API's public error contract.
+ *
+ * <p>Every error response has the same shape, {@code {"code", "message"}},
+ * with a stable machine-readable code clients can branch on. Two rules
+ * matter here:
+ * <ul>
+ *   <li>Client mistakes (bad JSON, bad headers, unknown fields, malformed
+ *       cursors) are 400s. They are the caller's fault and safe to describe.</li>
+ *   <li>Dependency outages are 503s with a fixed, safe message. Internal
+ *       detail such as connection strings never reaches the response body.</li>
+ * </ul>
+ */
 @RestControllerAdvice
 public class ApiErrors {
     private static final Logger log = LoggerFactory.getLogger(ApiErrors.class);
+    /** The single error body shape returned by every endpoint. */
     public record Error(String code, String message) {}
     @ExceptionHandler({IllegalArgumentException.class, HttpMessageNotReadableException.class,
             MissingRequestHeaderException.class, MethodArgumentTypeMismatchException.class,
@@ -36,6 +50,7 @@ public class ApiErrors {
         log.warn("admission.rejected");
         return ResponseEntity.status(409).body(new Error("IDEMPOTENCY_CONFLICT", "Key already used with different payload"));
     }
+    /** Unknown instruction ID. Deliberately quiet: a 404 poll is normal traffic, not a rejection. */
     @ExceptionHandler(AdmissionService.Missing.class)
     public ResponseEntity<Error> missing() { return ResponseEntity.status(404).body(new Error("NOT_FOUND", "Unknown instruction")); }
     @ExceptionHandler(AdmissionService.Capacity.class)

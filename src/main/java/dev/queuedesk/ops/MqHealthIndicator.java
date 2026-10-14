@@ -6,10 +6,16 @@ import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.stereotype.Component;
 
-// MQ dependency health (OPS-01): a cheap connect-and-close probe. DOWN here
-// degrades readiness only — liveness is the process itself, so a broker
-// outage never causes a restart loop. Never throws; an unknown broker is
-// reported, not hidden.
+/**
+ * MQ dependency health: a cheap connect-and-close probe for the actuator
+ * readiness group.
+ *
+ * <p>DOWN here degrades readiness only. Liveness is the process itself, so
+ * a broker outage can never cause a restart loop; the app keeps accepting
+ * payments into the outbox while MQ recovers. The probe runs on a daemon
+ * thread with a 5-second bound so a hung broker cannot stall the actuator,
+ * and it never throws: an unknown broker is reported, not hidden.
+ */
 @Component("mq")
 public class MqHealthIndicator implements HealthIndicator {
     // A hung broker must not stall the actuator thread: bound the probe.

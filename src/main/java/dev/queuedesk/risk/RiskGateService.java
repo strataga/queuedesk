@@ -29,17 +29,30 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-// Pre-clearing risk gate (RISK-03, RISK-04): evaluates between the dedup check
-// and clearing without ever holding a database transaction open during the
-// provider call (PRD §24). Three phases: (1) short read tx — load, snapshot,
-// reuse-check, lease; (2) provider call outside any tx under the
-// `queuedesk.risk.evaluate` span with a bounded deadline; (3) final tx —
-// recheck the dedup marker, then atomically commit hold (RISK_HELD + audit +
-// marker + assessment), reject, or ALLOW (assessment only; the existing
-// ProcessingService path runs unchanged after). Empty Optional means ALLOW:
-// the caller falls through to ProcessingService.process. The receiver is never
-// called on hold (PR14); a held instruction resumes only through an audited
-// review (RiskReviewService), never a replacement instruction.
+/**
+ * The pre-clearing risk gate: decides, before settlement, whether a payment
+ * proceeds, is held for review, or is rejected.
+ *
+ * <p>Evaluation runs in three phases, and no database transaction is ever
+ * held open across the provider call:
+ * <ol>
+ *   <li><b>Plan</b> (short transaction): load the instruction, freeze a
+ *       feature snapshot, reuse an existing assessment when the versions
+ *       match, and take a lease so only one evaluation calls the provider.</li>
+ *   <li><b>Call</b> (no transaction): ask the signal provider under a bounded
+ *       deadline. Rules-only mode skips the call entirely.</li>
+ *   <li><b>Commit</b> (final transaction): recheck the dedup marker, save the
+ *       assessment as durable evidence, then atomically hold, reject, or
+ *       allow. ALLOW returns empty and the caller runs the unchanged
+ *       processing path.</li>
+ * </ol>
+ *
+ * <p>Failure always fails closed: a provider timeout or error maps to a
+ * visible {@code NOT_ASSESSED} hold, never to an allow. The receiver is
+ * never called for a held payment, and a hold resumes only through an
+ * audited review ({@link RiskReviewService}), never through a replacement
+ * instruction or a silent re-score.
+ */
 @Service
 public class RiskGateService {
     private static final Logger log = LoggerFactory.getLogger(RiskGateService.class);
@@ -85,9 +98,17 @@ public class RiskGateService {
         this.finalTx = new TransactionTemplate(txManager);
     }
 
+    /** Returns the configured gate mode (status surfaces report it so an OFF lab explains itself). */
     public RiskMode mode() { return properties.mode(); }
 
-    // Gate verdict: empty means ALLOW (caller runs the normal path).
+    /**
+     * Evaluates one delivered event.
+     *
+     * @return empty when the verdict is ALLOW (or the gate is OFF, or the
+     *         normal path must decide), meaning the caller should run
+     *         {@link ProcessingService#process} unchanged; otherwise the
+     *         terminal hold/reject result, already committed
+     */
     public java.util.Optional<ProcessingService.Result> evaluate(InstructionReceivedEvent envelope, int deliveryCount) {
         if (properties.mode() == RiskMode.OFF) return java.util.Optional.empty();
         final UUID instructionId;

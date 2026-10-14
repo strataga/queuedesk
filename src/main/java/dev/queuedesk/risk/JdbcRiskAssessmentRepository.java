@@ -16,6 +16,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Postgres implementation of {@link RiskAssessmentRepository} with explicit
+ * SQL. Assessment JSON payloads are stored as JSONB but treated as opaque
+ * evidence blobs here; interpretation lives in the gate and read models.
+ * Dynamic filter fragments in {@code listHeld} are fixed strings from this
+ * class; all caller values travel as bound parameters (the free-text query
+ * is additionally escaped for LIKE).
+ */
 @Repository
 public class JdbcRiskAssessmentRepository implements RiskAssessmentRepository {
     private static final String COLUMNS = """

@@ -15,17 +15,32 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-// WORK-01: one event → one database transaction holding the dedup check, the
-// business transitions with their audit rows, the processed_message key and the
-// attempt telemetry. The JMS delivery commits only after this service returns,
-// so a crash in between redelivers an event the dedup key absorbs. The boundary
-// is an explicit TransactionTemplate: an ordinary @Transactional here would
-// cover the database only and silently exclude JMS (LEARN-02).
+/**
+ * Turns one delivered event into exactly one business outcome.
+ *
+ * <p>Each call runs in a single database transaction holding the dedup
+ * check, the business transitions with their audit rows, the
+ * {@code processed_message} dedup key, and the attempt telemetry. The JMS
+ * delivery commits only after this service returns, so a crash in between
+ * redelivers an event that the dedup key absorbs with no repeated effect.
+ *
+ * <p>The boundary is an explicit {@link TransactionTemplate} on purpose: an
+ * ordinary {@code @Transactional} here would cover the database only and
+ * silently exclude JMS, which is exactly the wrong lesson. There is no
+ * distributed transaction; the dedup key is what makes the two separate
+ * commits safe together.
+ *
+ * <p>Validation failures are poison ({@link UnsupportedEnvelope}), never
+ * transient retries: a message that cannot be understood will not become
+ * understandable on redelivery, so it counts toward quarantine instead.
+ */
 @Service
 public class ProcessingService {
+    /** The envelope cannot be processed as-is (bad version, shape, hash, or state). Routes to quarantine. */
     public static class UnsupportedEnvelope extends RuntimeException {
         public UnsupportedEnvelope(String reason) { super(reason); }
     }
+    /** Processing result for logging and the listener: outcome label, final business state, and reason. */
     public record Result(String outcome, String state, String reason) {}
     private final InstructionRepository instructions;
     private final ProcessedMessageRepository processed;
@@ -54,13 +69,25 @@ public class ProcessingService {
         this.metrics = metrics;
         this.tx = new TransactionTemplate(txManager);
     }
+    /** Test seam: fail the next business transaction once, to prove rollback leaves no partial outcome. */
     public void armDbFaultOnce() { dbFaultArmed.set(true); }
+
+    /**
+     * Processes one envelope in a single transaction. Outcomes: success,
+     * business reject (clearing policy or receiver), duplicate skipped, or
+     * pending confirmation when the receiver's answer is lost or uncertain.
+     *
+     * @throws UnsupportedEnvelope when the message fails structural validation
+     */
     public Result process(InstructionReceivedEvent envelope, int deliveryCount) {
         return tx.execute(status -> processInTransaction(envelope, deliveryCount));
     }
-    // Controlled write AFTER a rollback: the failed transaction's rows vanished,
-    // so this evidence commits in its own new transaction (DATA-02). It never
-    // acknowledges business work; the caller still rolls the JMS delivery back.
+    /**
+     * Records a transient failure after the business transaction rolled back.
+     * The failed transaction's rows vanished with it, so this evidence
+     * commits in its own new transaction. It never acknowledges business
+     * work; the caller still rolls the JMS delivery back for redelivery.
+     */
     public void recordFailureAfterRollback(UUID instructionId, String eventId, String reason, int deliveryCount) {
         new TransactionTemplate(tx.getTransactionManager()).execute(s -> {
             attempts.insert(instructionId, eventId, "FAILED", reason, deliveryCount);
@@ -68,6 +95,7 @@ public class ProcessingService {
         });
         metrics.failure("FAILED");
     }
+    /** Records a poison (unsupported-envelope) failure after rollback, in its own transaction. */
     public void recordUnsupportedAfterRollback(UUID instructionId, String eventId, String reason, int deliveryCount) {
         new TransactionTemplate(tx.getTransactionManager()).execute(s -> {
             attempts.insert(instructionId, eventId, "UNSUPPORTED", reason, deliveryCount);
@@ -75,9 +103,11 @@ public class ProcessingService {
         });
         metrics.failure("UNSUPPORTED");
     }
-    // Routing markers: ROUTED commits before the session commit performs the
-    // atomic move (a crash between the two re-routes honestly on redelivery);
-    // ROUTE_FAILED is the terminal backstop when the move itself is impossible.
+    /**
+     * Records that a message was routed to the backout queue. Commits before
+     * the JMS session commit performs the atomic move, so a crash between
+     * the two simply re-routes honestly on redelivery.
+     */
     public void recordRouted(UUID instructionId, String eventId, String reason, int deliveryCount) {
         new TransactionTemplate(tx.getTransactionManager()).execute(s -> {
             attempts.insert(instructionId, eventId, "ROUTED", reason, deliveryCount);
@@ -85,6 +115,7 @@ public class ProcessingService {
         });
         metrics.failure("ROUTED");
     }
+    /** Records the terminal backstop: the backout move itself was impossible and the consumer stopped. */
     public void recordRouteFailed(UUID instructionId, String eventId, String reason, int deliveryCount) {
         new TransactionTemplate(tx.getTransactionManager()).execute(s -> {
             attempts.insert(instructionId, eventId, "ROUTE_FAILED", reason, deliveryCount);

@@ -16,12 +16,28 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-// One polling publisher: due rows in id order, one persistent send per row, then the
-// published marker in a new DB transaction. A failed row stops the batch (order is
-// preserved) and backs off; recovery never deletes anything to catch up.
+/**
+ * The conveyor belt: polls the outbox and delivers each stored event to MQ
+ * exactly as recorded.
+ *
+ * <p>Due rows are sent in ID order, one persistent JMS message per row, and
+ * the published marker is written afterwards in its own database
+ * transaction. That order matters. If the process dies between the send and
+ * the marker, recovery simply resends the same event with the same
+ * {@code eventId}, and the worker dedups it. Nothing is ever deleted to
+ * "catch up".
+ *
+ * <p>A failed row stops the batch (preserving order), records the failure,
+ * and backs off with a capped, jittered delay. While MQ is down, admissions
+ * keep returning 202 and the backlog drains on recovery.
+ */
 @Component
 public class OutboxPublisher {
-    // Test seam: the crash-after-commit proof faults the marker write.
+    /**
+     * Writes the published marker after a confirmed send. Kept as an
+     * interface so tests can fault the marker write and prove the
+     * crash-after-commit recovery path.
+     */
     public interface MarkerWriter { void markPublished(OutboxRepository.DueRow row); }
     private static final Logger log = LoggerFactory.getLogger(OutboxPublisher.class);
     private final OutboxRepository outbox;
@@ -56,12 +72,19 @@ public class OutboxPublisher {
         this.enabled = enabled;
         this.batchSize = batchSize;
     }
+    /** Scheduled entry point: one batch per poll while the publisher is enabled. */
     @Scheduled(fixedDelayString = "${queuedesk.publisher.poll-delay-ms:1000}")
     public void poll() { if (enabled) publishBatch(); }
     // Test seam: the Spring context (and this singleton) is shared across tests,
     // so each test starts with a clean backoff window. Public because the worker
     // tests drive the publisher from another package.
     public void resetBackoffForTest() { resumeAtEpochMs = 0; }
+    /**
+     * Sends one due batch in order.
+     *
+     * @return how many events were sent and marked published; 0 while a
+     *         backoff window from an earlier failure is still open
+     */
     public int publishBatch() {
         if (System.currentTimeMillis() < resumeAtEpochMs) return 0;
         var due = outbox.dueBatch(batchSize);
@@ -131,7 +154,10 @@ public class OutboxPublisher {
             log.info("outbox.sent eventId={}", row.eventId());
         }
     }
-    // Shared with the worker's transient-failure pacing (same capped+jitter shape).
+    /**
+     * Capped exponential backoff with jitter, shared with the worker's
+     * transient-failure pacing so both sides recover at the same rhythm.
+     */
     public static long backoffMs(int failures) {
         long exponential = 1000L << Math.min(failures, 6);
         return Math.min(exponential, 60_000L) + ThreadLocalRandom.current().nextLong(0, 500);

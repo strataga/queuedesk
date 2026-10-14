@@ -11,11 +11,22 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
-// Rejects POST bodies over 16 KiB with 413 before the controller runs. A declared
-// Content-Length short-circuits; streamed bodies are counted while being read.
+/**
+ * Rejects oversized payment submissions with HTTP 413 before any controller
+ * code runs.
+ *
+ * <p>A declared {@code Content-Length} over the limit is refused
+ * immediately. Bodies without one (chunked or streamed) are counted byte by
+ * byte as they are read, on both the stream and reader paths, so there is
+ * no way to sneak past the limit by choosing a different read API. A lab
+ * payment is a few hundred bytes; 16 KiB is generous headroom, not a
+ * workload limit.
+ */
 @Component
 public class BodyLimitFilter extends OncePerRequestFilter {
+    /** Maximum accepted request body size for instruction submissions: 16 KiB. */
     public static final int MAX_BODY_BYTES = 16 * 1024;
+    /** Internal signal that the limit was exceeded; translated to 413 in this filter. */
     public static class BodyTooLarge extends RuntimeException {}
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {

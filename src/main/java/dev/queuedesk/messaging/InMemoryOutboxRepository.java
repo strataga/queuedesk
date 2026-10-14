@@ -3,7 +3,12 @@ package dev.queuedesk.messaging;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-// Plain unit-test double for the outbox: no Spring stereotype, constructed directly.
+/**
+ * In-memory {@link OutboxRepository} for unit tests. No Spring stereotype;
+ * tests construct it directly. It mirrors the JDBC adapter's strict
+ * ID-order, deferred-head behavior so publisher logic proven here holds
+ * against Postgres.
+ */
 public class InMemoryOutboxRepository implements OutboxRepository {
     private record Row(long outboxId, String eventId, UUID instructionId, String payload,
             int attempts, boolean published, String traceparent, String tracestate, java.time.Instant nextDue) {}

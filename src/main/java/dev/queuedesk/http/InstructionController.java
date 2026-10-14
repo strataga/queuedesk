@@ -13,6 +13,16 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.*;
 
+/**
+ * The payment front door: submit instructions, then read them back with
+ * their audit and attempt evidence.
+ *
+ * <p>This controller stays thin on purpose. It translates HTTP into calls on
+ * {@link AdmissionService} (which owns idempotency and transactions) and
+ * shapes the JSON views. Error mapping lives in {@link ApiErrors}; the body
+ * size limit lives in {@link BodyLimitFilter}. All reads are side-effect
+ * free, so the dashboard can poll them as often as it likes.
+ */
 @RestController
 @RequestMapping("/api/v1/instructions")
 public class InstructionController {
@@ -23,6 +33,12 @@ public class InstructionController {
         this.service = service;
         this.jdbc = jdbc;
     }
+    /**
+     * The public JSON shape of one instruction: business state, derived
+     * delivery state, the original payload, and (when the risk gate ran) the
+     * latest verdict. Risk and trace fields are {@code null} when absent, so
+     * older clients keep working as fields are added.
+     */
     public record View(UUID instructionId, String status, String reason, Instant receivedAt,
             Instant updatedAt, String statusUrl, String correlationId, String delivery,
             PaymentInstruction payload, String riskStatus, UUID assessmentId,
@@ -54,6 +70,12 @@ public class InstructionController {
         return parseTraceId(jdbc.sql("SELECT traceparent FROM outbox WHERE instruction_id = ? ORDER BY outbox_id ASC LIMIT 1")
                 .param(instructionId).query(String.class).optional().orElse(null));
     }
+    /**
+     * Admits one instruction. Returns 202 for a new payment, 200 for an exact
+     * repeat (same key, same payload, original ID kept), 409 when the key
+     * was reused with a different payload, and 400 for anything invalid.
+     * A 202 means the payment is durably stored, not yet delivered.
+     */
     @PostMapping
     public ResponseEntity<View> submit(@RequestHeader("Idempotency-Key") String key,
             @RequestHeader(value = "X-Correlation-Id", required = false) String correlation,
@@ -73,16 +95,22 @@ public class InstructionController {
         return ResponseEntity.status(admission.repeated() ? 200 : 202)
                 .location(URI.create(view.statusUrl())).header("X-Correlation-Id", view.correlationId()).body(view);
     }
+    /** Returns one instruction by ID, or 404 when the ID is unknown. */
     @GetMapping("/{id}")
     public View get(@PathVariable UUID id) { return View.of(service.get(id), traceIdFor(id)); }
 
-    // Audit timeline (mockup 03): the durable instruction_audit rows in commit
-    // order — business transitions only, never transport retries. Unknown ids
-    // 404 via the service read; the cap documents itself (transitions per
-    // instruction are bounded by the state machine, cf. quarantine list(100)).
+    /** One business transition from the durable audit trail. */
     public record AuditEvent(String oldState, String newState, String reason, String actor,
             Instant recordedAt) {}
+    /** The audit timeline response for one instruction. */
     public record AuditView(UUID instructionId, List<AuditEvent> items) {}
+
+    /**
+     * Audit timeline: the durable {@code instruction_audit} rows in commit
+     * order. Business transitions only, never transport retries. Unknown IDs
+     * 404 via the service read. The 100-row cap documents itself:
+     * transitions per instruction are bounded by the state machine.
+     */
     @GetMapping("/{id}/audit")
     public AuditView audit(@PathVariable UUID id) {
         service.get(id);
@@ -95,13 +123,18 @@ public class InstructionController {
         return new AuditView(id, items);
     }
 
-    // Attempt evidence (mockup 03 transport section): processing_attempt rows in
-    // write order. Telemetry, never business truth — a rolled-back worker
-    // attempt leaves no row here (V3 header). deliveryCount is the provider's
-    // per-attempt count (V4), null when the worker never saw one.
+    /** One worker processing attempt, as recorded for the transport view. */
     public record AttemptView(String eventId, String result, String reason, Integer deliveryCount,
             Instant startedAt, Instant endedAt) {}
+    /** The attempt-evidence response for one instruction. */
     public record AttemptList(UUID instructionId, List<AttemptView> items) {}
+
+    /**
+     * Attempt evidence: {@code processing_attempt} rows in write order. This
+     * is telemetry, never business truth. A rolled-back worker attempt
+     * leaves no row here. {@code deliveryCount} is the provider's
+     * per-attempt count and is {@code null} when the worker never saw one.
+     */
     @GetMapping("/{id}/attempts")
     public AttemptList attempts(@PathVariable UUID id) {
         service.get(id);
@@ -116,9 +149,13 @@ public class InstructionController {
                 .list();
         return new AttemptList(id, items);
     }
-    // Newest-first paging (mockup 02): order=desc returns the latest page
-    // first with direction-scoped cursors; asc is the default and preserves
-    // every existing caller.
+    /**
+     * Lists instructions with cursor paging. Every filter is optional.
+     * {@code order=desc} returns the newest page first with
+     * direction-scoped cursors; {@code asc} is the default and preserves
+     * every existing caller. When another page exists, its token arrives in
+     * the {@code X-Next-Cursor} response header.
+     */
     @GetMapping
     public ResponseEntity<List<View>> list(@RequestParam(required = false) String runId,
             @RequestParam(required = false) String status,

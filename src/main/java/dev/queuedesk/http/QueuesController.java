@@ -11,11 +11,17 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 
-// Queues page (DASH-01): outbox, MQ estimate, and quarantine freshness in one
-// read. MQ depth stays an APPLICATION_ESTIMATE from durable tables (the
-// backend has no PCF probe, PRD §17A); consumers come from the listener
-// container state, never a broker query. Stale quarantine keeps lastObserved
-// and nulls count — never a fake zero.
+/**
+ * One read for the dashboard's Queues page: outbox backlog, an MQ depth
+ * estimate, and quarantine freshness.
+ *
+ * <p>The backend has no broker admin probe, so MQ depth is honestly labeled
+ * {@code APPLICATION_ESTIMATE}: it is derived from durable tables (published
+ * events with no processed or routed record yet). Consumer state comes from
+ * the local listener container, never from a broker query. When quarantine
+ * data is stale, the live count is {@code null} and the last observed count
+ * is kept. A fake zero would hide held poison messages.
+ */
 @RestController
 @RequestMapping("/api/v1/ops/queues")
 public class QueuesController {
@@ -35,14 +41,23 @@ public class QueuesController {
         this.queueManager = queueManager;
     }
 
+    /** Outbox backlog: unpublished events, the age of the oldest, and the last successful publish. */
     public record OutboxView(long pending, double oldestPendingAgeSeconds, Instant lastPublishedAt,
             String dispatch, String lastEventId) {}
+    /** MQ connectivity plus the application-side depth estimate and local consumer state. */
     public record MqView(boolean connected, String queueManager, long depthEstimate, String depthEstimateNote,
             double oldestEstimateAgeSeconds, int activeConsumers, String consumerState, Instant lastSendAt) {}
+    /** Quarantine freshness: {@code count} is {@code null} when stale; {@code lastObserved} always keeps the last known value. */
     public record QuarantineView(Long count, long lastObserved, Instant lastObservedAt,
             double freshnessAgeSeconds, boolean stale) {}
+    /** Combined queues response, stamped with the time it was assembled. */
     public record QueuesView(Instant asOf, OutboxView outbox, MqView mq, QuarantineView quarantine, long dedupLast15Min) {}
 
+    /**
+     * Returns the combined queues snapshot. {@code windowMinutes} (1–60)
+     * bounds only the duplicate-deliveries-absorbed counter; the backlog
+     * gauges are always current.
+     */
     @GetMapping
     public QueuesView view(@RequestParam(defaultValue = "15") int windowMinutes) {
         if (windowMinutes < 1 || windowMinutes > 60)

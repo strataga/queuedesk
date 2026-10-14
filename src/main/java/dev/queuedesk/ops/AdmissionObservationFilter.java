@@ -10,11 +10,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
-// Admission observation (OBS-01/OBS-02): times POST /api/v1/instructions from
-// request start and records the outcome as one counter + timer series tagged
-// by decision (accepted/repeated/conflict/invalid/capacity/error). HTTP errors
-// are separate series, never mixed into acceptance latency. Monotonic clock
-// for the interval; nothing but the outcome leaves this filter.
+/**
+ * Observes admission traffic: opens the admission trace span and log scope,
+ * and times each submission to its durable outcome.
+ *
+ * <p>Runs first ({@code HIGHEST_PRECEDENCE}) so timing covers the whole
+ * request. Outcomes are recorded as counter and timer series tagged by
+ * decision (accepted, repeated, conflict, invalid, capacity, error).
+ * Error responses stay in their own series, never mixed into acceptance
+ * latency. A monotonic clock measures the interval, and nothing except the
+ * outcome decision leaves this filter.
+ */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class AdmissionObservationFilter extends OncePerRequestFilter {

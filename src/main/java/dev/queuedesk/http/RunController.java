@@ -7,13 +7,18 @@ import dev.queuedesk.worker.ReconciliationTaskRepository;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
-// Read-only run evidence (TEST-01, D-07): admitted counts by business state plus
-// outbox pending/published counts for one runId. The scenario runner asserts
-// through this endpoint, and the Phase 8 dashboard will read it too. Unknown
-// runs report zeros, never 404: absence of evidence is itself evidence.
+/**
+ * Read-only run evidence: admitted counts by business state, plus outbox
+ * and open-reconciliation counts for one generator run.
+ *
+ * <p>The scenario runner asserts outcomes through this endpoint, and the
+ * dashboard reads it too. Unknown runs report zeros, never a 404: for an
+ * evidence endpoint, the absence of evidence is itself evidence.
+ */
 @RestController
 @RequestMapping("/api/v1/runs")
 public class RunController {
+    /** Run summary response: totals by state plus delivery and reconciliation gauges. */
     public record RunSummary(String runId, long admitted, Map<String, Long> byState,
             long outboxPending, long outboxPublished, long reconcileOpen) {}
     private final InstructionRepository instructions;

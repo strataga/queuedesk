@@ -11,8 +11,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-// Postgres adapter: explicit SQL. claimDue locks due rows with SKIP LOCKED so a
-// future second poller cannot double-resolve; today one poller runs.
+/**
+ * Postgres implementation of {@link ReconciliationTaskRepository} with
+ * explicit SQL. {@code claimDue} selects with {@code SKIP LOCKED} and bumps
+ * due times in the same statement, so even a future second poller cannot
+ * claim (or double-resolve) the same task.
+ */
 @Repository
 public class JdbcReconciliationTaskRepository implements ReconciliationTaskRepository {
     private final JdbcClient jdbc;

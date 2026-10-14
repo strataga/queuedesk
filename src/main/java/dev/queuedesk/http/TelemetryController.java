@@ -22,13 +22,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-// Telemetry page + trace detail (DASH-02, DASH-03): latency cards, series,
-// sampled traces, exporter health, waterfall spans. Percentiles come from the
-// observed latency buckets over the stated window (Micrometer keeps no
-// history server-side); n is the observed count. Spans are the bounded ring —
-// unknown or evicted traceIds 404 honestly ("sampled diagnostics are not a
-// durable audit trail"). No fabricated backfill anywhere: empty windows read
-// p95=-1 with n=0.
+/**
+ * Telemetry reads for the dashboard: latency cards and series, sampled
+ * traces with waterfall detail, exporter health, and the live log ring.
+ *
+ * <p>Percentiles come from locally observed latency buckets over the stated
+ * window (Micrometer keeps no history server-side), and {@code n} is always
+ * the real observed count. Spans come from a bounded in-memory ring, so an
+ * unknown or evicted trace ID answers 404 honestly: sampled diagnostics
+ * are not a durable audit trail. Nothing is backfilled. An empty window
+ * reads {@code p95 = -1} with {@code n = 0}.
+ */
 @RestController
 @RequestMapping("/api/v1/telemetry")
 public class TelemetryController {
@@ -57,14 +61,25 @@ public class TelemetryController {
         this.gate = gate;
     }
 
+    /** One latency card: p95 over the window, the observed count, and what the measurement covers. */
     public record LatencyCard(double p95Ms, long n, String note) {}
+    /** Risk-provider latency; all values {@code null} except mode when the gate is OFF. */
     public record RiskLatency(Double p95Ms, Long n, String mode) {}
+    /** Trace sampling summary: configured percent and distinct traces currently in the ring. */
     public record Sampling(int percent, long sampledInstructions) {}
+    /** Span-exporter health: last success, recent throughput, and drop accounting. */
     public record ExporterView(String status, Instant lastExportAt, long spansSent15Min,
             long spansDropped, long bufferedSpans, String bufferedSpansNote) {}
+    /** Telemetry summary response for the dashboard's telemetry page. */
     public record Summary(Instant asOf, int windowMinutes, LatencyCard admission, LatencyCard completion,
             RiskLatency riskProvider, Sampling sampling, ExporterView exporter) {}
 
+    /**
+     * Returns latency cards, sampling state, and exporter health for the
+     * last {@code windowMinutes} (1–60). Admission latency ends at the HTTP
+     * 202; completion latency ends at the durable outcome commit, with
+     * unresolved payments excluded.
+     */
     @GetMapping("/summary")
     public Summary summary(@RequestParam(defaultValue = "15") int windowMinutes) {
         window(windowMinutes);
@@ -92,8 +107,16 @@ public class TelemetryController {
                         0, "SDK batch-queue depth is not exposed; ring evictions count in spansDropped"));
     }
 
+    /** One per-minute latency point for charting. */
     public record SeriesPoint(Instant at, double p95Ms, long n) {}
+    /** Latency-series response for one metric. */
     public record Series(String metric, int bucketSeconds, List<SeriesPoint> points) {}
+
+    /**
+     * Returns the per-minute p95 series for one metric
+     * ({@code admission}, {@code completion}, or {@code riskProvider}).
+     * Unknown metric names are a 400, never an empty series.
+     */
     @GetMapping("/latency-series")
     public Series series(@RequestParam String metric,
             @RequestParam(defaultValue = "15") int windowMinutes) {
@@ -109,9 +132,17 @@ public class TelemetryController {
         return new Series(metric, 60, points);
     }
 
+    /** One sampled trace, joined (when possible) to its instruction's reference and outcome. */
     public record TraceItem(String instructionId, String clientReference, String traceId,
             String outcome, Long elapsedMs) {}
+    /** Trace-list response wrapper. */
     public record TraceList(List<TraceItem> items) {}
+
+    /**
+     * Lists sampled traces, newest first: one row per trace, taken from its
+     * latest worker-attempt span. Rows whose instruction join is unavailable
+     * keep {@code null} reference and outcome instead of being dropped.
+     */
     @GetMapping("/traces")
     public ResponseEntity<TraceList> traces(@RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "20") int limit) {
@@ -154,12 +185,21 @@ public class TelemetryController {
         return response.body(new TraceList(page));
     }
 
+    /** One waterfall span, positioned relative to the trace start. */
     public record SpanView(String spanId, String parentSpanId, String name, long startOffsetMs,
             long durationMs, Map<String, String> attributes) {}
+    /** A cross-process link between spans (reserved; currently always empty). */
     public record AsyncLink(String fromSpanId, String toSpanId, String via) {}
+    /** Trace detail response: business context plus the full span waterfall. */
     public record TraceDetail(String traceId, String instructionId, String clientReference, String participants,
             int sampledPercent, String businessOutcome, String riskDecision, String riskMode, long endToEndMs,
             Long admissionMs, List<SpanView> spans, List<AsyncLink> asyncLinks, String auditUrl) {}
+
+    /**
+     * Returns one trace as a waterfall, joined to its instruction's current
+     * business outcome and risk decision. Answers 400 for a malformed trace
+     * ID and 404 when the trace was never sampled or has been evicted.
+     */
     @GetMapping("/traces/{traceId}")
     public TraceDetail trace(@PathVariable String traceId) {
         if (traceId == null || !traceId.matches("[0-9a-f]{32}"))
@@ -213,10 +253,15 @@ public class TelemetryController {
             throw new IllegalArgumentException("windowMinutes must be 1..60");
     }
 
+    /** Log-ring response: the newest entries plus drop accounting for the bounded buffer. */
     public record LogList(java.util.List<LogRingBuffer.Entry> items, long dropped,
             int capacity, String note) {}
-    // Live process log ring (mockup 07 Logs tab): newest last, minimum-level
-    // threshold, hard-capped limit. Events carry no stack traces by design.
+
+    /**
+     * Returns the tail of this process's live log ring, newest last, at or
+     * above the requested level. The ring is per-process and clears on
+     * restart; entries carry no stack traces by design.
+     */
     @GetMapping("/logs")
     public LogList logs(@RequestParam(required = false) String level,
             @RequestParam(defaultValue = "100") int limit) {

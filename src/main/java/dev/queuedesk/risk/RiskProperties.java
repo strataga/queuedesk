@@ -3,9 +3,15 @@ package dev.queuedesk.risk;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-// Risk gate configuration (RISK-02). Constructor parsing fails fast at boot:
-// an unknown mode stops the process with the named error instead of running
-// under a misunderstood gate.
+/**
+ * Risk gate configuration, validated eagerly at boot.
+ *
+ * <p>Constructor parsing fails fast: an unknown mode, a malformed version
+ * token, or an out-of-range deadline, window, or budget stops the process
+ * with a named error instead of running under a misunderstood gate. The
+ * three version strings (features, questions, policy) are part of every
+ * assessment's identity, so they are validated as tokens, not free text.
+ */
 @Component
 public class RiskProperties {
     private final RiskMode mode;
@@ -42,8 +48,11 @@ public class RiskProperties {
         this.jevBudgetUsd = jevBudgetUsd;
     }
 
-    // Plain-Java factory for unit tests (no Spring). A second constructor
-    // would confuse Spring's single-constructor injection, so tests use this.
+    /**
+     * Plain-Java factory for unit tests, with production defaults. A second
+     * constructor would confuse Spring's single-constructor injection, so
+     * tests use this instead.
+     */
     public static RiskProperties forTest(RiskMode mode) {
         return new RiskProperties(mode.name(), "1.0", "mock-2026-10", "0.4", 2000, 60, "NONE", 1.0);
     }
@@ -54,13 +63,22 @@ public class RiskProperties {
         return value.trim();
     }
 
+    /** The configured gate mode. */
     public RiskMode mode() { return mode; }
+    /** Feature-schema version stamped on snapshots and assessments. */
     public String featureVersion() { return featureVersion; }
+    /** Question-set version expected from providers. */
     public String questionVersion() { return questionVersion; }
+    /** Policy version stamped on assessments. */
     public String policyVersion() { return policyVersion; }
+    /** Hard deadline for one provider call, in milliseconds. */
     public long providerDeadlineMs() { return providerDeadlineMs; }
+    /** How far back sender history counts toward velocity features, in minutes. */
     public int velocityWindowMinutes() { return velocityWindowMinutes; }
+    /** The mock provider's configured fault injection (NONE in normal runs). */
     public String mockFault() { return mockFault; }
+    /** The live-provider budget cap in USD. */
     public double jevBudgetUsd() { return jevBudgetUsd; }
+    /** The budget cap in nano-dollars, for exact integer ledger comparisons. */
     public long jevBudgetNanoUsd() { return (long) (jevBudgetUsd * 1_000_000_000L); }
 }

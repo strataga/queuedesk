@@ -11,7 +11,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-// Plain unit-test double: no Spring stereotype, constructed directly in tests.
+/**
+ * In-memory {@link RiskAssessmentRepository} for unit tests. No Spring
+ * stereotype; tests construct it directly. It mirrors the JDBC contract
+ * where unit tests depend on it (identity conflicts throw, leases expire,
+ * usage counts metered rows only). Reads that need the instruction join
+ * ({@code listHeld}, {@code countByState}) deliberately throw: integration
+ * tests cover those against Postgres.
+ */
 public class InMemoryRiskAssessmentRepository implements RiskAssessmentRepository {
     private final Map<String, StoredAssessment> assessments = new HashMap<>();
     private final Map<String, Lease> leases = new HashMap<>();

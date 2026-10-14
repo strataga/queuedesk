@@ -18,16 +18,30 @@ import org.springframework.jms.config.JmsListenerEndpointRegistry;
 import org.springframework.stereotype.Component;
 import java.util.UUID;
 
-// The single worker consumer (WORK-01, PR06): one message at a time under a
-// LOCAL JMS transaction. Poison routing is APPLICATION-owned (QUAR-01): the
-// listener counts JMSXDeliveryCount and, after `backoutThreshold` failed
-// processing deliveries, moves the message to the backout queue in the SAME
-// transacted session and commits, so the move is atomic. A failed move stops
-// the consumer with the message retained — never a hot loop, never a loss.
-// Transient failures pace with backoff OUTSIDE the business transaction, so a
-// DB blip does not burn all three deliveries in milliseconds.
+/**
+ * The single worker consumer: one message at a time under a local JMS
+ * transaction.
+ *
+ * <p>Delivery semantics are at-least-once. The database transaction (inside
+ * {@link ProcessingService}) commits first; the JMS session commits only
+ * when this listener returns normally. A crash in between redelivers the
+ * message, and the durable dedup key absorbs the repeat with no second
+ * business effect.
+ *
+ * <p>Poison routing is application-owned. The listener counts
+ * {@code JMSXDeliveryCount} and, after {@code backoutThreshold} failed
+ * deliveries, moves the message to the backout queue in the same
+ * transacted session, so the move is atomic: the message is never in two
+ * places and never in none. If the move itself fails, the consumer stops
+ * with the message retained for an operator to repair routing. It never
+ * hot-loops and never discards.
+ *
+ * <p>Transient failures pace with backoff outside the business transaction,
+ * so a brief database blip cannot burn all deliveries in milliseconds.
+ */
 @Component
 public class WorkerListener {
+    /** Listener container ID, shared with the queues view's consumer-state read. */
     public static final String LISTENER_ID = "queuedesk-worker";
     private static final Logger log = LoggerFactory.getLogger(WorkerListener.class);
     private final ProcessingService processing;
@@ -54,6 +68,12 @@ public class WorkerListener {
     // Test seam: redirect routing at a nonexistent queue to prove the
     // route-failure backstop without racing MQ object lifecycle.
     void setQueueBackoutForTest(String queueBackout) { this.queueBackout = queueBackout; }
+    /**
+     * Handles one delivery. Returning normally commits the JMS session
+     * (acknowledging the message); throwing rolls it back for redelivery.
+     * Non-text and unparseable messages take the poison path; Java object
+     * messages are never deserialized.
+     */
     @JmsListener(id = LISTENER_ID, destination = "${queuedesk.mq.queue-in}",
             containerFactory = "workerListenerFactory")
     public void onMessage(Message message, Session session) throws Exception {

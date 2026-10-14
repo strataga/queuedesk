@@ -6,9 +6,14 @@ import io.opentelemetry.sdk.trace.export.SpanExporter;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
 
-// Counting OTLP wrapper (TEL-02): delegates every batch, counts received/ok/
-// failed spans, and NEVER throws — a dead collector degrades to counted
-// drops, never backpressure into admission or acknowledgement.
+/**
+ * Counting wrapper around the OTLP exporter: delegates every batch, counts
+ * received, succeeded, and failed spans, and never throws.
+ *
+ * <p>A dead collector degrades to counted drops, never to backpressure into
+ * admission or message acknowledgement. Recent batch outcomes (15 minutes)
+ * feed the telemetry page's exporter-health view.
+ */
 public class CountingSpanExporter implements SpanExporter {
     private final SpanExporter delegate;
     private final TelemetryCounters counters;
@@ -50,15 +55,18 @@ public class CountingSpanExporter implements SpanExporter {
         while (!recent.isEmpty() && recent.peekFirst().epochSecond() < cutoff) recent.removeFirst();
         while (recent.size() > 1024) recent.removeFirst();
     }
+    /** The most recent delegate failure text, or {@code null} if none yet. */
     public String lastError() { return lastError.get(); }
+    /** When a batch last exported successfully, or {@code null} if never. */
     public java.time.Instant lastOkAt() { return lastOkAt.get(); }
-    // Spans accepted in the trailing 15 minutes (pruned on read).
+
+    /** Spans accepted in the trailing 15 minutes (the window is pruned on read). */
     public synchronized long spansSent15Min() {
         long cutoff = java.time.Instant.now().getEpochSecond() - 15 * 60;
         while (!recent.isEmpty() && recent.peekFirst().epochSecond() < cutoff) recent.removeFirst();
         return recent.stream().filter(BatchOutcome::ok).mapToLong(BatchOutcome::spans).sum();
     }
-    // Any export failure in the trailing 5 minutes.
+    /** Whether any export failed in the trailing 5 minutes (drives the DEGRADED status). */
     public synchronized boolean failedRecently() {
         long cutoff = java.time.Instant.now().getEpochSecond() - 5 * 60;
         return recent.stream().anyMatch(b -> b.epochSecond() >= cutoff && !b.ok());

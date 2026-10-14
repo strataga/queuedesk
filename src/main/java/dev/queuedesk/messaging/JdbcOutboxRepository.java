@@ -9,8 +9,14 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
-// Postgres adapter: explicit SQL. insert() joins the admission transaction; marking
-// and deferral each run in their own short transaction owned by the publisher.
+/**
+ * Postgres implementation of {@link OutboxRepository} with explicit SQL.
+ *
+ * <p>{@link #insert} joins the caller's admission transaction. Marking and
+ * deferral each run in their own short transaction, owned by the publisher.
+ * The due-batch query locks its rows with {@code FOR UPDATE SKIP LOCKED},
+ * so overlapping polls can never send the same event twice.
+ */
 @Repository
 public class JdbcOutboxRepository implements OutboxRepository {
     private final JdbcClient jdbc;

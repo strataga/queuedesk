@@ -7,7 +7,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-// Plain unit-test double: no Spring stereotype, constructed directly in tests.
+/**
+ * In-memory {@link ProcessingAttemptRepository} for unit tests. No Spring
+ * stereotype; tests construct it directly and assert on the recorded
+ * attempt sequence.
+ */
 public class InMemoryProcessingAttemptRepository implements ProcessingAttemptRepository {
     private record Row(UUID instructionId, String eventId, String result, String reason) {}
     private final List<Row> rows = new ArrayList<>();

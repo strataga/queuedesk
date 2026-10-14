@@ -19,9 +19,19 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-// Read-only risk panel (DASH-05, PRD §15): held list, assessment detail,
-// summary. Review ACTIONS stay deferred: the reserved POST below answers 404
-// NOT_FOUND with the ApiErrors shape until the B01 authority design lands.
+/**
+ * Read-only risk panel: the held-payments list, one assessment in full
+ * detail, and a summary with the Jev spending ledger.
+ *
+ * <p>Review <em>actions</em> (approve or reject a hold) are deliberately
+ * deferred. The reserved {@code POST /reviews} route answers 404 in the
+ * standard error shape until the authority design for acting on holds
+ * lands. Everything here only explains decisions the gate already made.
+ *
+ * <p>Wording is part of the contract: assessment output explains a hold, it
+ * is not a fraud determination, and provider confidence is confidence in an
+ * answer to an exact question, never a probability of fraud.
+ */
 @RestController
 @RequestMapping("/api/v1/risk")
 public class RiskController {
@@ -48,13 +58,18 @@ public class RiskController {
         this.properties = properties;
     }
 
-    // Metered-usage ledger (PRD §25): durable totals over usage-bearing rows,
-    // list-price estimate, the configured $1 cap, and whether it is exhausted.
-    // Zeros in OFF/RULES_ONLY/RULES_PLUS_MOCK — only Jev rows carry usage.
+    /**
+     * Metered-usage ledger: durable token totals, the list-price cost
+     * estimate, the configured budget cap, and whether the cap is exhausted.
+     * All zeros unless live Jev calls happened; only Jev rows carry usage.
+     */
     public record UsageView(long calls, long inputTokens, long outputTokens, double costUsd,
             double budgetUsd, boolean exhausted) {}
+    /** Risk summary response: current mode, hold counters, and the usage ledger. */
     public record Summary(Instant asOf, String mode, long riskHeld, long reviewRequired,
             long notAssessed, String note, UsageView usage) {}
+
+    /** Returns hold counters for the current gate mode plus Jev budget status. */
     @GetMapping("/summary")
     public Summary summary(@RequestParam(defaultValue = "15") int windowMinutes) {
         window(windowMinutes);
@@ -69,9 +84,18 @@ public class RiskController {
                 assessments.countByResult("NOT_ASSESSED"), HOLD_NOTE, usage);
     }
 
+    /** One row of the held-payments list: the payment, its business outcome, and why the gate held it. */
     public record HeldItem(UUID instructionId, String clientReference, long amountMinor, String currency,
             String businessOutcome, String riskOutput, List<String> reasonCodes) {}
+    /** Held-list response, carrying the gate mode so an empty OFF-mode list explains itself. */
     public record HeldList(List<HeldItem> items, String mode) {}
+
+    /**
+     * Lists assessed payments, newest first, with optional filters for
+     * verdict ({@code assessment}), reason code, and a free-text query
+     * ({@code q}). Unknown filter values are 400s, never silent empty lists.
+     * Paging uses the same opaque cursor contract as the instruction list.
+     */
     @GetMapping("/assessments")
     public ResponseEntity<HeldList> list(
             @RequestParam(required = false) String assessment,
@@ -105,16 +129,27 @@ public class RiskController {
         return response.body(new HeldList(page, gate.mode().name()));
     }
 
+    /** One rule that fired, with the feature evidence that tripped it. */
     public record MatchedRule(String code, String detail) {}
+    /** One provider answer (or non-answer) to a fixed yes/no question. */
     public record SignalView(String questionId, String question, String type, Object answer,
             Double confidence, String confidenceNote) {}
+    /** One timed stage of the assessment, for the detail timeline. */
     public record StageView(String stage, Long durationMs) {}
+    /** The exact versions that produced an assessment, so old decisions stay interpretable. */
     public record VersionsView(String featureSchema, String rules, String policy, String questions) {}
+    /** Full assessment detail: features seen, rules matched, provider signals, and timing. */
     public record Detail(UUID instructionId, String clientReference, String participants, long amountMinor,
             String currency, String businessOutcome, String riskOutput, String riskOutputText,
             Map<String, Object> features, List<MatchedRule> matchedRules, String policy,
             List<SignalView> signals, List<StageView> timeline, Long totalMs, Instant assessedAt,
             String traceId, VersionsView versions) {}
+
+    /**
+     * Returns the latest assessment for one instruction in full. Answers 404
+     * when the instruction is unknown or was never assessed (for example
+     * with the gate OFF).
+     */
     @GetMapping("/assessments/{instructionId}")
     public Detail detail(@PathVariable UUID instructionId) {
         AdmissionService.Read read = service.get(instructionId);
@@ -139,9 +174,11 @@ public class RiskController {
                         assessment.policyVersion(), assessment.questionVersion()));
     }
 
-    // Reserved review-action contract (DEFERRED — 404 until B01). The route
-    // exists so clients get the stable ApiErrors shape instead of the
-    // container default; it never records anything.
+    /**
+     * Reserved review-action contract, deferred by design. The route exists
+     * so clients get the stable {@link ApiErrors} shape instead of the
+     * container default. It records nothing and changes nothing.
+     */
     @PostMapping("/reviews")
     public ResponseEntity<ApiErrors.Error> deferredReview(@RequestBody(required = false) String body) {
         return ResponseEntity.status(404).body(new ApiErrors.Error("NOT_FOUND",

@@ -2,11 +2,18 @@ package dev.queuedesk.risk;
 
 import java.time.Instant;
 
-// Frozen feature snapshot (RISK-01, PRD §24): amount, velocity, elapsed time,
-// receiver history, as-of timestamp, and explicit missingness flags. Plain
-// Java, unit-tested without Spring (SK01 pattern). Velocity counts UNIQUE
-// instructions only — retries and transport duplicates never create instruction
-// rows, so counting rows excludes them by construction.
+/**
+ * A frozen feature snapshot: everything the risk gate is allowed to look at
+ * for one payment, computed once and stored with the assessment.
+ *
+ * <p>Missing data is explicit, never defaulted: {@code missingElapsed} and
+ * {@code missingBaseline} say so out loud, and the baseline ratio uses the
+ * {@link #NO_BASELINE} sentinel instead of NaN or a quiet 1.0. Velocity
+ * counts unique instructions only. Retries and transport duplicates never
+ * create instruction rows, so counting rows excludes them by construction.
+ * Plain Java with constructor-checked invariants, unit-testable without
+ * Spring.
+ */
 public record FeatureSnapshot(
         long amountMinor,
         int priorUniqueCount,

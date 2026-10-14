@@ -8,8 +8,12 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
-// Postgres adapter: explicit SQL. All calls join the caller's transaction — the
-// worker's or a test's — so dedup and outcome commit or roll back together.
+/**
+ * Postgres implementation of {@link ProcessedMessageRepository} with
+ * explicit SQL. Every call joins the caller's transaction (the worker's or
+ * a test's), so the dedup key and the business outcome commit or roll back
+ * together.
+ */
 @Repository
 public class JdbcProcessedMessageRepository implements ProcessedMessageRepository {
     private final JdbcClient jdbc;

@@ -3,37 +3,55 @@ package dev.queuedesk.risk;
 import java.util.ArrayList;
 import java.util.List;
 
-// Policy composition (RISK-03, PRD §24): pure Java, owns ALLOW / REVIEW /
-// NOT_ASSESSED / REJECT. Deterministic rules evaluate first and any match
-// holds for review; provider signals are context only. REJECT fires solely
-// under the explicit deterministic simulation block below — never from a
-// score or confidence alone. Reason codes are predefined constants, never
-// model prose; confidence labels the exact question and the UI must never
-// render "probability of fraud".
+/**
+ * Policy composition: the pure-Java function that turns features and
+ * provider signals into {@code ALLOW}, {@code REVIEW}, {@code NOT_ASSESSED},
+ * or {@code REJECT}.
+ *
+ * <p>Deterministic rules evaluate first, and any match holds the payment
+ * for review. Provider signals are context only: they can explain a hold,
+ * but no score or confidence value can allow, hold, or reject anything by
+ * itself. The single {@code REJECT} path is the explicit simulation block
+ * below. Reason codes are predefined constants, never model prose, and
+ * provider confidence means "confidence in the answer to the exact
+ * question". It must never be presented as a probability of fraud.
+ */
 public final class RiskPolicy {
+    /** Rules version, stored on every assessment so old decisions stay interpretable. */
     public static final String RULES_VERSION = "0.4";
+    /** Reason code: the sender has never paid this receiver (in the run's history window). */
     public static final String NEW_RECIPIENT = "NEW_RECIPIENT";
+    /** Reason code: the amount is far above the sender's recent median. */
     public static final String UNUSUAL_AMOUNT = "UNUSUAL_AMOUNT";
+    /** Reason code: the deterministic simulation block fired (the only reject path). */
     public static final String SIMULATED_POLICY_BLOCK = "SIMULATED_POLICY_BLOCK";
+    /** Every reason code this policy can emit; API filters validate against this set. */
     public static final List<String> KNOWN_CODES = List.of(NEW_RECIPIENT, UNUSUAL_AMOUNT, SIMULATED_POLICY_BLOCK);
 
-    // An amount at least 5x the sender's window median is unusual. Missing
-    // baseline (first-in-window) is not unusual by itself — NEW_RECIPIENT
-    // already covers that case.
+    /**
+     * An amount at least 5× the sender's window median counts as unusual. A
+     * missing baseline (first payment in the window) is not unusual by
+     * itself; {@link #NEW_RECIPIENT} already covers that case.
+     */
     public static final double UNUSUAL_RATIO = 5.0;
-    // Explicit deterministic simulation block (the ONLY reject path): a
-    // near-cap amount to a never-seen receiver. Simulation-only; a live policy
-    // would replace this predicate, never a threshold tweak.
+    /**
+     * The simulation block threshold (the only reject path): a near-cap
+     * amount to a never-seen receiver. Simulation-only by design; a live
+     * policy would replace this predicate, never just tweak the number.
+     */
     public static final long SIMULATED_BLOCK_AMOUNT_MINOR = 9_500_000L;
 
+    /** A composed verdict: result, the predefined reason codes behind it, and the evaluation status. */
     public record Decision(String policyResult, List<String> reasonCodes, String evaluationStatus) {}
 
     private RiskPolicy() {}
 
+    /** Returns {@code true} when a baseline exists and this amount meets the unusual ratio. */
     public static boolean unusualAmount(FeatureSnapshot snapshot) {
         return !snapshot.missingBaseline() && snapshot.amountToBaselineRatio() >= UNUSUAL_RATIO;
     }
 
+    /** Returns the human-readable evidence line for one matched rule, for the assessment detail view. */
     public static String ruleDetail(String code, FeatureSnapshot snapshot) {
         return switch (code) {
             case NEW_RECIPIENT -> "recipient_seen_before = false";
@@ -45,9 +63,15 @@ public final class RiskPolicy {
         };
     }
 
-    // provider == null means RULES_ONLY (provider not consulted). Otherwise the
-    // assessment arrived OK and its signals are context: matched rules still
-    // drive the outcome; a required Noul (abstention) forces NOT_ASSESSED.
+    /**
+     * Composes the verdict for a completed evaluation.
+     *
+     * @param provider the provider's assessment, or {@code null} in
+     *        rules-only mode (provider not consulted). When present, its
+     *        signals are context: matched rules still drive the outcome, and
+     *        an abstention (Noul) on a required question forces
+     *        {@code NOT_ASSESSED} rather than an allow
+     */
     public static Decision evaluate(FeatureSnapshot snapshot, RiskSignalProvider.Assessment provider) {
         var matched = matchedRules(snapshot);
         String status = provider == null ? "NOT_APPLICABLE" : provider.evaluationStatus();
@@ -63,11 +87,14 @@ public final class RiskPolicy {
         return new Decision("ALLOW", List.of(), provider.evaluationStatus());
     }
 
-    // Failure mapping: rules STILL evaluate first on a faulted call (they are
-    // deterministic local facts — a provider outage must not flip a REVIEW to
-    // something else, nor hide the match). Only genuinely unevaluated quiet
-    // traffic holds NOT_ASSESSED, always with the fault's own evaluationStatus
-    // (never an allow, never a silent retry).
+    /**
+     * Failure mapping: rules still evaluate first on a faulted provider call,
+     * because they are deterministic local facts. A provider outage must not
+     * flip a {@code REVIEW} into something else or hide the match. Only
+     * genuinely unevaluated quiet traffic holds as {@code NOT_ASSESSED},
+     * always carrying the fault's own status. Never an allow, never a
+     * silent retry.
+     */
     public static Decision evaluateOnFault(FeatureSnapshot snapshot, String evaluationStatus) {
         var matched = matchedRules(snapshot);
         if (simulatedBlock(snapshot)) {
@@ -79,6 +106,7 @@ public final class RiskPolicy {
         return notAssessed(evaluationStatus);
     }
 
+    /** Builds a fail-closed hold for work that could not be evaluated, labeled with why. */
     public static Decision notAssessed(String evaluationStatus) {
         return new Decision("NOT_ASSESSED", List.of(), evaluationStatus);
     }

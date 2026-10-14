@@ -10,14 +10,20 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import tools.jackson.databind.ObjectMapper;
 
-// Live Jev wiring (live gate, human approval required): in RULES_PLUS_JEV
-// mode ONLY, a @Primary Jev adapter replaces the mock provider bean. Any other
-// mode leaves this configuration inert — the mock stays the sole provider.
-// The credential resolves from explicit config first, then the gitignored
-// key file; JEV mode without either fails boot with a named error (never a
-// silent fallback to the mock, never a live call without a credential).
+/**
+ * Live Jev wiring. In {@code RULES_PLUS_JEV} mode only, a primary Jev
+ * adapter replaces the mock provider bean; in every other mode this
+ * configuration is inert and the mock stays the sole provider.
+ *
+ * <p>The credential resolves from explicit configuration first, then from
+ * the gitignored key file. Jev mode with neither fails boot with a named
+ * error: never a silent fallback to the mock, and never a live call without
+ * a credential. Running this mode requires deliberate human action (setting
+ * the mode plus providing the key).
+ */
 @Configuration
 public class RiskLiveConfig {
+    /** Builds the live Jev provider (real HTTP transport, budget ledger wired in). */
     @Bean
     @Primary
     @ConditionalOnProperty(name = "queuedesk.risk.mode", havingValue = "RULES_PLUS_JEV")

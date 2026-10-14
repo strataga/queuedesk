@@ -11,12 +11,21 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
-// Single metrics owner (OBS-02): every queuedesk.* meter is built here. IDs
-// (instruction/event/run) never become labels — fixed small tag sets only;
-// IDs live in logs and traces. Gauges query the database live per scrape, so
-// they always agree with durable state; -1 means "unknown", never zero. On a
-// DB outage a gauge serves its last good reading (or -1 if none) instead of
-// throwing — metrics must survive exactly when they are most needed.
+/**
+ * The single owner of every {@code queuedesk.*} meter.
+ *
+ * <p>Cardinality discipline: instruction, event, and run IDs never become
+ * metric labels. Tags come from small fixed sets (decision, result, status);
+ * IDs live in logs and traces where they belong. Gauges query the database
+ * live on each scrape so they always agree with durable state. A reading of
+ * -1 means "unknown", never a disguised zero. During a database outage a
+ * gauge serves its last good reading (or -1 if it never had one) instead of
+ * throwing, because metrics must survive exactly when they are most needed.
+ *
+ * <p>Risk meters here are operational only (hold counts, call latency).
+ * Precision and recall come from the labeled offline harness, never from
+ * these counters.
+ */
 @Component
 public class QueuedeskMetrics {
     private final MeterRegistry registry;
@@ -45,6 +54,7 @@ public class QueuedeskMetrics {
         Gauge.builder("queuedesk.mq.backlog.estimate.oldest.age.seconds", this, m -> m.mqBacklogOldestAge())
                 .description("APPLICATION ESTIMATE of oldest unprocessed publish age; 0 when none").register(registry);
     }
+    /** Records one HTTP admission outcome and its duration (request start to durable acceptance). */
     public void admission(String decision, long nanos) {
         Counter.builder("queuedesk.admissions.total").tag("decision", decision)
                 .description("HTTP admission outcomes").register(registry).increment();
@@ -54,6 +64,7 @@ public class QueuedeskMetrics {
         if ("accepted".equals(decision) || "repeated".equals(decision))
             buckets.record(LatencyBuckets.ADMISSION, TimeUnit.NANOSECONDS.toMillis(nanos));
     }
+    /** Records one durable terminal outcome and its end-to-end duration. Unresolved work is never recorded. */
     public void outcome(String result, Instant receivedAt) {
         Counter.builder("queuedesk.outcomes.total").tag("result", result)
                 .description("Durable terminal business outcomes").register(registry).increment();
@@ -62,13 +73,12 @@ public class QueuedeskMetrics {
                 .register(registry).record(Duration.between(receivedAt, Instant.now()));
         buckets.record(LatencyBuckets.COMPLETION, Duration.between(receivedAt, Instant.now()).toMillis());
     }
-    // Risk ops (RISK-06): hold counts by policy result, provider calls by
-    // status, provider latency distribution. Operational only — precision /
-    // recall come from the labeled offline harness, never these meters.
+    /** Counts one risk-gate hold, tagged by policy result (REVIEW or NOT_ASSESSED). */
     public void riskHold(String policyResult) {
         Counter.builder("queuedesk.risk.holds.total").tag("result", policyResult)
                 .description("Risk gate holds by policy result").register(registry).increment();
     }
+    /** Counts one risk-provider call by evaluation status and records its latency. Faults are separate series. */
     public void riskProviderCall(String status, long latencyMs) {
         Counter.builder("queuedesk.risk.provider.calls.total").tag("status", status)
                 .description("Risk provider calls by evaluation status").register(registry).increment();
@@ -77,14 +87,17 @@ public class QueuedeskMetrics {
                 .register(registry).record(latencyMs, TimeUnit.MILLISECONDS);
         buckets.record(LatencyBuckets.RISK_PROVIDER, latencyMs);
     }
+    /** Counts one redelivery absorbed by event-ID dedup (proof duplicates are happening and being handled). */
     public void dedup() {
         Counter.builder("queuedesk.dedup.total").description("Redeliveries absorbed by eventId dedup")
                 .register(registry).increment();
     }
+    /** Counts one processing-failure evidence row, tagged by attempt result. */
     public void failure(String result) {
         Counter.builder("queuedesk.processing.failed.total").tag("result", result)
                 .description("Processing failure evidence by attempt result").register(registry).increment();
     }
+    /** Counts one reconciliation task settled from stored receiver evidence. */
     public void reconciled() {
         Counter.builder("queuedesk.reconciled.total").description("Tasks settled from receiver evidence")
                 .register(registry).increment();

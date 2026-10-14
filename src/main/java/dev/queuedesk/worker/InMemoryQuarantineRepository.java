@@ -8,9 +8,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-// Plain unit-test double: no Spring stereotype, constructed directly in tests.
-// Mirrors the JDBC adapter's observable contract: unresolved-only reads in
-// last-seen order with real timestamps, resolve/reopen lifecycle included.
+/**
+ * In-memory {@link QuarantineRepository} for unit tests. No Spring
+ * stereotype; tests construct it directly. Mirrors the JDBC adapter's
+ * observable contract: unresolved-only reads in last-seen order with real
+ * timestamps, and the same resolve/reopen lifecycle.
+ */
 public class InMemoryQuarantineRepository implements QuarantineRepository {
     private static final class Row {
         String digest;

@@ -6,11 +6,15 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
-// Laboratory safeguards (SAFE-01): one read-only view over the stop
-// conditions. The generator consults it before sending and halts new traffic
-// when backlog exceeds the limit or free disk drops below the reserve —
-// safeguards, not capacity claims. Pending work is never cleared to satisfy
-// a guard; the operator drains or shuts down explicitly (see runbook).
+/**
+ * Laboratory safeguards: one read-only view over the lab's stop conditions.
+ *
+ * <p>The generator consults this endpoint before sending and halts new
+ * traffic when the outbox backlog exceeds its limit or free disk drops
+ * below the reserve. These are safeguards, not capacity claims. Pending
+ * work is never cleared to satisfy a guard; the operator drains the lab or
+ * shuts it down explicitly (see the runbooks).
+ */
 @RestController
 @RequestMapping("/api/v1/ops")
 public class OpsController {
@@ -24,9 +28,12 @@ public class OpsController {
         this.backlogLimit = backlogLimit;
         this.diskReserveBytes = diskReserveBytes;
     }
+    /** Guard status: both checks, the combined halt decision, and human-readable reasons. */
     public record Guards(long outboxPending, long backlogLimit, boolean backlogHalt,
             long diskFreeBytes, long diskReserveBytes, boolean diskHalt,
             boolean haltTraffic, List<String> reasons) {}
+
+    /** Returns current guard readings. {@code haltTraffic} is true when any guard trips. */
     @GetMapping("/guards")
     public Guards guards() throws Exception {
         long pending = jdbc.sql("SELECT COUNT(*) FROM outbox WHERE published_at IS NULL").query(Long.class).single();

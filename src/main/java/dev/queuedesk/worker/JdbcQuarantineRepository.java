@@ -10,7 +10,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-// Postgres adapter: explicit SQL, joins the caller's transaction.
+/**
+ * Postgres implementation of {@link QuarantineRepository} with explicit SQL.
+ * Joins the reconciler's transaction, so one browse lands (upserts,
+ * resolutions, and heartbeat) as a single consistent projection update.
+ */
 @Repository
 public class JdbcQuarantineRepository implements QuarantineRepository {
     private final JdbcClient jdbc;

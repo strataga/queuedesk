@@ -6,22 +6,36 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-// Controlled crash windows (FAIL-01): one-shot latches that fire exactly at a
-// commit boundary — worker before/after its DB commit, publisher after its MQ
-// send. Firing HALTS the JVM (exit 99) when lab-armed, which is how SC08 kills
-// the process at the right microsecond instead of hoping. Unit-test seams arm
-// the same latch in THROW mode (Tripped), proving latch placement and the
-// recovery outcome without killing the test JVM.
-//
-// Safety: halt mode requires the explicit master switch
-// `queuedesk.fault.lab-armed` (env QUEUEDESK_FAULT_LAB_ARMED); all latches and
-// the master default to false, arming is logged loudly, and no latch is
-// reachable from any HTTP parameter — only the process owner can set env.
+/**
+ * Controlled crash windows for failure drills (FAIL-01).
+ *
+ * <p>Each latch is a one-shot switch placed exactly on a commit boundary:
+ * the worker before and after its database commit, the publisher after its
+ * MQ send, and the risk gate after saving an assessment. When the lab is
+ * armed, tripping a latch halts the JVM with exit code 99. That is how
+ * scenario SC08 kills the process at the right microsecond instead of
+ * hoping a timed {@code kill} lands in the window.
+ *
+ * <p>Unit tests arm the same latches in throw mode ({@link Tripped}), which
+ * proves latch placement and the recovery outcome without killing the test
+ * JVM.
+ *
+ * <p>Safety: halt mode requires the explicit master switch
+ * {@code queuedesk.fault.lab-armed} (environment variable
+ * {@code QUEUEDESK_FAULT_LAB_ARMED}). The master switch and every latch
+ * default to {@code false}, arming is logged loudly, and no latch is
+ * reachable from any HTTP parameter. Only the process owner, who controls
+ * the environment, can arm a crash.
+ */
 @Component
 public class FaultLatches {
-    // Extends Error deliberately: listener/publisher catch RuntimeException for
-    // paced redelivery bookkeeping, but a tripped latch must propagate like a
-    // real crash — no FAILED evidence row, just death (halt) or rollback (throw).
+    /**
+     * Thrown when a latch trips in throw mode. Extends {@link Error}
+     * deliberately: the listener and publisher catch {@link RuntimeException}
+     * for paced-redelivery bookkeeping, but a tripped latch must propagate
+     * like a real crash. No FAILED evidence row, just death (halt) or
+     * rollback (throw).
+     */
     public static final class Tripped extends Error {
         public Tripped(String latch) { super("fault latch tripped: " + latch); }
     }
@@ -47,21 +61,34 @@ public class FaultLatches {
             log.error("fault.armed workerBefore={} workerAfter={} publisherAfter={} riskAfter={} exitCode={} (LAB ONLY; process will halt, not degrade)",
                     workerBefore, workerAfter, publisherAfter, riskAfter, HALT_EXIT_CODE);
     }
+    /** Crash point: the worker has done its work but not yet committed. No-op unless armed. */
     public void tripWorkerBeforeCommit() { trip(workerBeforeCommit, "worker-halt-before-commit"); }
+    /** Crash point: the worker committed, but the MQ acknowledgement has not settled. No-op unless armed. */
     public void tripWorkerAfterCommit() { trip(workerAfterCommit, "worker-halt-after-commit"); }
+    /** Crash point: the publisher sent to MQ but has not marked the outbox row published. No-op unless armed. */
     public void tripPublisherAfterCommit() { trip(publisherAfterCommit, "publisher-halt-after-commit"); }
-    // RS06 crash window: after the assessment row is saved, before the hold
-    // outcome commits. A halt rolls everything back; redelivery reassesses —
-    // still exactly one outcome, never a half-held instruction.
+    /**
+     * Crash point for drill RS06: after the assessment row is saved, before
+     * the hold outcome commits. A halt rolls everything back and redelivery
+     * reassesses, so there is still exactly one outcome and never a
+     * half-held instruction. No-op unless armed.
+     */
     public void tripRiskAfterAssessment() { trip(riskAfterAssessment, "risk-halt-after-assessment"); }
-    // Test seams: arm the same latch in throw mode (haltMode stays false in
-    // tests — env is the only path to a real halt).
+    // Test seams: arm the same latch in throw mode. haltMode stays false in
+    // tests because the environment is the only path to a real halt.
+    /** Test seam: arm {@link #tripWorkerBeforeCommit} once, in throw mode. */
     public void armThrowWorkerBeforeCommitOnceForTest() { workerBeforeCommit.set(true); }
+    /** Test seam: arm {@link #tripWorkerAfterCommit} once, in throw mode. */
     public void armThrowWorkerAfterCommitOnceForTest() { workerAfterCommit.set(true); }
+    /** Test seam: arm {@link #tripPublisherAfterCommit} once, in throw mode. */
     public void armThrowPublisherAfterCommitOnceForTest() { publisherAfterCommit.set(true); }
+    /** Test seam: arm {@link #tripRiskAfterAssessment} once, in throw mode. */
     public void armThrowRiskAfterAssessmentOnceForTest() { riskAfterAssessment.set(true); }
-    // A latch that never trips stays armed: call from @BeforeEach so one
-    // test's unused arm cannot leak into the next test's commit path.
+    /**
+     * Disarms every latch. Tests call this from {@code @BeforeEach}: a latch
+     * that never trips stays armed, and one test's unused arm must not leak
+     * into the next test's commit path.
+     */
     public void resetForTest() {
         workerBeforeCommit.set(false);
         workerAfterCommit.set(false);

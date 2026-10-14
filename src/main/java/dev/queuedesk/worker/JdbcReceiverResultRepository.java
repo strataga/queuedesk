@@ -5,7 +5,11 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 import java.util.UUID;
 
-// Postgres adapter: explicit SQL, joins the caller's (gateway) transaction.
+/**
+ * Postgres implementation of {@link ReceiverResultRepository} with explicit
+ * SQL. Joins the gateway's own transaction, which is deliberately separate
+ * from the worker's outcome transaction.
+ */
 @Repository
 public class JdbcReceiverResultRepository implements ReceiverResultRepository {
     private final JdbcClient jdbc;

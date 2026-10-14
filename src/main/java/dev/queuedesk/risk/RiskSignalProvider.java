@@ -4,58 +4,92 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-// RiskSignalProvider application contract (RISK-02, PRD §24): assessmentId,
-// inputHash, versions, typed signals, latency, evaluationStatus. Java-first
-// validation (exact question IDs/types, allowed keys, finite ranges,
-// distribution totals) runs on EVERY response including the mock's — proving
-// the adapter path a future PR13 swap must satisfy.
+/**
+ * The application contract every risk-signal provider must satisfy: typed
+ * answers to fixed questions, pinned versions, measured latency, and an
+ * honest evaluation status.
+ *
+ * <p>Java-first validation (exact question IDs and types, allowed keys,
+ * finite ranges, distribution totals) runs on <em>every</em> response,
+ * including the mock's. That is deliberate: the mock proves the same
+ * adapter path the live provider must pass, so swapping providers never
+ * changes what the gate accepts. Policy code depends only on this
+ * interface, never on a provider's wire format.
+ */
 public interface RiskSignalProvider {
 
-    // Typed answers only: a Choice carries its full distribution plus the
-    // confidence in the answer to the EXACT question (never "probability of
-    // fraud"); a Noul declines to answer one required question.
+    /**
+     * One typed answer: the chosen value, its full probability distribution,
+     * and the confidence in the answer to the exact question asked. That
+     * confidence is never a probability of fraud. A provider that cannot
+     * answer records a Noul (abstention) instead; see {@link Assessment}.
+     */
     record ChoiceSignal(String questionId, String choice, Map<String, Double> probabilities, double confidence) {}
-    // Metered usage, null when the provider reports none (the mock never
-    // spends). Token counts feed the durable $1-cap ledger, never policy.
+
+    /**
+     * Metered token usage, {@code null} when the provider reports none (the
+     * mock never spends). Feeds the durable budget ledger, never the policy.
+     */
     record Usage(long inputTokens, long outputTokens) {
         public Usage {
             if (inputTokens < 0 || outputTokens < 0)
                 throw new IllegalArgumentException("usage token counts must be >= 0");
         }
     }
+    /**
+     * One completed provider evaluation: answers, abstentions
+     * ({@code noulQuestionIds}), versions, latency, status, and usage. The
+     * {@code inputHash} ties the answers to the exact snapshot assessed.
+     */
     record Assessment(UUID assessmentId, String inputHash, String providerVersion, String modelVersion,
             String questionVersion, List<ChoiceSignal> choices, List<String> noulQuestionIds,
             long latencyMs, String evaluationStatus, Usage usage) {}
 
+    /**
+     * Assesses one frozen feature snapshot.
+     *
+     * @throws ProviderException (typed by failure kind) when no valid
+     *         assessment could be produced; the gate maps each kind to a
+     *         fail-closed hold
+     */
     Assessment assess(FeatureSnapshot snapshot, String inputHash) throws ProviderException;
 
-    // Provider failures are typed so the gate maps each to its honest
-    // evaluationStatus (NOT_ASSESSED hold) instead of a generic error.
-    // (A sealed class, not records: records cannot extend Throwable.)
+    /**
+     * Base type for typed provider failures. Each subtype names the honest
+     * {@code evaluationStatus} the gate records on its hold, instead of
+     * collapsing every failure into a generic error. (A sealed class, not
+     * records: records cannot extend {@link Throwable}.)
+     */
     abstract sealed class ProviderException extends Exception
             permits ProviderTimeout, InvalidResponse, ProviderUnavailable {
         protected ProviderException(String detail) { super(detail); }
         public abstract String evaluationStatus();
         public String detail() { return getMessage(); }
     }
+    /** The provider did not answer within the deadline. */
     final class ProviderTimeout extends ProviderException {
         public ProviderTimeout(String detail) { super(detail); }
         @Override public String evaluationStatus() { return "TIMEOUT"; }
     }
+    /** The provider answered, but the response failed contract validation. */
     final class InvalidResponse extends ProviderException {
         public InvalidResponse(String detail) { super(detail); }
         @Override public String evaluationStatus() { return "INVALID_RESPONSE"; }
     }
+    /** The provider could not be reached (or refused: auth, overload, budget). */
     final class ProviderUnavailable extends ProviderException {
         public ProviderUnavailable(String detail) { super(detail); }
         @Override public String evaluationStatus() { return "PROVIDER_UNAVAILABLE"; }
     }
 
-    // Mock question catalog: stable IDs, boolean choices, required set.
+    /** Stable ID: "Is the recipient new to this sender?" */
     String Q01_NEW_RECIPIENT = "Q01";
+    /** Stable ID: "Is the amount unusual for this sender?" */
     String Q02_UNUSUAL_AMOUNT = "Q02";
+    /** The required boolean question set every provider must answer or abstain on. */
     List<String> REQUIRED_QUESTIONS = List.of(Q01_NEW_RECIPIENT, Q02_UNUSUAL_AMOUNT);
 
+    /** Returns the fixed display text for a question ID. Wording changes are a version bump, not config. */
     static String questionText(String questionId) {
         return switch (questionId) {
             case Q01_NEW_RECIPIENT -> "Is the recipient new to this sender?";
@@ -64,10 +98,13 @@ public interface RiskSignalProvider {
         };
     }
 
-    // Shared adapter validation: exact question IDs, boolean choices, finite
-    // [0,1] probabilities summing to 1.0 (±1e-6), finite [0,1] confidence,
-    // no unknown IDs, no duplicates. Throws InvalidResponse, never returns
-    // a half-validated assessment.
+    /**
+     * Shared adapter validation, applied to every provider response: exact
+     * question IDs, boolean choices, finite [0,1] probabilities summing to
+     * 1.0 (±1e-6), finite [0,1] confidence, no unknown IDs, no duplicates.
+     *
+     * @throws InvalidResponse on any violation; never returns a half-validated assessment
+     */
     static void validate(Assessment assessment, String expectedQuestionVersion) throws InvalidResponse {
         if (assessment == null) throw new InvalidResponse("null assessment");
         if (!expectedQuestionVersion.equals(assessment.questionVersion()))

@@ -19,11 +19,20 @@ import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.UUID;
 
-// QUAR-02: reconciles the backout queue into quarantine_record rows by BROWSING
-// only — observing held work must never consume it. The projection lags the MQ
-// move by design; the heartbeat keeps that lag visible instead of pretending
-// the move and the projection are atomic. Failures (broker/DB down) are logged
-// and retried next pass; a pass never throws into the scheduler.
+/**
+ * Keeps the quarantine projection honest by browsing the backout queue on a
+ * schedule.
+ *
+ * <p>Browsing only: observing held work must never consume it. Each pass
+ * upserts what the queue holds now (keyed by body digest, enriched with the
+ * worker's recorded failure reason when an event ID is readable), resolves
+ * rows the broker no longer shows, and stamps the heartbeat. The
+ * projection lags the MQ move by design; the heartbeat keeps that lag
+ * visible instead of pretending the two are atomic.
+ *
+ * <p>Broker or database failures are logged and retried next pass. A pass
+ * never throws into the scheduler.
+ */
 @Component
 public class QuarantineReconciler {
     static final String UNPARSEABLE = "UNPARSEABLE_ENVELOPE";
@@ -47,8 +56,11 @@ public class QuarantineReconciler {
         this.queueBackout = queueBackout;
         this.enabled = enabled;
     }
+    /** Scheduled entry point: one reconciliation pass while enabled. */
     @Scheduled(fixedDelayString = "${queuedesk.quarantine.poll-delay-ms:15000}")
     public void poll() { if (enabled) reconcile(); }
+
+    /** Runs one browse-and-project pass now (also the test entry point). Never throws. */
     public void reconcile() {
         try (var scope = dev.queuedesk.ops.LogContext.of("stage", "quarantine")) {
             reconcileHeld();

@@ -8,15 +8,24 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
-// Deterministic mock provider (RISK-02): seeded answers, bounded latency, no
-// network. Answers mirror the snapshot features (the mock is context, not
-// truth — matched rules drive the policy). Fault injection covers the failure
-// taxonomy: TIMEOUT sleeps past the gate deadline, INVALID returns a response
-// the Java-first validation rejects, UNAVAILABLE throws before answering, and
-// UNKNOWN declines a required question (well-formed Noul, honest abstention).
+/**
+ * Deterministic mock provider: seeded answers, bounded fake latency, no
+ * network, no spend.
+ *
+ * <p>Answers mirror the snapshot features (the mock is context, not truth;
+ * matched rules drive the policy), and the same input hash always yields
+ * the same assessment, so scenario results are reproducible. Fault
+ * injection covers the whole failure taxonomy on purpose: {@code TIMEOUT}
+ * sleeps past the gate deadline, {@code INVALID} returns a response the
+ * shared validation must reject, {@code UNAVAILABLE} throws before
+ * answering, and {@code UNKNOWN} honestly abstains (Noul) on a required
+ * question. This mock is the default provider bean; live mode replaces it.
+ */
 @Component
 public class MockRiskSignalProvider implements RiskSignalProvider {
+    /** Provider version stamped on mock assessments. */
     public static final String PROVIDER_VERSION = "mock-1.0";
+    /** Model version stamped on mock assessments. */
     public static final String MODEL_VERSION = "mock-2026-10";
 
     private final RiskProperties properties;
@@ -31,6 +40,11 @@ public class MockRiskSignalProvider implements RiskSignalProvider {
         this.properties = properties;
     }
 
+    /**
+     * Validates a fault-injection setting ({@code NONE|TIMEOUT|INVALID|UNAVAILABLE|UNKNOWN}).
+     *
+     * @throws IllegalArgumentException naming the valid set for anything else
+     */
     public static String requireFault(String raw) {
         if (raw == null) return "NONE";
         String name = raw.trim().toUpperCase(java.util.Locale.ROOT);
@@ -39,9 +53,13 @@ public class MockRiskSignalProvider implements RiskSignalProvider {
         return name;
     }
 
+    /** Test seam: override the configured fault without rebooting the context. */
     public void setFaultForTest(String fault) { faultForTest.set(requireFault(fault)); }
+    /** Test seam: drop the override so the configured fault applies again. */
     public void clearFaultForTest() { faultForTest.set(null); }
+    /** Test seam: how many assessments were requested (proves bounded calls and reuse). */
     public long callsForTest() { return callsForTest.get(); }
+    /** Test seam: reset the call counter between tests. */
     public void resetCallsForTest() { callsForTest.set(0); }
 
     @Override

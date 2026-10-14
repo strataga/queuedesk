@@ -3,8 +3,15 @@ package dev.queuedesk.repository;
 import dev.queuedesk.domain.StoredInstruction;
 import java.util.*;
 
-// Plain unit-test double: no Spring stereotype, constructed directly in tests.
-// Single-JVM locks only; cross-process safety comes from the Postgres adapter.
+/**
+ * In-memory {@link InstructionRepository} for unit tests.
+ *
+ * <p>Plain test double with no Spring stereotype; tests construct it
+ * directly. It mirrors the JDBC adapter's contract — same ordering, same
+ * duplicate-key failure, same conditional transitions — so service logic
+ * proven here behaves the same against Postgres. Synchronization is
+ * single-JVM only; cross-process safety comes from the database adapter.
+ */
 public class InMemoryInstructionRepository implements InstructionRepository {
     private final Map<String, StoredInstruction> instructions = new LinkedHashMap<>();
     public synchronized Optional<StoredInstruction> byKey(String key) { return Optional.ofNullable(instructions.get(key)); }

@@ -9,24 +9,32 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
-// Live Jev adapter (live gate, stubbed phase): implements the same
-// RiskSignalProvider contract as the mock, so policy code never changes
-// (PR13). NOT a Spring bean — the mock stays the only provider bean and
-// RULES_PLUS_JEV still fails boot validation (PR16); tests construct this
-// directly with a stubbed JevTransport (or the real HttpClient transport
-// against a loopback server). The remaining live-gate diff is documented in
-// RUNBOOK-RISK: account, pinned model, Spring binding, mode flip, eval.
-//
-// Wire shape follows the TypeSafe API reference (POST {base}/v1/systemone,
-// Bearer auth, {state, model, questions} → {model, answers, usage}). Both lab
-// questions go as Choice with true/false criteria under the mock's Q01/Q02
-// IDs, so the policy and the shared validate() apply unchanged. Question text
-// is fixed code versioned by QUESTION_VERSION — operators cannot silently
-// change what is asked; new wording is a code change plus re-evaluation.
-// The state carries snapshot numerics only: no actor identities exist on the
-// snapshot, and none are added here.
+/**
+ * Live Jev adapter: implements the same {@link RiskSignalProvider} contract
+ * as the mock, so policy and gate code never change when the provider does.
+ * Wired as the primary provider bean only in {@code RULES_PLUS_JEV} mode
+ * (see {@link RiskLiveConfig}); tests construct it directly with a stubbed
+ * transport or the real HTTP transport against a loopback server. See
+ * RUNBOOK-RISK for the live-run procedure.
+ *
+ * <p>Wire shape follows the TypeSafe API: {@code POST {base}/v1/systemone}
+ * with a bearer credential, {@code {state, model, questions}} in and
+ * {@code {model, answers, usage}} out. Both lab questions go as choice
+ * questions with true/false criteria under the shared Q01/Q02 IDs, so the
+ * shared {@code validate()} applies unchanged. Question wording is fixed
+ * code, versioned by {@link #QUESTION_VERSION}: operators cannot silently
+ * change what is asked; new wording is a code change plus re-evaluation.
+ * The state carries snapshot numbers only. No actor identities exist on the
+ * snapshot, and none are added here.
+ *
+ * <p>Before any call, the durable budget ledger is checked: spend is the
+ * sum over stored assessments, so restarts never reset the cap. A breached
+ * cap refuses as unavailable and the gate holds, visibly.
+ */
 public class JevRiskSignalProvider implements RiskSignalProvider {
+    /** Adapter version stamped on live assessments (distinct from the model version). */
     public static final String PROVIDER_VERSION = "jev-http-1.0";
+    /** Fixed question-wording version for the live prompt text below. */
     public static final String QUESTION_VERSION = "jev-q1";
     static final String Q01_INSTRUCTIONS =
             "Is the recipient new to this sender? Answer from receiver_seen_before in the state.";

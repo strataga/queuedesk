@@ -18,10 +18,25 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.time.Instant;
 import java.util.*;
 
-// Use case boundary: validation, idempotent admission, reads. Each database
-// interaction runs in its own short transaction. A lost insert race retries the
-// READ in a fresh transaction: Postgres aborts the failed one, so the same
-// transaction can never be reused after a constraint violation.
+/**
+ * The use-case boundary for payments: validated, idempotent admission plus
+ * consistent reads.
+ *
+ * <p>Each database interaction runs in its own short transaction. A lost
+ * insert race retries the <em>read</em> in a fresh transaction: Postgres
+ * aborts the failed one, so the same transaction can never be reused after a
+ * constraint violation.
+ *
+ * <p>Two guarantees live here:
+ * <ul>
+ *   <li>Repeating a submission with the same idempotency key and payload
+ *       returns the original instruction and creates nothing new — not even a
+ *       second outbox event.</li>
+ *   <li>A new instruction and its outbox event commit in one transaction, so
+ *       a payment can never be stored without its publish intent (or the
+ *       reverse).</li>
+ * </ul>
+ */
 @Service
 public class AdmissionService {
     private static final Set<String> KNOWN_STATES = Set.of("RECEIVED", "BUSINESS_ACCEPTED", "REJECTED",
@@ -55,18 +70,37 @@ public class AdmissionService {
         this.readTx.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
         this.readTx.setReadOnly(true);
     }
+    /** Admission result: the stored instruction, plus whether this call was an exact repeat. */
     public record Admission(StoredInstruction instruction, boolean repeated) {}
-    // PR08 read: business state plus separately derived delivery detail.
-    // QUARANTINED beats RETRYING beats PUBLISHED beats PENDING_PUBLISH; delivery
-    // may lag the worker and never implies business completion.
-    // DASH-06: the latest risk assessment joins the read (null with the gate
-    // OFF or before any assessment exists).
+    /**
+     * One read-model row (PR08): business state plus separately derived
+     * delivery detail. {@code QUARANTINED} beats {@code RETRYING} beats
+     * {@code PUBLISHED} beats {@code PENDING_PUBLISH}; delivery may lag the
+     * worker and never implies business completion. The latest risk
+     * assessment joins the read (DASH-06) and is {@code null} with the gate
+     * OFF or before any assessment exists.
+     */
     public record Read(StoredInstruction instruction, String delivery, RiskAssessmentRepository.StoredAssessment risk) {}
+    /** One page of reads; {@code nextCursor} is {@code null} on the last page. */
     public record Page(List<Read> items, String nextCursor) {}
+    /** The idempotency key was reused with a different payload (HTTP 409). */
     public static class Conflict extends RuntimeException {}
+    /** The lab-wide admission cap was reached (HTTP 503, code {@code CAPACITY}). */
     public static class Capacity extends RuntimeException {}
+    /** No instruction with the requested ID (HTTP 404). */
     public static class Missing extends RuntimeException {}
 
+    /**
+     * Admits one payment, or recognizes an exact repeat.
+     *
+     * @param key the caller's {@code Idempotency-Key} (trimmed and validated here)
+     * @param correlation optional {@code X-Correlation-Id}; a fresh UUID is minted when absent
+     * @param payload the already-validated instruction
+     * @return the stored instruction; {@code repeated} is {@code true} when the
+     *         key and payload matched an earlier admission exactly
+     * @throws Conflict when the key exists with a different payload
+     * @throws Capacity when the lab already holds {@code MAX_ADMISSIONS} instructions
+     */
     public Admission admit(String key, String correlation, PaymentInstruction payload) {
         if (payload == null) throw new IllegalArgumentException("payload is required");
         key = PaymentInstruction.token(key, "Idempotency-Key");
@@ -107,6 +141,12 @@ public class AdmissionService {
             return new Admission(winner, true);
         }
     }
+    /**
+     * Reads one instruction with its derived delivery state and latest risk
+     * assessment, from a single repeatable-read snapshot.
+     *
+     * @throws Missing when no instruction has this ID
+     */
     public Read get(UUID id) {
         return readTx.execute(s -> {
             var instruction = repository.byId(id).orElseThrow(Missing::new);
@@ -114,6 +154,18 @@ public class AdmissionService {
                     risk.latestByInstruction(id).orElse(null));
         });
     }
+    /**
+     * Lists instructions one cursor page at a time.
+     *
+     * <p>Filtering is optional per axis: a {@code null} runId, status, since,
+     * or until disables that filter. Pages are ordered by
+     * {@code (receivedAt, instructionId)} so paging stays stable while new
+     * payments arrive. The repository returns one extra row, which is how
+     * this method knows whether a next page exists without a count query.
+     *
+     * @throws IllegalArgumentException on a bad limit, unknown status, reversed
+     *         time window, or malformed cursor/run token (all HTTP 400)
+     */
     public Page list(String runId, String status, int limit, String cursor, Instant since, Instant until,
             boolean newestFirst) {
         if (limit < 1 || limit > 100) throw new IllegalArgumentException("limit must be 1..100");
@@ -133,8 +185,11 @@ public class AdmissionService {
             return new Page(items, PageCursor.encode(last.receivedAt(), last.instructionId()));
         });
     }
-    // Newest-first lab-wide recents for the overview table: same batched joins
-    // as list, first page only (no cursor — the table shows the latest few).
+    /**
+     * Newest-first lab-wide recents for the overview table: the same batched
+     * joins as {@link #list}, first page only. There is no cursor because the
+     * table only ever shows the latest few.
+     */
     public List<Read> recent(int limit) {
         if (limit < 1 || limit > 20) throw new IllegalArgumentException("limit must be 1..20");
         return readTx.execute(s -> assemble(repository.recent(limit)));

@@ -10,10 +10,16 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 
-// Bounded in-memory span ring (TG02 evidence): the last 1000 finished spans,
-// oldest evicted first with a visible counter. Synchronous by design (runs on
-// a SimpleSpanProcessor), so export() only appends — it never blocks, never
-// throws, and never touches the network. Tests read finished spans here.
+/**
+ * Bounded in-memory span ring: the last 1,000 finished spans, oldest
+ * evicted first with a visible counter.
+ *
+ * <p>Synchronous by design (it runs on a {@code SimpleSpanProcessor}), so
+ * {@code export} only appends: it never blocks, never throws into business
+ * code, and never touches the network. The telemetry endpoints and tests
+ * read finished spans from here. Sampled diagnostics only; this is not a
+ * durable audit trail.
+ */
 @Component
 public class SpanRingBuffer implements SpanExporter {
     private static final int CAPACITY = 1000;
@@ -35,10 +41,13 @@ public class SpanRingBuffer implements SpanExporter {
             return CompletableResultCode.ofFailure();
         }
     }
+    /** Returns a snapshot copy of all retained spans, oldest first. */
     public synchronized List<SpanData> spans() { return new ArrayList<>(ring); }
+    /** Returns retained spans with one exact name (trace assertions in tests). */
     public synchronized List<SpanData> byName(String name) {
         return ring.stream().filter(s -> s.getName().equals(name)).toList();
     }
+    /** Test seam: clear the ring between tests sharing one context. */
     public synchronized void resetForTest() { ring.clear(); }
     @Override
     public CompletableResultCode flush() { return CompletableResultCode.ofSuccess(); }

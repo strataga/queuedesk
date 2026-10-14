@@ -7,7 +7,12 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 
-// Postgres adapter: explicit SQL, joins the caller's transaction.
+/**
+ * Postgres implementation of {@link ProcessingAttemptRepository} with
+ * explicit SQL. Joins the caller's transaction, which is exactly why
+ * attempt rows from a rolled-back delivery vanish unless the caller writes
+ * fresh evidence afterwards.
+ */
 @Repository
 public class JdbcProcessingAttemptRepository implements ProcessingAttemptRepository {
     private final JdbcClient jdbc;

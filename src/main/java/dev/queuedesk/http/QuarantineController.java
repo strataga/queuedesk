@@ -7,14 +7,22 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-// Read-only quarantine projection (QUAR-02): held events with reasons plus the
-// reconciler heartbeat. Stale means the heartbeat aged past 60s (four missed
-// 15s passes) — the view says so instead of masquerading as current or empty.
-// Observing never authorizes replay (deferred B01).
+/**
+ * Read-only view of the quarantine projection: poison messages held on the
+ * backout queue, with the reason each one is held.
+ *
+ * <p>The response carries the reconciler heartbeat. When the heartbeat is
+ * older than 60 seconds (four missed 15-second passes), {@code stale} is
+ * {@code true}: the view says "I may be out of date" instead of pretending
+ * to be current or empty. Observing quarantine never authorizes replay;
+ * there is deliberately no write endpoint here.
+ */
 @RestController
 @RequestMapping("/api/v1/quarantine")
 public class QuarantineController {
+    /** One held (quarantined) event and why it is held. */
     public record HeldItem(String eventId, UUID instructionId, String reason, Instant firstSeenAt, Instant lastSeenAt) {}
+    /** Quarantine response: freshness evidence plus the held items (capped at 100). */
     public record QuarantineView(Instant lastReconciledAt, boolean stale, String lastError, List<HeldItem> items) {}
     private final QuarantineRepository quarantine;
     public QuarantineController(QuarantineRepository quarantine) { this.quarantine = quarantine; }

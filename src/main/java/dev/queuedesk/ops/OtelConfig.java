@@ -18,15 +18,20 @@ import org.springframework.context.annotation.Configuration;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
-// The one telemetry owner (TEL-01): an explicitly built OTel SDK. Three span
-// processors: a start counter (every span, framework or manual), the bounded
-// in-memory ring (synchronous, allocation-only), and the batched OTLP
-// exporter behind the counting wrapper. The batch queue is bounded (2048)
-// with short lab delays; a dead collector yields counted export failures,
-// never blocking business work (TG03). Boot ships no tracing auto-config, so
-// nothing here is magic — every bound is visible below.
+/**
+ * The one telemetry owner: an explicitly built OpenTelemetry SDK.
+ *
+ * <p>Three span processors run on every span: a start counter (so created
+ * spans can be compared against exported ones), the bounded in-memory ring
+ * (synchronous and allocation-only), and the batched OTLP exporter behind
+ * the counting wrapper. The batch queue is bounded at 2048 with short lab
+ * delays; a dead collector yields counted export failures and never blocks
+ * business work. Boot ships no tracing auto-configuration here, so nothing
+ * is magic: every bound is visible below.
+ */
 @Configuration
 public class OtelConfig {
+    /** Assembles the SDK with W3C trace-context plus baggage propagation. */
     @Bean(destroyMethod = "close")
     public OpenTelemetrySdk openTelemetry(SdkTracerProvider tracerProvider) {
         return OpenTelemetrySdk.builder().setTracerProvider(tracerProvider)
@@ -35,6 +40,7 @@ public class OtelConfig {
                 .build();
     }
 
+    /** Builds the OTLP HTTP exporter (5-second timeout) behind its counting wrapper. */
     @Bean
     public CountingSpanExporter countingSpanExporter(TelemetryCounters counters,
             @Value("${queuedesk.telemetry.otlp-endpoint:http://localhost:4318}") String endpoint) {
@@ -43,6 +49,7 @@ public class OtelConfig {
         return new CountingSpanExporter(otlp, counters);
     }
 
+    /** Wires the three processors and stamps the resource as service {@code queuedesk}. */
     @Bean(destroyMethod = "close")
     public SdkTracerProvider tracerProvider(SpanRingBuffer ring, TelemetryCounters counters,
             CountingSpanExporter exporter) {

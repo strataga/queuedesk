@@ -21,12 +21,20 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-// Scenarios + run detail (DASH-04): static catalog with REAL CLI previews
-// (the mockups invented flags — §8 maps every entry to the actual
-// scripts/generate / scripts/risk-eval.py interface) and run evidence
-// discovered from durable state. The UI executes nothing. Runs come from
-// DISTINCT run_id over instruction, never from CLI-side reports/*.json the
-// server cannot rely on. Unknown runs report zeros, never 404.
+/**
+ * Scenario catalog, run history, and stored CLI reports for the dashboard.
+ *
+ * <p>The catalog is static metadata, but every command preview is real: each
+ * entry maps to the actual {@code scripts/generate} or
+ * {@code scripts/risk-eval.py} interface, with no invented flags. The UI
+ * executes nothing; it only shows the command so a human can run it.
+ *
+ * <p>Run history is discovered from durable state (distinct {@code run_id}
+ * values over the instruction table), never from CLI-side report files the
+ * server cannot rely on. Unknown runs report zeros, never a 404. Facts the
+ * server does not persist (such as HTTP attempt counts) are returned as
+ * {@code null}, explicitly unavailable rather than zero-masked.
+ */
 @RestController
 @RequestMapping("/api/v1/scenarios")
 public class ScenarioController {
@@ -43,9 +51,16 @@ public class ScenarioController {
         this.reportsDir = reportsDir;
     }
 
+    /**
+     * One catalog entry: what the scenario proves, its default shape, and the
+     * exact CLI invocation. {@code commandArgs} is the same command split
+     * for safe copy-paste rendering; {@code dryRunDefault} records that the
+     * generator sends nothing without {@code --send}.
+     */
     public record CatalogItem(String id, String title, String group, String blurb, Integer seed,
             Integer unique, Integer repeats, Integer maxAttempts, String riskMode,
             String commandPreview, List<String> commandArgs, boolean dryRunDefault) {}
+    /** Catalog response wrapper. */
     public record Catalog(List<CatalogItem> items) {}
 
     private static CatalogItem core(String id, String title, String blurb, Integer seed, Integer unique,
@@ -119,14 +134,19 @@ public class ScenarioController {
             risk("RS06", "Restart around assessment save / hold commit",
                     "no second business outcome; incomplete assessment stays visible"));
 
+    /** Returns the full static scenario catalog (SC01–SC12 core drills, RS01–RS06 risk drills). */
     @GetMapping
     public Catalog catalog() {
         return new Catalog(CATALOG);
     }
 
+    /** One discovered run: identity, first-admission time, and admitted count. */
     public record RunItem(String runId, String scenarioId, String scenarioTitle, Instant startedAt,
             long admitted, String summary) {}
+    /** Run-history response wrapper. */
     public record RunList(List<RunItem> items) {}
+
+    /** Lists runs discovered from stored instructions, newest first, with offset-cursor paging. */
     @GetMapping("/runs")
     public ResponseEntity<RunList> runs(@RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "20") int limit) {
@@ -145,14 +165,28 @@ public class ScenarioController {
         return response.body(new RunList(page));
     }
 
+    /** One human-readable outcome line with its pass/fail verdict. */
     public record AssertionView(String text, boolean passed) {}
+    /** Best-known generator configuration for a run; unknown fields stay {@code null}. */
     public record GeneratorView(String scenario, Integer seed, long unique, long repeats,
             long maxAttempts, String participants) {}
+    /**
+     * Run detail response. {@code httpAttempts} and {@code repeatResponses}
+     * are nullable because the server does not persist admission-time
+     * attempt facts; {@code null} means unavailable, never zero.
+     */
     public record RunDetail(String runId, String scenarioId, String scenarioTitle, Instant startedAt,
             Integer seed, String riskMode, Long httpAttempts, long uniqueAdmitted, long simulatedCompleted,
             long unknownConfirmations, Long repeatResponses, long duplicateOutcomes,
             List<AssertionView> assertions, GeneratorView generator, String commandPreview,
             List<String> commandArgs, boolean dryRunDefault) {}
+
+    /**
+     * Returns the evidence for one run, derived entirely from stored
+     * instructions and attempts. Unknown runs report zeros. The suggested
+     * replay command points at the normal scenario because the server
+     * cannot know which scenario produced a run.
+     */
     @GetMapping("/runs/{runId}")
     public RunDetail run(@PathVariable String runId) {
         PaymentInstruction.token(runId, "runId");
@@ -197,21 +231,27 @@ public class ScenarioController {
                 true);
     }
 
-    // Export re-serves the run JSON (same shape + exportedAt); no server-side
-    // PDF/CSV in this build.
+    /**
+     * Re-serves the run detail as downloadable JSON with an export
+     * timestamp. There is no server-side PDF or CSV rendering in this build.
+     */
     @GetMapping("/runs/{runId}/export")
     public Map<String, Object> export(@PathVariable String runId) {
         return Map.of("run", run(runId), "exportedAt", Instant.now().toString());
     }
 
-    // CLI report files (mockup 10 evidence): the generator/harness writes
-    // reports/*.json beside the server; the UI lists and re-serves them here.
-    // Zero new migrations — the list carries file metadata only (name, bytes,
-    // mtime, newest first) and the UI parses the served JSON for detail. A
-    // missing directory reads as an empty list: the CLI may run elsewhere.
+    // CLI report files (evidence the generator and risk harness write to
+    // reports/*.json beside the server). The list carries file metadata only
+    // (name, bytes, modification time, newest first); the UI fetches and
+    // parses the JSON itself for detail. A missing directory reads as an
+    // empty list, because the CLI may run on another machine.
     private static final Pattern REPORT_NAME = Pattern.compile("[A-Za-z0-9][A-Za-z0-9._-]*\\.json");
+    /** Metadata for one stored CLI report file. */
     public record ReportFile(String name, long sizeBytes, Instant modifiedAt) {}
+    /** Report-list response wrapper. */
     public record ReportList(List<ReportFile> items) {}
+
+    /** Lists stored CLI report files, newest first, with offset-cursor paging. */
     @GetMapping("/reports")
     public ResponseEntity<ReportList> reports(@RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "20") int limit) {
@@ -225,10 +265,13 @@ public class ScenarioController {
         return response.body(new ReportList(more ? page.subList(0, limit) : page));
     }
 
-    // Raw bytes with application/json; the server never re-shapes CLI evidence.
-    // Traversal guard in two layers: the name allowlist rejects separators and
-    // leading dots (400 INVALID_REQUEST), then the normalized resolve must stay
-    // under the reports dir. Well-formed but absent reads 404 NOT_FOUND.
+    /**
+     * Serves one report file as raw JSON bytes; the server never re-shapes
+     * CLI evidence. The path-traversal guard works in two layers: the name
+     * allowlist rejects separators and leading dots (400), then the
+     * normalized path must still resolve inside the reports directory. A
+     * well-formed name with no matching file reads 404.
+     */
     @GetMapping("/reports/{name}")
     public ResponseEntity<?> report(@PathVariable String name) {
         if (!REPORT_NAME.matcher(name).matches())

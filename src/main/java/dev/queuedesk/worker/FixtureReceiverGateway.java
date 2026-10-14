@@ -10,15 +10,30 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.util.Optional;
 import java.util.UUID;
 
-// Fixture-driven mock receiver: deterministic on clientReference so scenario
-// tests demand uncertainty by construction. Every call runs in its OWN
-// transaction (REQUIRES_NEW): receiver truth commits independently of — and
-// survives rollback of — the worker's result transaction (D-01).
+/**
+ * Fixture-driven mock receiver: behavior is deterministic on the payment's
+ * {@code clientReference}, so scenario tests can demand uncertainty by
+ * construction instead of by timing luck.
+ *
+ * <p>Reference prefixes select the drill: {@code uncertain-} stores a
+ * result then loses the reply, {@code uncertain-reject-} does the same with
+ * a rejection, {@code unknown-} never knows, and {@code flaky-} crashes the
+ * first call after storing a pending marker. Everything else completes.
+ *
+ * <p>Every call runs in its own transaction ({@code REQUIRES_NEW}):
+ * receiver truth commits independently of, and survives rollback of, the
+ * worker's result transaction. That independence is the point: it is what
+ * makes reconciliation from stored receiver truth possible.
+ */
 @Component
 public class FixtureReceiverGateway implements ReceiverGateway {
+    /** References with this prefix store a completion, then lose the reply. */
     public static final String UNCERTAIN_PREFIX = "uncertain-";
+    /** References with this prefix store a rejection, then lose the reply. Checked before {@link #UNCERTAIN_PREFIX}. */
     public static final String UNCERTAIN_REJECT_PREFIX = "uncertain-reject-";
+    /** References with this prefix are stored as permanently unknown. */
     public static final String UNKNOWN_PREFIX = "unknown-";
+    /** References with this prefix crash the first call, leaving a resumable pending marker. */
     public static final String FLAKY_PREFIX = "flaky-";
     private final ReceiverResultRepository results;
     private final InstructionRepository instructions;

@@ -8,12 +8,17 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 
-// Production Jev transport (live gate, stubbed phase): real java.net.http
-// POSTs to the pinned endpoint with the bounded deadline. NOT a Spring bean
-// (the mock stays the only RiskSignalProvider bean until the live gate) —
-// tests run it against a loopback stub server. No retries: 429/529 surface
-// as unavailable per PRD §25. Provider error bodies are bounded before they
-// reach messages; the API key never appears in any message.
+/**
+ * Production Jev transport: real {@code java.net.http} POSTs to the pinned
+ * endpoint under the configured deadline.
+ *
+ * <p>No retries: 429 and 529 surface as unavailable so the gate holds and
+ * the operator sees the overload. Status mapping is explicit (401 auth,
+ * 422 bad request, everything else unavailable). Provider error bodies are
+ * flattened and length-bounded before they reach exception messages, and
+ * the API key never appears in any message. Tests run this same transport
+ * against a loopback stub server.
+ */
 public class JevHttpTransport implements JevTransport {
     private static final int MAX_DETAIL = 500;
 
