@@ -9,8 +9,8 @@ public record PaymentInstruction(String clientReference, String runId,
         runId = token(runId, "runId");
         if (!"SENDER_A".equals(senderParticipant) || !"RECEIVER_B".equals(receiverParticipant))
             throw new IllegalArgumentException("Participants must be SENDER_A and RECEIVER_B");
-        if (amountMinor == null || amountMinor < 1 || amountMinor > 1_000_000_000L)
-            throw new IllegalArgumentException("amountMinor must be 1..1000000000 (synthetic lab cap)");
+        if (amountMinor == null || amountMinor < 1 || amountMinor > 10_000_000L)
+            throw new IllegalArgumentException("amountMinor must be 1..10000000 (synthetic lab cap)");
         if (!"USD".equals(currency)) throw new IllegalArgumentException("currency must be USD");
     }
 

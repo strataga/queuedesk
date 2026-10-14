@@ -1,0 +1,166 @@
+#!/bin/sh
+# Phase 9 evidence (K8S-01): scenario regression plus pod-restart, rollout,
+# Postgres-restart, MQ-outage and cluster-recreation checks against the kind lab.
+# Requires `scripts/k8s up` + `scripts/k8s setup` first. Manages its own
+# loopback port-forward (18080); leaves the cluster running with its data.
+# Exit 0 prints VERIFY PASS; any failed assertion prints FAIL and exits 1.
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+NS=queuedesk-lab
+BASE=http://127.0.0.1:18080
+PF_PID=""
+
+cleanup() { [ -n "$PF_PID" ] && kill "$PF_PID" 2>/dev/null || true; }
+trap cleanup EXIT INT TERM
+
+# kubectl svc port-forward sticks to one backing pod and exits when that pod is
+# replaced, so re-establish it after every pod replacement below.
+pf_start() {
+  [ -n "$PF_PID" ] && kill "$PF_PID" 2>/dev/null || true
+  sleep 1
+  kubectl -n "$NS" port-forward svc/queuedesk-app 18080:8080 >>/tmp/qdesk-k8s-verify-pf.log 2>&1 &
+  PF_PID=$!
+  sleep 4
+}
+
+fail() { echo "FAIL: $1" >&2; exit 1; }
+pass() { echo "ok: $1"; }
+
+ap() { curl -s --max-time 10 "$BASE$1"; }
+run_field() { ap "/api/v1/runs/$1" | python3 -c "import json,sys; print(json.load(sys.stdin)$2)"; }
+run_ids() { curl -s --max-time 15 "$BASE/api/v1/instructions?runId=$1&limit=100" | python3 -c "import json,sys; print('\n'.join(sorted(i['instructionId'] for i in json.load(sys.stdin))))"; }
+
+wait_run() { # runId expectedAdmitted timeoutSeconds
+  i=0
+  while [ "$i" -lt "$3" ]; do
+    adm=$(run_field "$1" "['admitted']" 2>/dev/null || echo -1)
+    pend=$(run_field "$1" "['outboxPending']" 2>/dev/null || echo -1)
+    open=$(run_field "$1" "['reconcileOpen']" 2>/dev/null || echo -1)
+    if [ "$adm" = "$2" ] && [ "$pend" = "0" ] && [ "$open" = "0" ]; then return 0; fi
+    sleep 5; i=$((i + 5))
+  done
+  return 1
+}
+wait_ready() { # timeoutSeconds
+  kubectl -n "$NS" wait --for=condition=ready pod -l app=queuedesk-app --timeout="$1s" >/dev/null
+}
+app_restarts() {
+  kubectl -n "$NS" get pods -l app=queuedesk-app -o jsonpath='{.items[0].status.containerStatuses[0].restartCount}'
+}
+
+kubectl -n "$NS" get svc/queuedesk-app >/dev/null 2>&1 || fail "stack not up (run scripts/k8s up first)"
+pf_start
+ap "/actuator/health/liveness" | grep -q '"UP"' || fail "app not reachable via port-forward"
+
+echo "== stage 1/6: scenario regression (normal + duplicates) =="
+"$ROOT/scripts/generate" --run-id k8s-normal --count 20 --scenario normal --seed 42 --rate 10 --send --send-seconds 60 --base-url "$BASE" >/dev/null
+wait_run k8s-normal 20 120 || fail "k8s-normal did not drain"
+[ "$(run_field k8s-normal "['byState'].get('COMPLETED_SIMULATED',0)")" = "20" ] || fail "k8s-normal not 20/20 completed"
+"$ROOT/scripts/generate" --run-id k8s-dup --count 20 --scenario duplicate --seed 42 --rate 10 --send --send-seconds 90 --base-url "$BASE" >/dev/null
+wait_run k8s-dup 20 120 || fail "k8s-dup did not drain"
+[ "$(run_field k8s-dup "['byState'].get('COMPLETED_SIMULATED',0)")" = "20" ] || fail "k8s-dup not 20/20 completed"
+pass "normal 20/20 + duplicates 20 rows completed (repeats absorbed)"
+
+echo "== stage 2/6: app pod delete mid-run =="
+# Paced sends (2/s over ~12s) with the pod deleted mid-stream: sends during the
+# outage fail at the client, but every admitted row must complete exactly once
+# after the replacement pod recovers — no lost rows, no duplicate outcomes.
+"$ROOT/scripts/generate" --run-id k8s-kill --count 20 --scenario burst --seed 7 --rate 2 --send --send-seconds 150 --base-url "$BASE" >/dev/null &
+GEN_PID=$!
+sleep 5
+kubectl -n "$NS" delete pod -l app=queuedesk-app --wait=false >/dev/null
+wait "$GEN_PID" || true
+wait_ready 300
+pf_start
+KILL_ADM=$(run_field k8s-kill "['admitted']")
+[ "$KILL_ADM" -ge 5 ] 2>/dev/null || fail "k8s-kill admitted too few to prove mid-run kill ($KILL_ADM)"
+wait_run k8s-kill "$KILL_ADM" 180 || fail "k8s-kill did not drain after pod delete"
+[ "$(run_field k8s-kill "['byState'].get('COMPLETED_SIMULATED',0)")" = "$KILL_ADM" ] || fail "k8s-kill not fully completed"
+KILL_IDS=$(run_ids k8s-kill)
+[ "$(printf '%s\n' "$KILL_IDS" | sort -u | wc -l | tr -d ' ')" = "$KILL_ADM" ] || fail "k8s-kill identities unstable"
+pass "pod deleted mid-run: $KILL_ADM/$KILL_ADM completed, stable identities, one outcome each"
+
+echo "== stage 3/6: controlled rollout restart =="
+IDS_BEFORE=$(run_ids k8s-normal)
+kubectl -n "$NS" rollout restart deploy/queuedesk-app >/dev/null
+kubectl -n "$NS" rollout status deploy/queuedesk-app --timeout=420s >/dev/null
+pf_start
+wait_run k8s-normal 20 60 || fail "k8s-normal changed across rollout"
+[ "$(run_ids k8s-normal)" = "$IDS_BEFORE" ] || fail "k8s-normal identities changed across rollout"
+[ "$(app_restarts)" = "0" ] || fail "fresh rollout pod already restarted"
+pass "rollout restart: run evidence identical, replacement pod 0 restarts"
+
+echo "== stage 4/6: postgres pod delete (durability) =="
+DUP_BEFORE=$(run_ids k8s-dup)
+kubectl -n "$NS" delete pod -l app=postgres --wait=false >/dev/null
+kubectl -n "$NS" rollout status deploy/postgres --timeout=180s >/dev/null
+wait_ready 300
+pf_start
+wait_run k8s-dup 20 60 || fail "k8s-dup changed across postgres restart"
+[ "$(run_ids k8s-dup)" = "$DUP_BEFORE" ] || fail "k8s-dup identities changed across postgres restart"
+pass "postgres restart: durable rows intact, app recovered"
+
+echo "== stage 5/6: MQ outage (no restart loop, outbox recovery) =="
+R0=$(app_restarts)
+docker stop qdesk-mq >/dev/null
+READY=true
+for _ in $(seq 1 18); do
+  READY=$(kubectl -n "$NS" get pods -l app=queuedesk-app -o jsonpath='{.items[0].status.containerStatuses[0].ready}')
+  [ "$READY" = "false" ] && break
+  sleep 5
+done
+[ "$READY" = "false" ] || fail "app still Ready during MQ outage (want NotReady)"
+[ "$(app_restarts)" = "$R0" ] || fail "app restarted during MQ outage (want no restart loop)"
+POD=$(kubectl -n "$NS" get pods -l app=queuedesk-app -o jsonpath='{.items[0].metadata.name}')
+kubectl -n "$NS" port-forward "pod/$POD" 18081:8080 >>/tmp/qdesk-k8s-verify-pf.log 2>&1 &
+POD_PF=$!
+sleep 4
+curl -s --max-time 10 http://127.0.0.1:18081/actuator/health/liveness | grep -q '"UP"' || { kill "$POD_PF" 2>/dev/null; fail "liveness not UP during outage"; }
+# The readiness verdict that matters is kubelet's (NotReady above): the endpoint
+# itself may hang past any client timeout (MQ TCP connect blackholes to the
+# stopped container), so assert it never reports UP rather than a DOWN body.
+# Parse the TOP-LEVEL status: per-component entries (db stays UP during an MQ
+# outage) also contain "status":"UP" substrings, which a naive grep trips on.
+ROUT=$(curl -s --max-time 15 http://127.0.0.1:18081/actuator/health/readiness 2>/dev/null || true)
+if [ -n "$ROUT" ] && echo "$ROUT" | python3 -c "import json,sys; sys.exit(0 if json.load(sys.stdin).get('status')=='UP' else 1)"; then
+  kill "$POD_PF" 2>/dev/null; fail "readiness UP during outage"
+fi
+kill "$POD_PF" 2>/dev/null; wait "$POD_PF" 2>/dev/null || true
+docker start qdesk-mq >/dev/null
+for _ in $(seq 1 60); do
+  docker exec qdesk-mq dspmq -m QDESK 2>/dev/null | grep -q "STATUS(Running)" && break
+  sleep 5
+done
+docker exec qdesk-mq dspmq -m QDESK 2>/dev/null | grep -q "STATUS(Running)" || fail "QM did not return"
+wait_ready 300
+pf_start
+[ "$(app_restarts)" = "$R0" ] || fail "app restarted across MQ outage"
+curl -s --max-time 10 -X POST "$BASE/api/v1/instructions" -H 'Content-Type: application/json' \
+  -H 'Idempotency-Key: k8s-recovered-1' \
+  -d '{"clientReference":"k8s-rec-1","runId":"k8s-recovered","senderParticipant":"SENDER_A","receiverParticipant":"RECEIVER_B","amountMinor":100,"currency":"USD"}' >/dev/null
+wait_run k8s-recovered 1 120 || fail "post-outage admission did not complete"
+pass "outage: NotReady + liveness UP + 0 restarts; recovery via outbox after broker return"
+
+echo "== stage 6/6: cluster recreation preserves Postgres durability =="
+MARK_BEFORE=$(ap "/api/v1/runs/k8s-normal")
+cleanup; PF_PID=""
+# Recreate is the one destructive step: if it fails midway, attempt recovery
+# before failing so the script never strands the operator without a lab.
+if ! kind delete cluster --name qdesk >/dev/null 2>&1 \
+  || ! (cd "$ROOT" && kind create cluster --config k8s/kind-cluster.yaml --wait 180s >/dev/null 2>&1) \
+  || ! "$ROOT/scripts/k8s" up >/tmp/qdesk-k8s-reup.log 2>&1; then
+  echo "stage 6 recreate failed; attempting recovery via scripts/k8s up..." >&2
+  "$ROOT/scripts/k8s" up >/tmp/qdesk-k8s-reup.log 2>&1 \
+    || fail "recreate failed and recovery failed (see /tmp/qdesk-k8s-reup.log); run scripts/k8s up manually"
+fi
+"$ROOT/scripts/k8s" setup >/dev/null 2>&1
+pf_start
+MARK_AFTER=$(ap "/api/v1/runs/k8s-normal")
+[ "$MARK_BEFORE" = "$MARK_AFTER" ] || fail "run evidence changed across cluster recreation: $MARK_BEFORE vs $MARK_AFTER"
+curl -s --max-time 10 -X POST "$BASE/api/v1/instructions" -H 'Content-Type: application/json' \
+  -H 'Idempotency-Key: k8s-recreated-1' \
+  -d '{"clientReference":"k8s-recr-1","runId":"k8s-recreated","senderParticipant":"SENDER_A","receiverParticipant":"RECEIVER_B","amountMinor":100,"currency":"USD"}' >/dev/null
+wait_run k8s-recreated 1 120 || fail "post-recreation admission did not complete"
+pass "recreated cluster serves pre-recreation rows and new work"
+
+echo "VERIFY PASS: scenarios + pod/rollout/pg/mq-outage/recreation all green"

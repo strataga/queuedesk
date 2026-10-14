@@ -1,0 +1,29 @@
+#!/bin/sh
+# TEST-01 explicit gates, in order: unit+integration suite, durable-backend
+# smoke, core scenario evidence. Needs ./scripts/postgres up and ./scripts/mq up.
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$ROOT"
+unset MQ_APP_PASSWORD
+# Gate 0: the gates below assume a clean lab (1000-row admission cap, global
+# reconciliation claims, exact scenario counts), so reset LOUDLY first — a
+# silent reset skip once polluted WorkerTest with smoke leftovers (expected
+# 1 resolved task, got 5). Under set -eu a reset failure aborts, never slides.
+echo "=== gate 0/3: clean lab ==="
+./scripts/reset-lab
+# reset-lab drains best-effort (a live consumer holds queues open): gate 0
+# must refuse a dirty lab instead of letting residue poison global-count
+# assertions downstream.
+qdepth() {
+  docker exec qdesk-mq bash -c "echo 'DIS QL($1) CURDEPTH' | runmqsc QDESK" 2>/dev/null \
+    | sed -n 's/.*CURDEPTH(\([0-9][0-9]*\)).*/\1/p' | head -1
+}
+[ "$(qdepth QUEUEDESK.INSTRUCTION.IN)" = "0" ] && [ "$(qdepth QUEUEDESK.INSTRUCTION.BACKOUT)" = "0" ] || {
+  echo "gate 0: queues not drained (stop the app, run ./scripts/reset-lab, retry)" >&2; exit 1; }
+echo "=== gate 1/3: unit + HTTP + Postgres + MQ integration ==="
+./mvnw test
+echo "=== gate 2/3: durable-backend smoke ==="
+./scripts/smoke
+echo "=== gate 3/3: scenarios SC01-SC12 incl. failure drills ==="
+./scripts/scenarios
+echo "VERIFY PASS: all three gates green."

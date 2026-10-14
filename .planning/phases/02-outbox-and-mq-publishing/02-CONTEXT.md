@@ -77,6 +77,8 @@ Future-phase references describe integration points that do not yet exist at int
 - Review applicable developer-use terms before running the chosen image.
 - Specify due-row selection and retry metadata semantics for one publisher; replicas/leases remain deferred.
 - Confirm behavior on MQ commit uncertainty and database failure while writing the published marker.
+- Bind MQ listener/console ports to loopback (127.0.0.1) per PRD §17; the spike's default all-interfaces binding must not carry into lab configuration.
+- SPIKE RESULT 2026-10-04 (GO): IBM MQ runs on this machine (Apple M4 Pro, Docker Desktop engine 29.8.1 aarch64, Rosetta for Linux available). Official `icr.io/ibm-messaging/mq:latest` (amd64, 1.34 GB, sha256:378c88e8aee6ff32d6b5fa6ce6584a017b42cec628d785b62dabf417cb3373a2) runs under emulation; QDESK reached STATUS(Running), version 10.0.0.5 level p1000-005-260828. Proved: host TCP to 1414, put/get roundtrip, and a DEFPSIST(YES) message plus queue definition surviving container restart on a named volume. Note DEV.QUEUE.1 defaults to DEFPSIST(NO). Faster native path if emulation proves slow: `make build-devserver` from ibm-messaging/mq-container produces an arm64 developer image. License accepted via LICENSE=accept (developer-machine-only, no redistribution). Kept artifacts: image, `qdesk-mqm` volume, stopped `qdesk-mq-probe` container.
 
 <deferred>
 ## Deferred Scope

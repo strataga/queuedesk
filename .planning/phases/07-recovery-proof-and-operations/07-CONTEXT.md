@@ -3,7 +3,7 @@
 **Gathered:** 2026-10-04
 **Status:** Ready for phase research and planning; execution waits for prerequisites
 **Origin:** Synthesized from the supplied PRD, implementation docs and reviewed images. This is source-derived context, not a claimed discuss-phase interview.
-**Requirements:** PR09, FAIL-01, FAIL-02, OBS-01, OBS-02, OPS-01, SAFE-01, OPS-02, LEARN-03
+**Requirements:** PR09, FAIL-01, FAIL-02, OBS-01, OBS-02, TEL-01, TEL-02, OPS-01, SAFE-01, OPS-02, LEARN-03
 
 <domain>
 ## Phase Boundary
@@ -31,8 +31,8 @@ These decisions reflect the PRD and documented precedence resolutions. Version/t
 
 1. Add controlled publisher/worker crash hooks and local-only outage/backout controls with bounded diagnostics.
 2. Complete SC06–SC10 and regression of all core scenarios, asserting both sides of every commit boundary and original identity.
-3. Expose structured logs, operational metrics/read endpoints, liveness/dependency state and resource/backlog stop conditions.
-4. Finalize recover/restart/shutdown runbook, CI integration profiles, retained scenario evidence and the learner's explanation checkpoint.
+3. Expose structured logs, operational metrics/read endpoints, trace context with per-attempt spans and async links, liveness/dependency state and resource/backlog stop conditions; prove bounded visible degradation when the telemetry exporter fails.
+4. Finalize recover/restart/shutdown runbook, CI integration profiles, retained scenario evidence and the learner-review material for the final review.
 
 These are planning inputs, not executable PLAN.md files. Resolve the open implementation choices, then create bounded plans with tasks, verification and must-haves.
 
@@ -40,7 +40,7 @@ These are planning inputs, not executable PLAN.md files. Resolve the open implem
 
 1. SC06–SC10 and both publisher/worker crash boundaries recover with stable IDs, retained rows and one definitive result; broken quarantine routing produces no silent drop.
 2. The local-only harness uses controlled hooks and bounded eventual assertions, refuses non-lab targets and only operates named QueueDesk resources.
-3. Logs/metrics expose backlog age, dedup/failure counts, pending age, quarantine freshness and correctly separated latency, without unbounded ID labels.
+3. Logs/metrics expose backlog age, dedup/failure counts, pending age, quarantine freshness and correctly separated latency, without unbounded ID labels. Trace context survives outbox/MQ with per-attempt spans and async links, and exporter failure degrades visibly without blocking processing.
 4. Resource/capacity guards stop new generated traffic at configured backlog/disk limits; health distinguishes dependency outage from a dead process and preserves restartable pending work.
 5. A fresh-reader runbook and recorded demonstration pass the reliability gate; CI explicitly distinguishes real Postgres/MQ passes from skips.
 
@@ -80,11 +80,14 @@ Future-phase references describe integration points that do not yet exist at int
 - Specify which operational reads/metrics drive traffic guards, including missing/stale guard data behavior.
 - Choose minimal local health/metrics exposure, a clear dependency-health model and freshness response fields reusable by Angular.
 - Define evidence retention, CI runner resource constraints and documentation paths without requiring paid infrastructure.
+- Choose one tracing owner (Micrometer Tracing with OTel bridge or the OTel Java agent) and verify it together with the selected Spring/MQ-client versions; persist trace context with the outbox and propagate it through MQ message properties.
+- Plan Phase 7 in two execution blocks (failure harness + matrix first; observability/ops/runbook second); it carries the largest requirement and evidence load.
+- Define the lab-run data retention/purge policy for instruction/outbox/dedup/audit rows; SAFE-01 guards traffic, not table growth.
 
 <deferred>
 ## Deferred Scope
 
-Dashboard implementation follows in Phase 8. Cloud and Kubernetes remain optional gated backlog items.
+Dashboard implementation follows in Phase 8. Cloud spend remains an optional gated backlog item; local Kubernetes is Phase 9.
 </deferred>
 
 ---

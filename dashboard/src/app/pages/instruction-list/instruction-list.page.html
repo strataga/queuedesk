@@ -1,0 +1,245 @@
+<div class="flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-semibold tracking-tight">Payments</h1>
+    <p class="mt-1 text-sm text-slate-600">Synthetic instructions · Read-only lab.</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <label class="text-xs text-slate-600">Window
+      <select [value]="windowMinutes" (change)="setWindow($any($event.target).value)" aria-label="Census window"
+        class="ml-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-sm">
+        @for (option of windowOptions; track option.minutes) {
+          <option [value]="option.minutes" [selected]="option.minutes === windowMinutes">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+    <a routerLink="/scenarios" class="rounded border border-sky-800 px-3 py-1 text-sm font-medium text-sky-800 hover:bg-sky-50">▷ View scenarios</a>
+  </div>
+</div>
+
+<section aria-label="Payment census" class="mt-4">
+  @if (census) {
+    <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div class="rounded-lg border border-slate-200 bg-white p-4">
+        <div class="flex items-center gap-3">
+          <span aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-800">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+          </span>
+          <p class="text-sm text-slate-600">All instructions</p>
+        </div>
+        <p class="mt-2 text-3xl font-semibold tabular-nums">{{ census.admitted | number }}</p>
+      </div>
+      <div class="rounded-lg border border-slate-200 bg-white p-4">
+        <div class="flex items-center gap-3">
+          <span aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg>
+          </span>
+          <p class="text-sm text-slate-600">Simulated completed</p>
+        </div>
+        <p class="mt-2 text-3xl font-semibold tabular-nums">{{ statCount('COMPLETED_SIMULATED') | number }}</p>
+      </div>
+      <div class="rounded-lg border border-slate-200 bg-white p-4">
+        <div class="flex items-center gap-3">
+          <span aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 22 20H2Z"/><path d="M12 10v4M12 17.5v.5"/></svg>
+          </span>
+          <p class="text-sm text-slate-600">Risk held</p>
+        </div>
+        <p class="mt-2 text-3xl font-semibold tabular-nums">{{ statCount('RISK_HELD') | number }}</p>
+      </div>
+      <div class="rounded-lg border border-slate-200 bg-white p-4">
+        <div class="flex items-center gap-3">
+          <span aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-800">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+          </span>
+          <p class="text-sm text-slate-600">Received</p>
+        </div>
+        <p class="mt-2 text-3xl font-semibold tabular-nums">{{ statCount('RECEIVED') | number }}</p>
+      </div>
+      <div class="rounded-lg border border-slate-200 bg-white p-4">
+        <div class="flex items-center gap-3">
+          <span aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3.5M12 17.5v.5"/></svg>
+          </span>
+          <p class="text-sm text-slate-600">Unknown confirmation</p>
+        </div>
+        <p class="mt-2 text-3xl font-semibold tabular-nums">{{ statCount('PENDING_CONFIRMATION') | number }}</p>
+      </div>
+    </div>
+    <p class="mt-1 text-xs text-slate-600">@if (censusRun) { scope: run {{ runId.trim() }} } @else { {{ windowLabel() }} · lab-wide }{{ censusFresh ? '' : ' · stale' }}</p>
+  } @else if (!censusFresh) {
+    <qd-state-message state="unavailable" message="Payment counts are unavailable." />
+  } @else {
+    <qd-state-message state="loading" />
+  }
+</section>
+
+<form (ngSubmit)="applyFilters()" class="mt-4 rounded-lg border border-slate-200 bg-white p-4" aria-label="Payment filters">
+  <h2 class="text-lg font-semibold">Payments <span class="text-sm font-normal text-slate-600">(synthetic instructions)</span></h2>
+  <div class="mt-2 grid grid-cols-1 gap-3 md:grid-cols-4">
+    <span>
+      <label for="f-search" class="text-sm font-medium">Search</label>
+      <input id="f-search" name="search" [(ngModel)]="search" placeholder="Search instruction or reference" autocomplete="off"
+        class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" />
+    </span>
+    <span>
+      <label for="f-run" class="text-sm font-medium">Run</label>
+      <input id="f-run" name="runId" [(ngModel)]="runId" placeholder="All runs" autocomplete="off"
+        class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" />
+    </span>
+    <span>
+      <label for="f-status" class="text-sm font-medium">Business status</label>
+      <select id="f-status" name="status" [(ngModel)]="status" class="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-1.5 text-sm">
+        <option value="">All statuses</option>
+        @for (state of knownStates; track state) {
+          <option [value]="state">{{ state }}</option>
+        }
+      </select>
+    </span>
+    <span>
+      <label for="f-risk" class="text-sm font-medium">Risk assessment</label>
+      <select id="f-risk" name="riskFilter" [(ngModel)]="riskFilter"
+        class="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-1.5 text-sm">
+        <option value="">All results</option>
+        @for (r of knownRiskResults; track r) {
+          <option [value]="r">{{ r }}</option>
+        }
+        <option value="NONE">No assessment recorded</option>
+      </select>
+    </span>
+  </div>
+  <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
+    <span>
+      <label for="f-range" class="text-sm font-medium">Time range</label>
+      <select id="f-range" name="timeRange" [(ngModel)]="timeRange" (ngModelChange)="setTimeRange($event)"
+        class="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-1.5 text-sm">
+        <option value="all">All time</option>
+        <option value="15m">Last 15 minutes</option>
+        <option value="1h">Last hour</option>
+        <option value="24h">Last 24 hours</option>
+      </select>
+    </span>
+    <span>
+      <label for="f-since" class="text-sm font-medium">Since (local time)</label>
+      <input id="f-since" name="since" type="datetime-local" [(ngModel)]="sinceLocal"
+        class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" />
+    </span>
+    <span>
+      <label for="f-until" class="text-sm font-medium">Until (local time)</label>
+      <input id="f-until" name="until" type="datetime-local" [(ngModel)]="untilLocal"
+        class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" />
+    </span>
+    <span>
+      <label for="f-limit" class="text-sm font-medium">Page size</label>
+      <select id="f-limit" name="limit" [(ngModel)]="limit" class="mt-1 w-full rounded border border-slate-300 bg-white px-3 py-1.5 text-sm">
+        <option [ngValue]="10">10</option>
+        <option [ngValue]="25">25</option>
+        <option [ngValue]="50">50</option>
+        <option [ngValue]="100">100</option>
+      </select>
+    </span>
+  </div>
+  <p class="mt-2 text-xs text-slate-600">Search and risk narrowing apply to loaded rows only — the list API has no server search or risk filter.</p>
+  <div class="mt-3 flex gap-2">
+    <button type="submit" class="rounded bg-sky-800 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700">
+      Apply filters
+    </button>
+    <button type="button" (click)="resetFilters()"
+      class="rounded border border-slate-300 bg-white px-4 py-1.5 text-sm font-medium hover:bg-slate-50">
+      Reset
+    </button>
+  </div>
+</form>
+
+<section [attr.aria-label]="'Results for ' + scopeLabel()" class="mt-4">
+  <h2 class="text-lg font-semibold">Results <span class="text-sm font-normal text-slate-600">({{ scopeLabel() }})</span></h2>
+  @if (items === null && fresh) {
+    <qd-state-message state="loading" />
+  } @else if (items === null) {
+    <qd-state-message state="unavailable" [message]="failure" />
+  } @else if (items.length === 0) {
+    <qd-state-message state="empty" message="No instructions match these filters." />
+    <qd-refresh-note [at]="lastAt" [stale]="!fresh"></qd-refresh-note>
+  } @else {
+    @let rows = displayed(items);
+    @if (!fresh && failure) {
+      <qd-state-message state="error" [message]="failure" />
+    }
+    @if (!live) {
+      <p role="note" class="mt-2 rounded-md border border-slate-300 bg-slate-50 px-4 py-2 text-sm text-slate-700">
+        ⏸ Auto-refresh paused while paging — rows below are a point-in-time snapshot. Apply filters to resume live updates.
+      </p>
+    }
+    @if (rows.length === 0) {
+      <qd-state-message state="empty" message="No loaded rows match this search — search and risk narrowing apply to loaded rows only." />
+    } @else {
+      <div class="mt-2 overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <table class="w-full text-left text-sm">
+          <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+            <tr>
+              <th scope="col" class="px-4 py-2">Instruction</th>
+              <th scope="col" class="px-4 py-2">Amount</th>
+              <th scope="col" class="px-4 py-2">Business status</th>
+              <th scope="col" class="px-4 py-2">Risk assessment</th>
+              <th scope="col" class="px-4 py-2">Delivery</th>
+              <th scope="col" class="px-4 py-2">Age</th>
+              <th scope="col" class="px-4 py-2"><span class="sr-only">Open</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of rows; track item.instructionId) {
+              <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                <td class="px-4 py-2">
+                  <a [routerLink]="['/payments', item.instructionId]" class="font-mono text-xs text-sky-800 underline hover:text-sky-600">{{ item.payload.clientReference }}</a>
+                </td>
+                <td class="px-4 py-2 tabular-nums">{{ item.payload.amountMinor | minorCurrency: item.payload.currency }}</td>
+                <td class="px-4 py-2"><qd-status-badge [value]="item.status"></qd-status-badge></td>
+                <td class="px-4 py-2">
+                  @if (item.riskStatus) {
+                    <qd-status-badge [value]="item.riskStatus" kind="risk"></qd-status-badge>
+                  } @else if (riskPending(item)) {
+                    <span class="inline-flex items-center gap-1 rounded border border-slate-300 bg-slate-100 px-2 py-0.5 text-xs text-slate-700"><span aria-hidden="true">◷</span> Pending</span>
+                  } @else {
+                    <span class="text-xs text-slate-400" title="No assessment recorded">—</span>
+                  }
+                </td>
+                <td class="px-4 py-2"><qd-status-badge [value]="item.delivery" kind="delivery"></qd-status-badge></td>
+                <td class="px-4 py-2 text-slate-600"><time [attr.datetime]="item.receivedAt" [attr.title]="item.receivedAt">{{ item.receivedAt | timeAgo }}</time></td>
+                <td class="px-4 py-2 text-right">
+                  <a [routerLink]="['/payments', item.instructionId]" [attr.aria-label]="'Open ' + item.payload.clientReference" class="text-lg leading-none text-slate-400 hover:text-sky-600">›</a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    <p class="mt-2 text-sm text-slate-600">Showing {{ rows.length }} of {{ items.length }} loaded row{{ items.length === 1 ? '' : 's' }}.</p>
+    @if (capped) {
+      <p role="note" class="mt-2 rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+        ⚠ Capped at the first {{ maxRows }} rows — narrow the filters to see the rest.
+      </p>
+    } @else if (nextCursor !== null) {
+      <button type="button" (click)="loadMore()" [disabled]="loadingMore"
+        class="mt-2 rounded border border-slate-300 bg-white px-4 py-1.5 text-sm font-medium hover:bg-slate-50 disabled:opacity-50">
+        {{ loadingMore ? 'Loading…' : 'Load more' }}
+      </button>
+    }
+    <qd-refresh-note [at]="lastAt" [stale]="!fresh || !live"></qd-refresh-note>
+  }
+</section>
+
+<section aria-label="Reconciliation" class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+  @if (pendingLabel(); as label) {
+    <div role="alert" class="rounded-lg border border-amber-300 bg-amber-50 p-4">
+      <p class="font-semibold text-amber-900">⚠ {{ label }}</p>
+      <p class="mt-1 text-sm text-amber-900">Check the original instruction outcome before any further action.</p>
+      <button type="button" (click)="viewPending()" class="mt-1 text-sm font-medium text-sky-800 underline hover:text-sky-600">
+        View pending confirmations →
+      </button>
+    </div>
+  }
+  <div class="rounded-lg border border-slate-200 bg-white p-4">
+    <p class="font-semibold">Business state ≠ transport state</p>
+    <p class="mt-1 text-sm text-slate-600">HTTP 202 means received. MQ delivery does not prove simulated completion.</p>
+  </div>
+</section>

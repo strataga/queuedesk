@@ -1,0 +1,24 @@
+#!/bin/sh
+# Local Postgres lifecycle for the lab. Named resources only; never touches
+# the user's Homebrew Postgres on 5432 or any other project's containers.
+set -eu
+NAME=qdesk-postgres
+IMAGE=postgres:17
+case "${1:-status}" in
+  up)
+    if docker start "$NAME" >/dev/null 2>&1; then echo "started existing $NAME";
+    else docker run -d --name "$NAME" -p 127.0.0.1:5442:5432 \
+      -e POSTGRES_USER=queuedesk -e POSTGRES_PASSWORD=queuedesk -e POSTGRES_DB=queuedesk \
+      -v qdesk-pgdata:/var/lib/postgresql/data --memory=512m \
+      --log-opt max-size=10m --log-opt max-file=3 "$IMAGE" >/dev/null; echo "created $NAME";
+    fi
+    for _ in $(seq 1 20); do
+      docker exec "$NAME" pg_isready -U queuedesk >/dev/null 2>&1 && echo READY && exit 0
+      sleep 3
+    done
+    echo "Postgres did not become ready" >&2; exit 1;;
+  down) docker stop "$NAME" >/dev/null && echo stopped;;
+  status) docker inspect -f '{{.State.Status}}' "$NAME" 2>/dev/null || echo missing;;
+  logs) docker logs --tail "${2:-50}" "$NAME";;
+  *) echo "usage: scripts/postgres up|down|status|logs [n]" >&2; exit 1;;
+esac

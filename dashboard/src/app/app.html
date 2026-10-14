@@ -1,0 +1,64 @@
+<a
+  href="#main"
+  class="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2 focus:text-sm focus:shadow"
+  >Skip to content</a
+>
+<div class="flex min-h-screen">
+  <aside class="flex w-56 shrink-0 flex-col bg-slate-900 text-slate-100" aria-label="Primary">
+    <p class="px-4 pb-1 pt-4 text-lg font-semibold tracking-tight">QueueDesk</p>
+    <p class="px-4 pb-4 text-xs text-slate-400">Synthetic payment learning lab</p>
+    <nav class="flex flex-col gap-1 px-2 text-sm" aria-label="Views">
+      <a
+        routerLink="/"
+        routerLinkActive="bg-slate-700 text-white"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="rounded px-3 py-2 hover:bg-slate-800"
+        >Overview</a
+      >
+      <a
+        routerLink="/payments"
+        routerLinkActive="bg-slate-700 text-white"
+        class="rounded px-3 py-2 hover:bg-slate-800"
+        >Payments</a
+      >
+      <a routerLink="/risk" routerLinkActive="bg-slate-700 text-white" class="rounded px-3 py-2 hover:bg-slate-800"
+        >Risk review</a
+      >
+      <a routerLink="/ops" routerLinkActive="bg-slate-700 text-white" class="rounded px-3 py-2 hover:bg-slate-800"
+        >Operations</a
+      >
+      <a routerLink="/queues" routerLinkActive="bg-slate-700 text-white" class="rounded px-3 py-2 hover:bg-slate-800"
+        >Queues</a
+      >
+      <a routerLink="/telemetry" routerLinkActive="bg-slate-700 text-white" class="rounded px-3 py-2 hover:bg-slate-800"
+        >Telemetry</a
+      >
+      <a routerLink="/scenarios" routerLinkActive="bg-slate-700 text-white" class="rounded px-3 py-2 hover:bg-slate-800"
+        >Scenarios</a
+      >
+    </nav>
+    <form (ngSubmit)="openRun()" class="mt-6 px-4" aria-label="Open a run">
+      <label for="run-lookup" class="text-xs font-medium text-slate-300">Open run</label>
+      <span class="mt-1 flex gap-1">
+        <input
+          id="run-lookup"
+          name="runLookup"
+          [(ngModel)]="runLookup"
+          placeholder="run id"
+          autocomplete="off"
+          class="w-full min-w-0 rounded border border-slate-700 bg-slate-800 px-2 py-1 text-sm placeholder:text-slate-500" />
+        <button type="submit" class="shrink-0 rounded bg-slate-700 px-2 py-1 text-sm hover:bg-slate-600">Go</button>
+      </span>
+    </form>
+    <p class="mt-auto px-4 py-4 text-xs text-slate-500">Read-only · no operator writes</p>
+  </aside>
+  <div class="flex min-w-0 flex-1 flex-col">
+    <p class="border-b border-teal-200 bg-teal-50 px-6 py-2 text-sm text-teal-900" role="note">
+      <span aria-hidden="true">●</span>
+      <strong class="font-semibold"> SIMULATION</strong> — synthetic data only. No real money, no real participants.
+    </p>
+    <main id="main" class="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
+      <router-outlet />
+    </main>
+  </div>
+</div>

@@ -1,0 +1,97 @@
+#!/bin/sh
+# Local Kubernetes lab lifecycle (Phase 9, kind only). Named resources only:
+# cluster `qdesk`, namespace `queuedesk-lab`, images qdesk-app:k8s.
+# Topology: app + Postgres run in kind; IBM MQ stays the adjacent lab container
+# qdesk-mq (no arm64 MQ image exists and kubelet cannot schedule foreign-arch
+# images — proven during Phase 9, see RUNBOOK-K8S). The app reaches MQ over the
+# shared `kind` docker network by container IP; MQ's loopback publishing is
+# untouched. Data persists in .k8s-data/ across cluster recreation.
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+NS=queuedesk-lab
+CLUSTER=qdesk
+IMAGE=qdesk-app:k8s
+
+need() { command -v "$1" >/dev/null 2>&1 || { echo "missing: $1" >&2; exit 1; }; }
+
+mq_ip() {
+  docker inspect qdesk-mq --format '{{.NetworkSettings.Networks.kind.IPAddress}}' 2>/dev/null || true
+}
+
+case "${1:-status}" in
+  build)
+    need docker
+    docker build -t "$IMAGE" -f "$ROOT/k8s/Dockerfile.app" "$ROOT" ;;
+  up)
+    need docker; need kind; need kubectl
+    # Adjacent broker must exist; start it the same way the host lab does.
+    if [ "$(docker inspect -f '{{.State.Running}}' qdesk-mq 2>/dev/null)" != "true" ]; then
+      "$ROOT/scripts/mq" up
+    fi
+    mkdir -p "$ROOT/.k8s-data/pgdata" "$ROOT/.k8s-data/mqm"
+    if ! kind get clusters 2>/dev/null | grep -qx "$CLUSTER"; then
+      (cd "$ROOT" && kind create cluster --config k8s/kind-cluster.yaml --wait 180s)
+    else echo "cluster $CLUSTER exists"; fi
+    docker build -t "$IMAGE" -f "$ROOT/k8s/Dockerfile.app" "$ROOT" >/dev/null
+    kind load docker-image "$IMAGE" --name "$CLUSTER"
+    docker network connect kind qdesk-mq >/dev/null 2>&1 || true
+    MQIP=$(mq_ip)
+    [ -n "$MQIP" ] || { echo "qdesk-mq has no address on the kind network" >&2; exit 1; }
+    echo "adjacent MQ at $MQIP (loopback publishing untouched)"
+    kubectl apply -f "$ROOT/k8s/namespace.yaml" >/dev/null
+    # Secrets travel via files, never --from-literal: literal values are
+    # visible in ps output during the deploy.
+    secret_from_value() {
+      _sv_tmp=$(mktemp) || exit 1
+      printf '%s' "$3" > "$_sv_tmp"; chmod 600 "$_sv_tmp"
+      kubectl -n "$NS" create secret generic "$1" --from-file="$2=$_sv_tmp" \
+        --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+      rm -f "$_sv_tmp"
+    }
+    secret_from_value qdesk-db password "${QD_DB_PASSWORD:-queuedesk}"
+    if [ -f "$ROOT/.cache/mq-secrets/mqAppPassword" ]; then
+      kubectl -n "$NS" create secret generic qdesk-mq-app \
+        --from-file="password=$ROOT/.cache/mq-secrets/mqAppPassword" \
+        --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+    else
+      secret_from_value qdesk-mq-app password "${MQ_APP_PASSWORD:-queuedesk-lab}"
+    fi
+    kubectl -n "$NS" create configmap qdesk-mq-endpoint --from-literal=host="$MQIP" \
+      --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+    # A Released (or Failed) PV never rebinds: drop the object (Retain keeps
+    # the data on the host path) so the apply below recreates it fresh.
+    # Without this, up after a bare namespace delete strands the PVC Pending.
+    pvphase=$(kubectl get pv qdesk-pgdata -o jsonpath='{.status.phase}' 2>/dev/null || true)
+    if [ "$pvphase" = "Released" ] || [ "$pvphase" = "Failed" ]; then
+      kubectl delete pv qdesk-pgdata >/dev/null
+    fi
+    kubectl apply -f "$ROOT/k8s/postgres.yaml" >/dev/null
+    kubectl -n "$NS" rollout status deploy/postgres --timeout=180s
+    kubectl apply -f "$ROOT/k8s/app.yaml" >/dev/null
+    kubectl -n "$NS" rollout status deploy/queuedesk-app --timeout=420s
+    echo "UP: namespace $NS on kind/$CLUSTER; MQ objects still need 'scripts/k8s setup' on a fresh QM" ;;
+  setup)
+    # MQ objects/grants on the adjacent broker (persistent QM volume keeps them;
+    # re-apply is additive and safe).
+    "$ROOT/scripts/mq" setup ;;
+  status)
+    kind get clusters 2>/dev/null || true
+    kubectl -n "$NS" get pods,pvc,svc 2>/dev/null || echo "namespace $NS absent"
+    "$ROOT/scripts/mq" status ;;
+  teardown)
+    # Scoped: namespace + cluster only. Lab containers (qdesk-postgres, qdesk-mq)
+    # and .k8s-data/ volumes are untouched; see wipe-data for volume removal.
+    kubectl delete namespace "$NS" --wait=true 2>/dev/null || true
+    kind delete cluster --name "$CLUSTER" 2>/dev/null || true
+    docker network disconnect kind qdesk-mq 2>/dev/null || true
+    echo "torn down; lab data retained in .k8s-data/ (see 'scripts/k8s wipe-data')" ;;
+  wipe-data)
+    # Explicit operator action: destroys retained k8s Postgres data. Refuses to
+    # run while the cluster exists so live volumes are never pulled away.
+    if kind get clusters 2>/dev/null | grep -qx "$CLUSTER"; then
+      echo "refusing: teardown the cluster first" >&2; exit 1; fi
+    rm -rf "$ROOT/.k8s-data/pgdata" "$ROOT/.k8s-data/mqm"
+    mkdir -p "$ROOT/.k8s-data/pgdata" "$ROOT/.k8s-data/mqm"
+    echo "wiped .k8s-data/ (Postgres + reserved MQ volume dirs)" ;;
+  *) echo "usage: $0 [build|up|setup|status|teardown|wipe-data]" >&2; exit 2 ;;
+esac

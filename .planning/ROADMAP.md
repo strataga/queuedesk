@@ -12,17 +12,19 @@ Build from the existing Java/in-memory HTTP rehearsal to a durable local messagi
 | L2 core MVP | 2–4 | Atomic outbox, real MQ/worker/dedup, SC01–SC05 and SC11–SC12 reports and explainable local runbook |
 | L3 reliability | 5–7 | Bounded quarantine, pending reconciliation, SC06–SC10 and complete crash/outage matrix |
 | L4 optional dashboard | 8 | Read-only API-based views, correct freshness/uncertainty and accessible polling UI |
+| Local Kubernetes (optional) | 9 | Working health checks, restart/rollout survival, persistent data and scoped teardown |
 
 ## Phases
 
 - [ ] **Phase 1: Durable walking skeleton** - A generated instruction is durably admitted, repeatable by key, and retrievable after the API restarts.
 - [ ] **Phase 2: Outbox and MQ publishing** - Every accepted instruction has durable event intent that reaches approved local MQ and survives broker interruption.
 - [ ] **Phase 3: Worker outcomes and deduplication** - An admitted instruction reaches one truthful simulated outcome even when its event is delivered repeatedly.
-- [ ] **Phase 4: Generator reports and core MVP** - A learner can run every core traffic scenario and account for admission, completion, rejection and uncertainty in a reproducible report.
+- [ ] **Phase 4: Generator reports and core MVP** - Every core traffic scenario runs with admission, completion, rejection and uncertainty accounted in a reproducible report.
 - [ ] **Phase 5: Bounded retry and quarantine** - Transient work retries predictably and poison work remains inspectable without a hot loop or silent loss.
 - [ ] **Phase 6: Pending confirmation and reconciliation** - A lost receiver reply can be resolved using the original instruction without creating or rerolling a second simulated outcome.
 - [ ] **Phase 7: Recovery proof and operations** - The operator can demonstrate and diagnose recovery from every specified outage and crash without losing accepted work or inventing completion.
 - [ ] **Phase 8: Read-only Angular dashboard** - A local operator can inspect runs, instructions and recovery evidence in an accessible dashboard that states what is current, stale or unknown.
+- [ ] **Phase 9: Local Kubernetes deployment** - The backend lab runs on local Kubernetes with working health checks, surviving pod restarts and rollouts without losing durable work or duplicating outcomes.
 
 ## Phase Details
 
@@ -38,7 +40,7 @@ Build from the existing Java/in-memory HTTP rehearsal to a durable local messagi
 2. Invalid fields/participants/amounts create no rows; oversized bodies return 413; failed commits return no successful admission. Valid amount boundaries match 1..10,000,000 minor units.
 3. Concurrent same-key submissions yield one durable identity; changed business payload returns 409 without overwriting it, while changed correlation metadata remains a repeat.
 4. GET supports unknown-ID 404 and bounded run/status pagination with stable ordering; database/capacity errors expose safe, truthful responses.
-5. Dry-run/local defaults and bounded configuration remain usable, and the learner can explain record validation, injected layers, the unique constraint and commit-before-202.
+5. Dry-run/local defaults and bounded configuration remain usable, and learner-review material is prepared for record validation, injected layers, the unique constraint and commit-before-202.
 
 **Plans**: TBD — source-driven plan slices captured in phase context; run `$gsd-plan-phase 1` to produce executable plans.
 
@@ -78,7 +80,7 @@ Build from the existing Java/in-memory HTTP rehearsal to a durable local messagi
 2. Repeated event delivery leaves one processed_message and one definitive result with visible dedup evidence, without regressing the instruction state.
 3. Database business result and dedup commit together before JMS commit; database failure leaves the delivery eligible for redelivery.
 4. ID/run reads show business status, reason, delivery detail and timestamps without inferring completion from queue depth or the outbox marker.
-5. The learner can explain the separate DB/JMS boundaries and trace one stable business/event identity through the diagram, rows and logs.
+5. Learner-review material is prepared for the separate DB/JMS boundaries and tracing one stable business/event identity through the diagram, rows and logs.
 
 **Plans**: TBD — source-driven plan slices captured in phase context; run `$gsd-plan-phase 3` to produce executable plans.
 
@@ -88,7 +90,7 @@ Build from the existing Java/in-memory HTTP rehearsal to a durable local messagi
 
 ### Phase 4: Generator reports and core MVP
 
-**Goal**: A learner can run every core traffic scenario and account for admission, completion, rejection and uncertainty in a reproducible report.
+**Goal**: Every core traffic scenario runs with admission, completion, rejection and uncertainty accounted for in a reproducible report.
 **Depends on**: Phase 3
 **Stage**: L2 exit
 **Requirements**: PR01, GN01, GN02, GN03, GN04, GN05, GN06, GN07, GN08, GEN-01, GEN-02, TEST-01
@@ -149,12 +151,12 @@ Build from the existing Java/in-memory HTTP rehearsal to a durable local messagi
 **Goal**: The operator can demonstrate and diagnose recovery from every specified outage and crash without losing accepted work or inventing completion.
 **Depends on**: Phase 6
 **Stage**: L3 exit
-**Requirements**: PR09, FAIL-01, FAIL-02, OBS-01, OBS-02, OPS-01, SAFE-01, OPS-02, LEARN-03
+**Requirements**: PR09, FAIL-01, FAIL-02, OBS-01, OBS-02, TEL-01, TEL-02, OPS-01, SAFE-01, OPS-02, LEARN-03
 **Success Criteria** (what must be TRUE):
 
 1. SC06–SC10 and both publisher/worker crash boundaries recover with stable IDs, retained rows and one definitive result; broken quarantine routing produces no silent drop.
 2. The local-only harness uses controlled hooks and bounded eventual assertions, refuses non-lab targets and only operates named QueueDesk resources.
-3. Logs/metrics expose backlog age, dedup/failure counts, pending age, quarantine freshness and correctly separated latency, without unbounded ID labels.
+3. Logs/metrics expose backlog age, dedup/failure counts, pending age, quarantine freshness and correctly separated latency, without unbounded ID labels. Trace context survives outbox/MQ with per-attempt spans and async links, and exporter failure degrades visibly without blocking processing.
 4. Resource/capacity guards stop new generated traffic at configured backlog/disk limits; health distinguishes dependency outage from a dead process and preserves restartable pending work.
 5. A fresh-reader runbook and recorded demonstration pass the reliability gate; CI explicitly distinguishes real Postgres/MQ passes from skips.
 
@@ -185,23 +187,44 @@ Build from the existing Java/in-memory HTTP rehearsal to a durable local messagi
 **Canonical refs**: `docs/QueueDesk_PRD.md §§4, 6–7, 15–17, 20`; `docs/images/QueueDesk_Architecture.png`; `docs/images/QueueDesk_Status_Model.png`
 **Validation**: Read API integration checks and browser checks for all five views, bounded filtering/pagination, stale/unavailable semantics, visibility-aware polling, keyboard access and integer currency.
 
+### Phase 9: Local Kubernetes deployment
+
+**Goal**: The backend lab runs on local Kubernetes with working health checks, surviving pod restarts and rollouts without losing durable work or duplicating outcomes.
+**Depends on**: Phase 7 (health/recovery behavior); Phase 8 dashboard included only if already built.
+**Stage**: Optional deployment
+**Requirements**: K8S-01
+**Success Criteria** (what must be TRUE):
+
+1. A local cluster (kind, k3d or minikube) runs the API/publisher/worker with explicit CPU/memory requests and limits inside a documented laptop budget.
+2. Liveness/readiness/startup probes use the Phase 7 health endpoints so dependency outages never cause destructive restart loops.
+3. Pod restarts, controlled rollout/restart and cluster recreation preserve Postgres durability (named volume) and existing duplicate/recovery guarantees; scenario behavior is unchanged through restarts.
+4. MQ runs in a pinned supported topology (in-cluster or adjacent lab container, decided at plan time) with persistent storage; broker restarts recover via the proven outbox path.
+5. Scoped teardown (namespace or cluster delete) removes only named QueueDesk resources and documents retained data and remaining cost/exposure (zero for local).
+
+**Plans**: TBD — source-driven plan slices captured in phase context; run `$gsd-plan-phase 9` to produce executable plans.
+
+**Context**: [09-CONTEXT.md](phases/09-local-kubernetes-deployment/09-CONTEXT.md)
+**Canonical refs**: `docs/QueueDesk_PRD.md §§17, 20`; `docs/images/QueueDesk_Architecture.png`
+**Validation**: Pod-restart/rollout/storage/teardown checks plus scenario regression through restarts; no cloud spend.
+
 ## Deferred Chapters
 
-All source features remain accounted for. [BACKLOG.md](BACKLOG.md) defines B01 controlled operations (PR12), B02 AWS/Terraform deployment and B03 Kubernetes with prerequisites and acceptance. Promote them into numbered phases only when their entry conditions are met; preserve continuous numbering.
+All source features remain accounted for. [BACKLOG.md](BACKLOG.md) defines B01 controlled operations (PR12) and B04 L5 fraud-risk lab with prerequisites and acceptance. B03 Kubernetes was promoted to Phase 9; B02 AWS/Terraform was declined as out-of-scope (local-only lab). Promote remaining items into numbered phases only when their entry conditions are met; preserve continuous numbering.
 
 ## Progress
 
-Execution order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8. Phase 8 remains optional for the product's backend completion gate.
+Execution order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9. Phase 8 remains optional for the product's backend completion gate; Phase 9 is an optional local-deployment exercise.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Durable walking skeleton | 0/TBD | Not started | - |
-| 2. Outbox and MQ publishing | 0/TBD | Not started | - |
-| 3. Worker outcomes and deduplication | 0/TBD | Not started | - |
-| 4. Generator reports and core MVP | 0/TBD | Not started | - |
-| 5. Bounded retry and quarantine | 0/TBD | Not started | - |
-| 6. Pending confirmation and reconciliation | 0/TBD | Not started | - |
-| 7. Recovery proof and operations | 0/TBD | Not started | - |
-| 8. Read-only Angular dashboard | 0/TBD | Not started | - |
+| 1. Durable walking skeleton | 1/1 | Complete (LEARN-01 at final review) | - |
+| 2. Outbox and MQ publishing | done | Complete | - |
+| 3. Worker outcomes and deduplication | done | Complete | - |
+| 4. Generator reports and core MVP | done | Complete | - |
+| 5. Bounded retry and quarantine | done | Complete | - |
+| 6. Pending confirmation and reconciliation | done | Complete | - |
+| 7. Recovery proof and operations | done | Complete | - |
+| 8. Read-only Angular dashboard | done | Complete | - |
+| 9. Local Kubernetes deployment | done | Complete | - |
 
-No phase is complete. Existing starter evidence is recorded separately in codebase/BASELINE.md.
+All phases are complete; evidence is recorded in docs/VERIFICATION.md. Original starter evidence remains in codebase/BASELINE.md.

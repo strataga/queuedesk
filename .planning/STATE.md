@@ -2,7 +2,7 @@
 gsd_state_version: "1.0"
 status: planning
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -16,16 +16,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-04)
 
 **Core value:** Trace synthetic instructions to truthful durable outcomes and explain identity-preserving recovery.
-**Current focus:** Phase 1 — Durable walking skeleton.
+**Current focus:** Phase 2 — Outbox and MQ publishing.
 
 ## Current Position
 
-Phase: 1 of 8 (Durable walking skeleton)
+Phase: 2 of 9 (Outbox and MQ publishing)
 Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-10-04 — Source ingestion, eight-phase roadmap, requirements, validation map and all phase contexts created.
+Status: Phase 1 closed; Phase 2 next
+Last activity: 2026-10-04 — Phase 1 closed (12 reqs done, LEARN-01 deferred); no human gates until final review.
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 11% (1 of 9 phases)
 
 ## Performance Metrics
 
@@ -42,12 +42,12 @@ Full decisions: PROJECT.md and INGEST-CONFLICTS.md.
 - PRD is target acceptance; current starter remains pre-L1 in-memory rehearsal.
 - Phase 1 aligns amount cap to 10,000,000 and proves real Postgres durability.
 - Phase 4 aligns SC02 to 20 unique plus five repeats and adds truthful outcome reports.
-- PR12/cloud/Kubernetes remain gated backlog chapters; Angular follows backend reliability.
+- PR12 remains a gated backlog chapter; local Kubernetes is Phase 9; cloud deployment declined per user decision; Angular follows backend reliability.
 
 ### Pending Todos
 
-- Run $gsd-plan-phase 1 using the source-derived 01-CONTEXT.md.
-- Verify current dependency compatibility and local resource budget during phase research.
+- Start Phase 2: outbox + MQ publisher against verified MQ 10.0.0.5.
+- Run $gsd-plan-phase 2 using 02-CONTEXT.md (MQ publisher design against verified MQ 10.0.0.5).
 
 ### Blockers/Concerns
 
@@ -61,8 +61,8 @@ Full decisions: PROJECT.md and INGEST-CONFLICTS.md.
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
 | Controls | PR12 replay/manual resolution | B01, design gated | 2026-10-04 | After local reliability |
-| Deployment | AWS/Terraform | B02, authorization/budget gated | 2026-10-04 | Optional later |
-| Deployment | Kubernetes | B03, learning/resource gated | 2026-10-04 | After simpler hosting |
+| Deployment | Kubernetes (local) | Promoted to Phase 9 | 2026-10-04 | After Phase 7 |
+| Risk lab | Jev fraud risk (L5) | B04, mock-first/live-gated | 2026-10-04 | After core MQ flow + dashboard |
 
 ## Session Continuity
 

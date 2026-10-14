@@ -1,0 +1,47 @@
+#!/bin/sh
+# Lab IBM MQ lifecycle. Named resources only; loopback ports per PRD section 17.
+# Auth follows the image's documented secrets mechanism: the app user exists only
+# when its password arrives via the mqAppPassword secret (env vars are deprecated
+# and create no user). The secret file lives gitignored under .cache/.
+set -eu
+NAME=qdesk-mq
+# Pinned by digest, not :latest: an image update would change the QM version
+# under the persistent qdesk-mqm2 volume and could break or auto-migrate QM
+# data. Bump deliberately with a wipe-data + setup cycle.
+IMAGE=icr.io/ibm-messaging/mq@sha256:378c88e8aee6ff32d6b5fa6ce6584a017b42cec628d785b62dabf417cb3373a2
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+SECRET_DIR="$ROOT/.cache/mq-secrets"
+case "${1:-status}" in
+  up)
+    mkdir -p "$SECRET_DIR"
+    if [ ! -f "$SECRET_DIR/mqAppPassword" ]; then
+      printf 'queuedesk-lab' > "$SECRET_DIR/mqAppPassword"
+      chmod 600 "$SECRET_DIR/mqAppPassword"
+      echo "created lab mqAppPassword secret (loopback-only default)"
+    fi
+    if docker start "$NAME" >/dev/null 2>&1; then echo "started existing $NAME";
+    else docker run -d --platform linux/amd64 --name "$NAME" \
+      -p 127.0.0.1:1414:1414 -p 127.0.0.1:9443:9443 \
+      -e LICENSE=accept -e MQ_QMGR_NAME=QDESK -e MQ_CONNAUTH_USE_HTP=true -e DEBUG=true \
+      -v "$SECRET_DIR/mqAppPassword:/run/secrets/mqAppPassword:ro" \
+      -v qdesk-mqm2:/mnt/mqm --memory=2g \
+      --log-opt max-size=10m --log-opt max-file=3 "$IMAGE" >/dev/null; echo "created $NAME";
+    fi
+    for _ in $(seq 1 40); do
+      docker exec "$NAME" dspmq -m QDESK 2>/dev/null | grep -q "STATUS(Running)" && echo READY && exit 0
+      sleep 5
+    done
+    echo "Queue manager did not start" >&2; exit 1;;
+  down) docker stop "$NAME" >/dev/null && echo stopped;;
+  status) docker exec "$NAME" dspmq -m QDESK 2>/dev/null || docker inspect -f '{{.State.Status}}' "$NAME" 2>/dev/null || echo missing;;
+  logs) docker logs --tail "${2:-50}" "$NAME";;
+  setup)
+    docker exec -i "$NAME" bash -c "runmqsc QDESK" < "$ROOT/scripts/mq-setup.mqsc"
+    docker exec "$NAME" bash -c "setmqaut -m QDESK -t qmgr -p app +connect +inq && setmqaut -m QDESK -t queue -n 'QUEUEDESK.**' -p app +put +get +browse +inq +passall";;
+    # +passall: the JMS poison requeue preserves the original message's identity
+    # context when moving it to the backout queue (AMQ8077 otherwise; +setall
+    # was probed and is not required). setmqaut unions into the profile and
+    # -remove drops the whole principal entry, so grants are only ever added
+    # here; to slim the live set, re-apply setup after a profile reset.
+  *) echo "usage: scripts/mq up|down|status|logs [n]|setup" >&2; exit 1;;
+esac

@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+. "$ROOT/scripts/java-env.sh"
+cd "$ROOT"
+# Build only: the suite runs in gate 1 (and standalone mvnw), never as a side
+# effect here — re-running it on a dirty lab once broke WorkerTest's global
+# reconcile counts (SC09 leaves open tasks by design).
+./mvnw -q package -DskipTests
+exec python3 "$ROOT/scripts/scenarios.py"

@@ -1,0 +1,136 @@
+<h1 class="text-2xl font-semibold tracking-tight">Queues</h1>
+<p class="mt-1 text-sm text-slate-600">Transport health · Read-only lab. Refreshes every 5 seconds while this tab is visible.</p>
+
+@if (view$ | async; as r) {
+  @let v = toView(r);
+  @if (v.value; as q) {
+    @if (!v.fresh) {
+      <qd-state-message state="error" [message]="describe(v.error)" />
+    }
+    <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section aria-label="Outbox pending" class="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 class="text-sm font-medium text-slate-600">Outbox pending</h2>
+        <p class="mt-1 text-3xl font-semibold tabular-nums">{{ q.outbox.pending }}</p>
+        <p class="mt-1 text-xs text-slate-600">Oldest {{ formatAge(q.outbox.oldestPendingAgeSeconds) }}</p>
+      </section>
+      <section aria-label="MQ depth estimate" class="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 class="text-sm font-medium text-slate-600">MQ ready <span class="font-normal">(est.)</span></h2>
+        <p class="mt-1 text-3xl font-semibold tabular-nums">{{ q.mq.depthEstimate }}</p>
+        <p class="mt-1 text-xs text-slate-600">Oldest {{ formatAge(q.mq.oldestEstimateAgeSeconds) }} · application estimate</p>
+      </section>
+      <section aria-label="Active consumers" class="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 class="text-sm font-medium text-slate-600">Active consumers</h2>
+        <p class="mt-1 text-3xl font-semibold tabular-nums">{{ q.mq.activeConsumers }}</p>
+        <p class="mt-1 text-xs text-slate-600">{{ q.mq.consumerState === 'LISTENING' ? 'Connected' : q.mq.consumerState }}</p>
+      </section>
+      <section aria-label="Quarantine" class="rounded-lg border border-slate-200 bg-white p-4">
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-medium text-slate-600">Quarantine</h2>
+          <qd-status-badge [value]="q.quarantine.stale ? 'STALE' : 'CURRENT'" kind="fresh"></qd-status-badge>
+        </div>
+        @if (q.quarantine.count === null) {
+          <p class="mt-1 text-3xl font-semibold text-slate-400">—</p>
+          <p class="mt-1 text-xs text-slate-600">Stale projection · Last observed: {{ q.quarantine.lastObserved }} at {{ q.quarantine.lastObservedAt }}</p>
+        } @else {
+          <p class="mt-1 text-3xl font-semibold tabular-nums">{{ q.quarantine.count }}</p>
+          <p class="mt-1 text-xs text-slate-600">Current projection</p>
+        }
+      </section>
+    </div>
+
+    <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <section aria-label="Backlog over time" class="rounded-lg border border-slate-200 bg-white p-4 lg:col-span-2">
+        <h2 class="text-lg font-semibold">Backlog over time</h2>
+        <p class="text-xs text-slate-600">Client-side samples, since page open · one point per refresh · no server history</p>
+        <qd-trend-chart [series]="trend()"></qd-trend-chart>
+      </section>
+      <section aria-label="Connection and publisher" class="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 class="text-lg font-semibold">Connection &amp; publisher</h2>
+        <dl class="mt-2 space-y-2 text-sm">
+          <div class="flex items-center justify-between gap-2">
+            <dt class="font-medium">IBM MQ ({{ q.mq.queueManager }})</dt>
+            <dd><qd-status-badge [value]="q.mq.connected ? 'UP' : 'DOWN'" kind="health"></qd-status-badge></dd>
+          </div>
+          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+            <dt class="font-medium">Outbox dispatch</dt>
+            <dd class="font-mono text-xs">{{ q.outbox.dispatch }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+            <dt class="font-medium">Last send</dt>
+            <dd class="text-xs text-slate-600"><time [attr.datetime]="q.mq.lastSendAt" [attr.title]="q.mq.lastSendAt">{{ q.mq.lastSendAt | timeAgo }}</time></dd>
+          </div>
+          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+            <dt class="font-medium">Deduplicated deliveries</dt>
+            <dd class="tabular-nums">{{ q.dedupLast15Min }} last 15 min</dd>
+          </div>
+        </dl>
+        <p class="mt-2 text-xs text-slate-600">MQ acknowledgement is transport evidence. Queue depth is not payment completion.</p>
+      </section>
+    </div>
+
+    <section aria-label="Queue inventory" class="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+      <h2 class="text-lg font-semibold">Queue inventory</h2>
+      <div class="mt-2 overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-600">
+            <tr><th scope="col" class="px-2 py-1">Name</th><th scope="col" class="px-2 py-1">Ready</th><th scope="col" class="px-2 py-1">Oldest age</th><th scope="col" class="px-2 py-1">Consumer</th><th scope="col" class="px-2 py-1">Freshness</th></tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-slate-100">
+              <td class="px-2 py-1"><span class="font-mono text-xs">QUEUEDESK.INSTRUCTION.IN</span><br /><span class="text-xs text-slate-600">Persistent instruction events</span></td>
+              <td class="px-2 py-1 tabular-nums">{{ q.mq.depthEstimate }} (est.)</td>
+              <td class="px-2 py-1 tabular-nums">{{ formatAge(q.mq.oldestEstimateAgeSeconds) }}</td>
+              <td class="px-2 py-1">{{ q.mq.activeConsumers }} active</td>
+              <td class="px-2 py-1"><qd-status-badge [value]="q.mq.connected ? 'CURRENT' : 'UNAVAILABLE'" kind="fresh"></qd-status-badge></td>
+            </tr>
+            <tr>
+              <td class="px-2 py-1">Quarantine projection<br /><span class="text-xs text-slate-600">Read only</span></td>
+              <td class="px-2 py-1 tabular-nums">{{ q.quarantine.count === null ? '—' : q.quarantine.count }}</td>
+              <td class="px-2 py-1 tabular-nums">—</td>
+              <td class="px-2 py-1">Read only</td>
+              <td class="px-2 py-1">
+                @if (q.quarantine.stale) {
+                  <qd-status-badge value="STALE" kind="fresh"></qd-status-badge>
+                  <span class="ml-1 text-xs text-slate-600">{{ formatAge(q.quarantine.freshnessAgeSeconds) }}</span>
+                } @else {
+                  <qd-status-badge value="CURRENT" kind="fresh"></qd-status-badge>
+                }
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      @if (q.quarantine.stale) {
+        <p role="alert" class="mt-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          ⚠ Quarantine data is stale. Last observed: {{ q.quarantine.lastObserved }} at {{ q.quarantine.lastObservedAt }}. Current count unavailable.
+        </p>
+      }
+    </section>
+
+    <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <section aria-label="Outbox dispatch" class="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 class="text-lg font-semibold">Outbox dispatch</h2>
+        <dl class="mt-2 space-y-2 text-sm">
+          <div class="flex items-center justify-between gap-2"><dt class="font-medium">Pending</dt><dd class="tabular-nums">{{ q.outbox.pending }}</dd></div>
+          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2"><dt class="font-medium">Oldest pending</dt><dd class="tabular-nums">{{ formatAge(q.outbox.oldestPendingAgeSeconds) }}</dd></div>
+          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2"><dt class="font-medium">Dispatch retries</dt><dd class="font-mono text-xs">{{ q.outbox.dispatch }}</dd></div>
+          <div class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2"><dt class="font-medium">Last event</dt><dd class="font-mono text-xs">{{ q.outbox.lastEventId }}</dd></div>
+        </dl>
+      </section>
+      <section aria-label="Recovery boundaries" class="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 class="text-lg font-semibold">Recovery boundaries</h2>
+        <ul class="mt-2 space-y-1 text-sm">
+          <li>✔ Redelivery keeps the same event ID</li>
+          <li>✔ Deduplication protects the business outcome</li>
+          <li>✔ Unknown receiver outcomes require lookup</li>
+        </ul>
+        <p class="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-600">ⓘ Queue depth is not payment completion. Diagnostic freshness is shown separately.</p>
+      </section>
+    </div>
+    <qd-refresh-note [at]="v.at" [stale]="!v.fresh"></qd-refresh-note>
+  } @else {
+    <qd-state-message state="unavailable" [message]="describe(v.error)" />
+  }
+} @else {
+  <qd-state-message state="loading" />
+}

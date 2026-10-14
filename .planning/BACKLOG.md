@@ -17,8 +17,9 @@ These items preserve all later source scope. They are roadmap candidates with co
 
 **Acceptance:** No bulk automatic replay of pending work; original logical identity is preserved for technical replay; no second simulated effect; denied/stale actions make no state change; every permitted action is auditable. An edit that would change business intent cannot masquerade as an idempotent replay.
 
-## B02 — Optional AWS and Terraform learning
+## B02 — Optional AWS and Terraform learning (DECLINED)
 
+**Status:** Declined on 2026-10-04: user confirmed local-only lab with no deployment plans. Section retained for provenance; DEPLOY-01 moved to out-of-scope.
 **Source:** DEPLOY-01; docs/QueueDesk_PRD.md §§1, 17, 20.
 **Depends on:** Phase 7 local reliability and a functioning local shutdown/recovery runbook.
 **Entry gate:** Explicit sandbox account/resource authorization, a concrete learning goal, cost ceiling, private-resource design, IAM/security review and destroy plan.
@@ -32,8 +33,9 @@ These items preserve all later source scope. They are roadmap candidates with co
 
 **Acceptance:** Authorized private sandbox only; bounded spend and clear ownership; reproducible setup; no real payment data; working operational checks; teardown evidence. Authentication/TLS and least-privilege review are mandatory before any nonlocal exposure.
 
-## B03 — Optional Kubernetes learning
+## B03 — Optional Kubernetes learning (PROMOTED to Phase 9)
 
+**Status:** Promoted to roadmap Phase 9 (local kind/k3d/minikube) on 2026-10-04 at user request. Local-only scope needs no B02 cloud prerequisite; the packages below are superseded by the Phase 9 context.
 **Source:** K8S-01; docs/QueueDesk_PRD.md §20.
 **Depends on:** A successful simpler hosting exercise (B02 or an explicitly chosen simpler alternative) and Phase 7 health/recovery behavior.
 **Entry gate:** A specific learning objective, chosen local/sandbox environment and explicit resource budget.
@@ -46,6 +48,22 @@ These items preserve all later source scope. They are roadmap candidates with co
 4. Provide scoped shutdown/teardown instructions and verify only named lab resources are affected.
 
 **Acceptance:** Existing scenario behavior remains correct through pod restarts; persistent data survives intended lifecycle events; resources stay within budget and health semantics are understood.
+
+## B04 — Optional Jev fraud risk lab (L5)
+
+**Source:** PR13, PR14, PR15, PR16, RS01–RS06, TG04; docs/QueueDesk_PRD.md §§15, 17A, 23–25; docs/images/QueueDesk_Risk_Gate.png; docs/images/ui/04-risk-review.png; docs/images/ui/05-risk-assessment.png.
+**Depends on:** Phase 7 worker/reliability path for the pre-clearing gate; Phase 8 dashboard for the read-only risk panel. If Phase 8 is skipped, the backend lab may proceed alone and the risk panel waits for a dashboard host.
+**Entry gate:** Explicit L5 selection after the core MQ flow works. Mock-first: RULES_ONLY baseline and RULES_PLUS_MOCK learning complete before any live adapter is considered. Live RULES_PLUS_JEV additionally requires account/credential setup, terms/retention review, a pinned model, call/cost caps and re-evaluation on model change.
+
+**Work packages:**
+
+1. Build versioned Java feature snapshots (amount, velocity, elapsed time, receiver history) with frozen as-of timestamps and explicit missingness; exclude retries/duplicates from velocity.
+2. Define the RiskSignalProvider application contract (assessmentId, inputHash, versions, typed signals, latency, evaluationStatus) with Java-first validation; implement OFF/RULES_ONLY/RULES_PLUS_MOCK modes with a mock provider.
+3. Implement Java policy composition (ALLOW/REVIEW/NOT_ASSESSED/REJECT) with predefined reasons; commit RISK_HELD plus the handled-event marker atomically before clearing; never call the receiver on hold.
+4. Build the evaluator-only held-out harness (disjoint seeds/histories, frozen final set) and run RS01–RS06; add the read-only risk panel (assessment status, reason text, versions, last assessment time) with review actions still deferred.
+5. Apply §24 mechanics: never hold a database transaction open during provider HTTP; guard concurrent provider calls with a durable attempt lease; reuse completed assessments under frozen versions with no silent re-score; resume audited reviews through a new deduplicated continuation event on the original instructionId.
+
+**Acceptance:** PR13–PR16 and RS01–RS06 pass locally with reproducible reports; TG04 separates operational latency from offline accuracy; no live call by default; provider failure holds safely and never silently changes modes; no replacement instruction is ever created.
 
 ## Design Options Requiring a Future Decision
 

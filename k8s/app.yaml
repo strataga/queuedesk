@@ -1,0 +1,118 @@
+# QueueDesk backend in kind (Phase 9): one replica running the API, publisher,
+# worker, quarantiner and reconciler exactly as on the host lab. Single replica
+# is a correctness requirement, not a capacity choice: publisher/worker
+# multi-pod scaling needs the deferred lease/locking design (D-03).
+#
+# Probes reuse the Phase 7 health model (D-02): liveness is process-alive only,
+# readiness/startup include db+mq dependency state, so a broker or database
+# outage marks the pod NotReady without restarting it. No values in this file
+# are secret: passwords come from Secrets, the MQ endpoint from a ConfigMap —
+# all created by scripts/k8s at deploy time.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: queuedesk-app
+  namespace: queuedesk-lab
+  labels:
+    app: queuedesk-app
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: queuedesk-app
+  template:
+    metadata:
+      labels:
+        app: queuedesk-app
+    spec:
+      initContainers:
+        # Startup ordering without restarts: Flyway fail-fasts when Postgres is
+        # not yet accepting connections, so wait here (no app code change). MQ
+        # is deliberately NOT waited on — the app must start into NotReady and
+        # recover when the broker appears, which is the outage behavior under
+        # test in Phase 9.
+        - name: wait-for-postgres
+          image: postgres:17
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "until pg_isready -h postgres -p 5432 -U queuedesk -t 2; do sleep 2; done"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+      containers:
+        - name: app
+          image: qdesk-app:k8s
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            # In-cluster the pod must bind all interfaces so kubelet probes and
+            # the ClusterIP reach it; exposure stays cluster-internal plus
+            # loopback kubectl port-forward — nothing is published outward.
+            - name: SERVER_ADDRESS
+              value: "0.0.0.0"
+            - name: QD_DB_URL
+              value: "jdbc:postgresql://postgres:5432/queuedesk"
+            - name: QD_DB_USER
+              value: queuedesk
+            - name: QD_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: qdesk-db
+                  key: password
+            - name: QUEUEDESK_MQ_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: qdesk-mq-endpoint
+                  key: host
+            - name: QUEUEDESK_MQ_PORT
+              value: "1414"
+            - name: MQ_APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: qdesk-mq-app
+                  key: password
+            - name: JAVA_OPTS
+              value: "-Xms512m -Xmx1024m"
+          startupProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            failureThreshold: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 500m
+              memory: 768Mi
+            limits:
+              cpu: "2"
+              memory: 1536Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: queuedesk-app
+  namespace: queuedesk-lab
+spec:
+  selector:
+    app: queuedesk-app
+  ports:
+    - port: 8080
+      targetPort: 8080

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QueueDesk — How It Works + Stack</title>
+<style>
+  :root {
+    --ink: #16202e;
+    --muted: #4b5a70;
+    --faint: #7d8ba1;
+    --line: #d9e0ea;
+    --paper: #ffffff;
+    --wash: #eef2f7;
+    --navy: #131f31;
+    --teal: #0f766e;
+    --teal-bg: #e6f4f2;
+    --amber: #b45309;
+    --amber-bg: #fdf3e3;
+    --red: #b91c1c;
+    --red-bg: #fdecec;
+    --blue: #1d4ed8;
+    --blue-bg: #e9effe;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--wash);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 32px 20px 60px;
+  }
+  .sheet { max-width: 1080px; margin: 0 auto; background: var(--paper);
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  header.band { background: var(--navy); color: #fff; padding: 28px 36px 24px; }
+  header.band h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+  header.band h1 .thin { font-weight: 300; color: #a9b6c9; }
+  header.band p { color: #c3cedd; margin-top: 6px; font-size: 14px; max-width: 72ch; }
+  header.band .facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  header.band .facts span { font-size: 12px; font-family: ui-monospace, Menlo, monospace;
+    background: #243449; border: 1px solid #33445f; border-radius: 20px; padding: 3px 12px; color: #dbe4f0; }
+  .body { padding: 26px 36px 36px; }
+  h2 { font-size: 19px; font-weight: 700; margin: 30px 0 4px; letter-spacing: -0.01em; }
+  h2:first-child { margin-top: 0; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+
+  /* Flow */
+  .flow { display: flex; align-items: stretch; gap: 0; margin: 6px 0 4px; }
+  .step { flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 10px 10px 8px;
+    background: #fff; min-width: 0; }
+  .step .n { display: inline-block; font-size: 11px; font-weight: 700; color: #fff;
+    background: var(--navy); border-radius: 50%; width: 20px; height: 20px;
+    line-height: 20px; text-align: center; margin-bottom: 6px; }
+  .step h3 { font-size: 13px; font-weight: 700; line-height: 1.3; }
+  .step p { font-size: 11.5px; color: var(--muted); margin-top: 4px; line-height: 1.45;
+    overflow-wrap: anywhere; }
+  .step.risk { border-color: #e5c07a; background: var(--amber-bg); }
+  .step.risk .n { background: var(--amber); }
+  .arrow { align-self: center; color: var(--faint); font-size: 18px; padding: 0 5px; flex: none; }
+  .flowkey { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+  .flowkey b { color: var(--ink); }
+
+  /* Two-col panels */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .panel { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; background: #fff; }
+  .panel h3 { font-size: 13.5px; font-weight: 700; margin-bottom: 8px; }
+  .panel ul { list-style: none; }
+  .panel li { font-size: 12.5px; color: var(--muted); padding: 3px 0 3px 16px; position: relative; }
+  .panel li::before { content: "–"; position: absolute; left: 2px; color: var(--faint); }
+  .panel li b { color: var(--ink); font-weight: 600; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 4px; padding: 1px 7px; }
+  .t-allow { background: var(--teal-bg); color: var(--teal); }
+  .t-review { background: var(--amber-bg); color: var(--amber); }
+  .t-reject { background: var(--red-bg); color: var(--red); }
+  .t-na { background: var(--blue-bg); color: var(--blue); }
+
+  /* Stack table */
+  table.stack { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.stack th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--faint); font-weight: 700; padding: 6px 10px; border-bottom: 2px solid var(--line); }
+  table.stack td { padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.stack tr:last-child td { border-bottom: none; }
+  table.stack td:first-child { font-weight: 700; white-space: nowrap; width: 148px; }
+  table.stack td:nth-child(2) { width: 250px; }
+  table.stack td { color: var(--muted); }
+  table.stack td:first-child { color: var(--ink); }
+
+  /* Ops strip */
+  .ops { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .op { background: var(--navy); color: #dbe4f0; border-radius: 8px; padding: 12px 14px; }
+  .op h4 { font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .op code { display: block; color: #a9c6b8; font-size: 11.5px; line-height: 1.7; word-break: break-all; }
+  .op p { font-size: 11.5px; color: #a9b6c9; margin-top: 6px; }
+  footer { margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--line);
+    font-size: 12px; color: var(--faint); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <header class="band">
+    <h1>QueueDesk <span class="thin">— synthetic payment learning lab</span></h1>
+    <p>A local-only system for learning durable payment processing: idempotent HTTP admission,
+    transactional outbox over IBM MQ, a pre-clearing fraud-risk gate, simulated settlement, and a read-only
+    operations dashboard. No real money, no real participants, no cloud spend.</p>
+    <div class="facts">
+      <span>local-only · loopback</span><span>1000-row lab cap</span><span>177 backend tests</span>
+      <span>74 dashboard tests</span><span>SC01–SC12 verify green</span><span>Jev $1 cap · $0.00006 spent</span>
+    </div>
+  </header>
+  <div class="body">
+
+    <h2>Journey of a payment</h2>
+    <p class="sub">Seven stages from HTTP to settled outcome. Every stage is durable or honestly pending — nothing fails silently.</p>
+    <div class="flow">
+      <div class="step"><span class="n">1</span><h3>HTTP admission</h3>
+        <p><span class="mono">POST /api/v1/instructions</span> validates, hashes the body, honors <span class="mono">Idempotency-Key</span> → 202 new · 200 replay · 409 conflict · 400 invalid.</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><span class="n">2</span><h3>Outbox + Postgres</h3>
+        <p>Instruction + outbox event commit in <b>one transaction</b>. Crash between commit and publish recovers by re-reading the outbox.</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><span class="n">3</span><h3>IBM MQ transport</h3>
+        <p>Publisher sends to <span class="mono">QUEUEDESK.INSTRUCTION.IN</span> (at-least-once). Poison and broken routes park in backout/quarantine, consumer stays alive.</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><span class="n">4</span><h3>Worker consumes</h3>
+        <p>Dedups by event id, rebuilds features (amount, velocity, recipient history), then calls the risk gate <b>before</b> any settlement.</p></div>
+      <div class="arrow">→</div>
+      <div class="step risk"><span class="n">5</span><h3>Risk gate</h3>
+        <p>Deterministic rules + optional AI provider answer Q01/Q02. Verdicts: ALLOW · REVIEW · REJECT · NOT_ASSESSED. Holds are visible, never silent.</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><span class="n">6</span><h3>Simulated clearing</h3>
+        <p>Mock receiver completes, rejects, or answers uncertain. Lost replies reconcile; unknown receivers stay honestly pending with open tasks.</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><span class="n">7</span><h3>Outcome saved</h3>
+        <p>Terminal state + full audit trail in Postgres. Dashboard polls read-only APIs: overview, payments, risk, queues, telemetry.</p></div>
+    </div>
+    <div class="flowkey">
+      <span><b>Idempotent</b> — same key, same result, original IDs preserved</span>
+      <span><b>Durable</b> — outbox + assessment rows survive restarts</span>
+      <span><b>Fail-safe</b> — provider faults hold, never allow</span>
+    </div>
+
+    <h2>Risk gate in detail</h2>
+    <p class="sub">Rules are deterministic local facts; the AI provider is context only. No score or confidence ever allows, rejects, or names fraud.</p>
+    <div class="cols">
+      <div class="panel">
+        <h3>Rules → reason codes</h3>
+        <ul>
+          <li><b>NEW_RECIPIENT</b> — sender has never paid this receiver → REVIEW</li>
+          <li><b>UNUSUAL_AMOUNT</b> — amount far from sender baseline → REVIEW</li>
+          <li><b>SIMULATED_POLICY_BLOCK</b> — ≥ $95,000 to a new recipient → REJECT</li>
+          <li>Faults re-evaluate rules first; quiet traffic holds NOT_ASSESSED with the fault's own status</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Modes + live meter</h3>
+        <ul>
+          <li><b>OFF</b> — gate short-circuits · <b>RULES_ONLY</b> — no provider call</li>
+          <li><b>RULES_PLUS_MOCK</b> — deterministic seeded provider, free forever</li>
+          <li><b>RULES_PLUS_JEV</b> — live TypeSafe Jev <span class="mono">jev-1.13.0</span>, key file 600 + gitignored</li>
+          <li>Every Jev success persists token usage; the <b>durable SUM ledger</b> refuses new calls past the $1 budget — restarts never reset the cap</li>
+        </ul>
+      </div>
+    </div>
+    <div class="cols" style="margin-top:14px">
+      <div class="panel">
+        <h3>Assessment outputs</h3>
+        <ul>
+          <li><span class="tag t-allow">ALLOW</span> — no rule matched, provider OK → proceeds to clearing</li>
+          <li><span class="tag t-review">REVIEW</span> — rule matched → RISK_HELD with reason codes</li>
+          <li><span class="tag t-reject">REJECT</span> — simulated policy block only, with reason</li>
+          <li><span class="tag t-na">NOT_ASSESSED</span> — provider fault/abstention on quiet traffic → held safely</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Failure lab (proved, not promised)</h3>
+        <ul>
+          <li><b>SC06</b> MQ outage — 202s queue up, drain after restart with stable IDs</li>
+          <li><b>SC07/SC08</b> redelivery + crash — same event twice, one result</li>
+          <li><b>SC09</b> lost replies reconcile; unknowns stay pending, never faked</li>
+          <li><b>SC10</b> poison held with reason; <b>SC11</b> rejections carry reasons; <b>SC12</b> deadline admits honestly-unsent</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>Stack</h2>
+    <p class="sub">Pinned versions, all running on this machine. Total cloud spend: $0.00006 (Jev smoke).</p>
+    <table class="stack">
+      <tr><th>Layer</th><th>Technology</th><th>Role in the lab</th></tr>
+      <tr><td>Backend API</td><td>Java 25 · Spring Boot 4.0.8 · Maven</td>
+        <td>Admission, outbox, worker, risk gate, reconciliation — <span class="mono">:8080</span>, 177 JUnit tests</td></tr>
+      <tr><td>Dashboard</td><td>Angular 22 · Tailwind 4.3 · Node 24.21</td>
+        <td>Read-only ops UI — <span class="mono">:4200</span> proxied to the API, 74 specs, mockup parity</td></tr>
+      <tr><td>Database</td><td>PostgreSQL 17 · Flyway V1–V10</td>
+        <td><span class="mono">qdesk-postgres</span>: instructions, outbox, assessments, audit trail, usage ledger</td></tr>
+      <tr><td>Messaging</td><td>IBM MQ · QM QDESK</td>
+        <td><span class="mono">qdesk-mq</span>: durable instruction queue + backout; poison + broken-route handling</td></tr>
+      <tr><td>Kubernetes</td><td>kind cluster <span class="mono">qdesk</span></td>
+        <td>Local container orchestration for the stack; k8s-verify gate green</td></tr>
+      <tr><td>Risk AI</td><td>TypeSafe Jev <span class="mono">jev-1.13.0</span></td>
+        <td>Choice Q01/Q02 over numerics-only state; $1 budget, durable token ledger, no PII leaves the lab</td></tr>
+      <tr><td>Observability</td><td>OpenTelemetry OTLP · JSON logs · Actuator</td>
+        <td>Trace-linked structured logs, liveness/readiness probes, ops guards endpoint</td></tr>
+      <tr><td>Load + verify</td><td>Generator CLI · verify harness</td>
+        <td>Seeded scenarios (normal → risk-6), SC01–SC12 failure suite with stored reports</td></tr>
+    </table>
+
+    <h2>Operate it</h2>
+    <p class="sub">Four commands cover the daily loop.</p>
+    <div class="ops">
+      <div class="op"><h4>Start everything</h4><code>./start-lab</code>
+        <p>Postgres + MQ containers, API :8080, dashboard :4200. Idempotent; refuses occupied ports.</p></div>
+      <div class="op"><h4>Send traffic</h4><code>./scripts/generate --run-id w1 --count 50 --scenario risk-2 --send --observe</code>
+        <p>Dry-run by default; --send posts, --observe polls to terminal states.</p></div>
+      <div class="op"><h4>Clean slate</h4><code>./scripts/reset-lab</code>
+        <p>Truncates run data, drains queues. Deliberate reset also zeroes the Jev ledger.</p></div>
+      <div class="op"><h4>Prove health</h4><code>./scripts/verify</code>
+        <p>Three gates: unit suites, SC01–SC12 failure lab, k8s-verify. Exit 0 or it says why.</p></div>
+    </div>
+
+    <footer>
+      <span>QueueDesk · synthetic payment learning lab · local-only, no deploy target</span>
+      <span>Infographic generated 6 Oct 2026 — source: QueueDesk_Infographic.html</span>
+    </footer>
+  </div>
+</div>
+</body>
+</html>

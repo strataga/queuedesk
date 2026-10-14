@@ -1,0 +1,9 @@
+#!/bin/sh
+# Lab-only controlled-redelivery injector for SC07. See docs/RUNBOOK-RECOVERY.md.
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+. "$ROOT/scripts/java-env.sh"
+MQ_JAR=$(find "$ROOT/.cache/repository" -name 'com.ibm.mq.jakarta.client-*.jar' | head -1)
+JMS_JAR=$(find "$ROOT/.cache/repository" -name 'jakarta.jms-api-*.jar' | head -1)
+if [ -z "$MQ_JAR" ] || [ -z "$JMS_JAR" ]; then echo "run ./mvnw -q test-compile first (populates .cache/repository)" >&2; exit 1; fi
+exec "$JAVA_HOME/bin/java" -cp "$MQ_JAR:$JMS_JAR" "$ROOT/tools/Redeliver.java" "$@"

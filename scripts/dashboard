@@ -1,0 +1,27 @@
+#!/bin/sh
+# Dashboard runner: install | serve | build | test for the read-only Angular lab UI.
+# Uses the pinned Node from dashboard/.nvmrc via nvm when available. Serves on
+# loopback only (127.0.0.1:4200) with /api and /actuator proxied to the lab
+# backend on 127.0.0.1:8080 — start the backend first (see docs/RUNBOOK-L1.md).
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+if [ -s "$HOME/.nvm/nvm.sh" ]; then
+  # shellcheck disable=SC1091
+  . "$HOME/.nvm/nvm.sh" >/dev/null 2>&1
+  nvm use --silent >/dev/null 2>&1 || true
+fi
+# nvm use can silently no-op (slow init, dubious shell state), leaving a stale
+# default node on PATH. If the pinned version is installed, prefer it directly.
+PINNED=$(cat "$ROOT/dashboard/.nvmrc" 2>/dev/null || echo "")
+if [ -n "$PINNED" ] && [ -x "$HOME/.nvm/versions/node/v$PINNED/bin/node" ]; then
+  PATH="$HOME/.nvm/versions/node/v$PINNED/bin:$PATH"
+  export PATH
+fi
+cd "$ROOT/dashboard"
+case "${1:-serve}" in
+  install) npm install ;;
+  serve) npm start ;;
+  build) npx ng build ;;
+  test) npx ng test ;;
+  *) echo "usage: $0 [install|serve|build|test]" >&2; exit 2 ;;
+esac

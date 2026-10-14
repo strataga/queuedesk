@@ -1,0 +1,67 @@
+#!/bin/sh
+# Start the whole QueueDesk lab: Postgres + MQ containers, backend API, dashboard.
+# Idempotent for containers (restarts existing ones); refuses if 8080/4200 are taken.
+# Logs: /tmp/qdesk-app.log, /tmp/qdesk-dashboard.log
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+for port in 8080 4200; do
+  if curl -s --max-time 2 "http://127.0.0.1:$port/" >/dev/null 2>&1; then
+    echo "refusing: something already answers on 127.0.0.1:$port (stop it first)" >&2
+    exit 1
+  fi
+done
+
+echo "== containers =="
+"$ROOT/scripts/postgres" up
+"$ROOT/scripts/mq" up
+for _ in $(seq 1 36); do
+  docker exec qdesk-mq dspmq -m QDESK 2>/dev/null | grep -q "STATUS(Running)" && break
+  sleep 5
+done
+docker exec qdesk-mq dspmq -m QDESK 2>/dev/null | grep -q "STATUS(Running)" \
+  || { echo "QM QDESK never reached Running" >&2; exit 1; }
+if ! docker exec qdesk-mq bash -c "echo 'DISPLAY QL(QUEUEDESK.INSTRUCTION.IN) CURDEPTH
+END' | runmqsc QDESK" 2>/dev/null | grep -q "AMQ8409I"; then
+  echo "queues missing; running setup"
+  "$ROOT/scripts/mq" setup
+fi
+
+echo "== backend API (127.0.0.1:8080) =="
+unset MQ_APP_PASSWORD
+cd "$ROOT"
+./mvnw spring-boot:run > /tmp/qdesk-app.log 2>&1 &
+APP_PID=$!
+for _ in $(seq 1 40); do
+  curl -s --max-time 3 http://127.0.0.1:8080/actuator/health/liveness 2>/dev/null | grep -q '"UP"' && break
+  kill -0 "$APP_PID" 2>/dev/null || { echo "backend died; see /tmp/qdesk-app.log" >&2; exit 1; }
+  sleep 5
+done
+curl -s --max-time 3 http://127.0.0.1:8080/actuator/health/liveness 2>/dev/null | grep -q '"UP"' \
+  || { echo "backend never went live; see /tmp/qdesk-app.log" >&2; exit 1; }
+echo "backend up (pid $APP_PID)"
+
+echo "== dashboard (http://127.0.0.1:4200) =="
+if [ ! -d "$ROOT/dashboard/node_modules" ]; then
+  echo "node_modules missing; running install (one-time, slow)"
+  "$ROOT/scripts/dashboard" install
+fi
+"$ROOT/scripts/dashboard" serve > /tmp/qdesk-dashboard.log 2>&1 &
+UI_PID=$!
+for _ in $(seq 1 40); do
+  curl -s --max-time 3 http://127.0.0.1:4200/ >/dev/null 2>&1 && break
+  kill -0 "$UI_PID" 2>/dev/null || { echo "dashboard died; see /tmp/qdesk-dashboard.log" >&2; exit 1; }
+  sleep 5
+done
+curl -s --max-time 3 http://127.0.0.1:4200/ >/dev/null 2>&1 \
+  || { echo "dashboard never served; see /tmp/qdesk-dashboard.log" >&2; exit 1; }
+echo "dashboard up (pid $UI_PID)"
+
+cat <<EOF
+
+Lab is up:
+  API:       http://127.0.0.1:8080  (health: /actuator/health/liveness, guards: /api/v1/ops/guards)
+  Dashboard: http://127.0.0.1:4200
+  Logs:      /tmp/qdesk-app.log  /tmp/qdesk-dashboard.log
+Stop with: kill $APP_PID $UI_PID && ./scripts/mq down && ./scripts/postgres down
+EOF

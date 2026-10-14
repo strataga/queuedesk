@@ -1,0 +1,8 @@
+# QueueDesk lab namespace (Phase 9). All k8s lab objects live here so scoped
+# teardown is one namespace delete; cluster delete is the outer scope.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: queuedesk-lab
+  labels:
+    lab: queuedesk

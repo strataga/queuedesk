@@ -41,7 +41,7 @@ These are planning inputs, not executable PLAN.md files. Resolve the open implem
 2. Invalid fields/participants/amounts create no rows; oversized bodies return 413; failed commits return no successful admission. Valid amount boundaries match 1..10,000,000 minor units.
 3. Concurrent same-key submissions yield one durable identity; changed business payload returns 409 without overwriting it, while changed correlation metadata remains a repeat.
 4. GET supports unknown-ID 404 and bounded run/status pagination with stable ordering; database/capacity errors expose safe, truthful responses.
-5. Dry-run/local defaults and bounded configuration remain usable, and the learner can explain record validation, injected layers, the unique constraint and commit-before-202.
+5. Dry-run/local defaults and bounded configuration remain usable, and learner-review material is prepared for record validation, injected layers, the unique constraint and commit-before-202.
 
 ## Evidence
 
@@ -83,6 +83,9 @@ Future-phase references describe integration points that do not yet exist at int
 - Specify canonicalization/hash version, duplicate-race recovery and an HTTP response boundary that cannot send 202 before commit.
 - Choose deterministic cursor ordering (including a tie-breaker), cursor validation and the exact response envelope; verify bounded streaming-body enforcement.
 - Measure local container-engine availability, OS/CPU, disk reserve and memory before starting the dependency.
+- Run an early IBM MQ platform feasibility spike (approved image manifest/CPU support on this machine plus one persistent send/receive); full publisher evidence stays in Phase 2 but the go/no-go must not slip past Phase 1.
+- Default to one shared local dependency stack for integration tests per PRD §16; Testcontainers is optional and must be resource-capped if chosen.
+- Note: PR04 is staged L2 in the PRD §4 table but planned here because the §3 L1 demo requires duplicate-key repeat behavior; the "no new outbox event" half is proven again in Phase 2.
 
 <deferred>
 ## Deferred Scope

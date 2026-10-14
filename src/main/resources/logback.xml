@@ -1,0 +1,19 @@
+<!-- OBS-01: one JSON console appender. Identity travels in MDC (see
+     LogContext) and renders as real fields; UTC timestamps; stack traces
+     stay attached. Logger name renders as "component". -->
+<configuration>
+  <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+      <fieldNames>
+        <logger>component</logger>
+      </fieldNames>
+      <timeZone>UTC</timeZone>
+    </encoder>
+  </appender>
+  <root level="INFO">
+    <appender-ref ref="JSON"/>
+  </root>
+  <logger name="org.springframework" level="WARN"/>
+  <logger name="com.ibm" level="WARN"/>
+  <logger name="org.apache.hc" level="WARN"/>
+</configuration>

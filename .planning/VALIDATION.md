@@ -10,13 +10,13 @@ Requirements are complete only after implementation and verification, with sourc
 - Store runId, seed, fixture version, effective limits, software versions, timestamps, fault point, counts, identity assertions, pending items, timing intervals and pass/fail/skip status with scenario evidence.
 - Full report output may live in ignored reports/; retain compact, reproducible acceptance summaries and exact invocation/configuration in versioned verification docs. Never commit secrets.
 - A skipped or unavailable integration profile is not a passed gate. An in-process adapter is explicitly simulation evidence.
-- Learner explanation is a human checkpoint; passing automation alone does not establish understanding.
+- Learner explanation is verified once at the final project review, not per phase; passing automation alone does not establish understanding.
 
 ## Baseline Verification
 
 During planning intake on 2026-10-04, `./mvnw test` passed five tests with zero failures, errors or skips. This validates the current in-memory starter only.
 
-docs/VERIFICATION.md records earlier package/smoke/demo evidence. Those checks were not rerun during intake. No Postgres, MQ, worker, reconciliation, quarantine or browser acceptance evidence exists yet.
+docs/VERIFICATION.md records earlier package/smoke/demo evidence. Those checks were not rerun during intake. That intake-time gap is closed: real Postgres 17 / IBM MQ evidence plus worker, reconciliation, quarantine, dashboard and kind acceptance are recorded in docs/VERIFICATION.md (Phases 1–9).
 
 ## Scenario Ownership
 
@@ -36,8 +36,14 @@ Each scenario has one final acceptance owner. Earlier phases may establish prere
 | SC10 | 7 | Poison schema and unavailable backout route | Held work with reason; bad routing preserves persistent work; projection freshness remains honest |
 | SC11 | 4 | Deterministic mock clearing/receiver rejection | REJECTED with stable reason; normal acknowledgement, no transport retry/quarantine |
 | SC12 | 4 | User stop or sending/observation deadline | New submissions stop; unsent/pending/unknown work remains listed; no fabricated success |
+| RS01 | B04 | Benign normal/unusual activity | Unnecessary holds/rejections reported; unusual is not fraud |
+| RS02 | B04 | Labeled suspicious velocity/conflict | Rules compute numeric facts; missed-suspicious rate measured |
+| RS03 | B04 | HTTP retries and MQ redeliveries | No inflated velocity or auto-fraud label; stable identities, cached assessment |
+| RS04 | B04 | Missing/contradictory/adversarial memo | Injection cannot alter policy/labels/destinations; uncertain holds |
+| RS05 | B04 | Provider timeout/invalid/rate-limit/wrong model | NOT_ASSESSED hold; bounded calls; no receiver invocation |
+| RS06 | B04 | Restart around assessment/hold commit | No second outcome; incomplete assessment visible and recoverable |
 
-SC07 is first exercised in Phase 3; SC10 in Phase 5; SC09 in Phase 6. Phase 7 owns their final recovery acceptance against the assembled system.
+SC07 is first exercised in Phase 3; SC10 in Phase 5; SC09 in Phase 6. Phase 7 owns their final recovery acceptance against the assembled system. RS01–RS06 are owned by backlog item B04 and run only if L5 is selected.
 
 ## Walking Skeleton Gate — Phase 1
 
@@ -46,7 +52,7 @@ SC07 is first exercised in Phase 3; SC10 in Phase 5; SC09 in Phase 6. Phase 7 ow
 3. Real Postgres tests cover initial/repeated migration, unique-key concurrency, same-key changed-body race, commit failure and restart retrieval.
 4. Invalid requests create no rows. Admission commit failure produces no successful 202. Correlation changes never create a new business instruction.
 5. API restart preserves the exact instruction ID/state. Document startup, migration, tests and non-destructive shutdown.
-6. Learner predicts a small domain change, reads a failure, and explains why durable RECEIVED is not processing completion.
+6. Learner-review material is prepared (small-change exercise, failing test, prompts); the human review is deferred to the final project review.
 
 ## Core MVP Gate — Phases 2–4
 
@@ -55,7 +61,7 @@ SC07 is first exercised in Phase 3; SC10 in Phase 5; SC09 in Phase 6. Phase 7 ow
 3. Worker result/dedup commits together before JMS commit. Repeated eventId produces one result.
 4. SC01–SC05 and SC11–SC12 pass with separate admission and completion reports.
 5. PR01–PR05, PR08 and PR10 pass; a reader can run the local loop without DB editing.
-6. Learner explains the controller/service/repository path, outbox duplicate window, worker dedup and transport-versus-business identities.
+6. Learner-review material is prepared (path walkthrough, dedup explanation, identity prompts); the human review is deferred to the final project review.
 
 ## Failure Matrix — Final Owner Phase 7
 
@@ -82,10 +88,11 @@ SC07 is first exercised in Phase 3; SC10 in Phase 5; SC09 in Phase 6. Phase 7 ow
 
 - PR06, PR07 and PR09 plus SC06–SC10 and the full matrix pass.
 - Attempt thresholds and one poison-routing owner are measured on the selected IBM JMS/Spring combination.
+- TG02/TG03 pass: trace context survives outbox/MQ/restart with per-attempt spans, and exporter outage degrades visibly without blocking work.
 - Pending and quarantine state remain observable through outage/restart and never become false rejection/completion.
 - Structured logs, bounded metric labels, latency definitions, freshness, liveness and dependency state behave as documented.
 - Capacity/resource safeguards and named-resource shutdown work; tests refuse non-lab targets.
-- Learner demonstrates normal, duplicate, outage and lost-confirmation runs and explains both DB/JMS crash windows.
+- Learner-review material is prepared (run demonstrations, crash-window explanations); the human review is deferred to the final project review.
 
 ## Dashboard Gate — Phase 8
 
@@ -97,6 +104,23 @@ SC07 is first exercised in Phase 3; SC10 in Phase 5; SC09 in Phase 6. Phase 7 ow
 - Preserve completed business outcome with a lagging published marker; missing intermediate polls are not invented events.
 - No replay/manual-entry or other operator writes are exposed.
 
+## Kubernetes Gate — Phase 9
+
+- Liveness/readiness/startup probes use Phase 7 health endpoints; dependency outages cause no destructive restart loops.
+- Pod restarts, rollout/restart and cluster recreation preserve Postgres durability and duplicate/recovery guarantees; scenario behavior is unchanged through restarts.
+- MQ topology is pinned and persistent; broker restarts recover via the proven outbox path.
+- Scoped teardown removes only named QueueDesk resources; retained data handling is documented; no cloud spend occurs.
+
+## Final Review — after Phase 9
+
+The single human gate for the project. The user walks the assembled system and
+closes LEARN-01, LEARN-02 and LEARN-03 in one session:
+
+- LEARN-01: explain records, injection, layers, constraints, commit and restart survival.
+- LEARN-02: trace DB/JMS commits, explain the transaction/MQ boundary and dedup keys.
+- LEARN-03: demonstrate normal/duplicate/outage runs, explain a crash, reconcile a loss.
+- Full walkthrough: admit → publish → work → recover → dashboard → local Kubernetes.
+
 ## Checks by Layer
 
 | Layer | Initial owner | Required check |
@@ -107,6 +131,7 @@ SC07 is first exercised in Phase 3; SC10 in Phase 5; SC09 in Phase 6. Phase 7 ow
 | CLI end-to-end | 4 | Core scenario assertions and honest reports |
 | Controlled failure integration | 7 | Complete failure matrix and SC06–SC10, then all-scenario regression |
 | Browser/UI | 8 | Read-only views, freshness, polling and keyboard behavior |
+| Kubernetes | 9 | Pod restart/rollout/storage/teardown and scenario regression |
 
 ## Completion Recording
 

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QueueDesk — Slide Deck</title>
+<style>
+  :root {
+    --ink: #16202e; --muted: #4b5a70; --faint: #7d8ba1; --line: #d9e0ea;
+    --navy: #131f31; --navy2: #243449; --teal: #0f766e; --teal-bg: #e6f4f2;
+    --amber: #b45309; --amber-bg: #fdf3e3; --red: #b91c1c; --red-bg: #fdecec;
+    --blue: #1d4ed8; --blue-bg: #e9effe;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: #0b1220; color: var(--ink); }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; }
+  #stage { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .slide { display: none; width: 1180px; min-height: 700px; max-width: 96vw; background: #fff;
+    border-radius: 12px; padding: 56px 64px; flex-direction: column; justify-content: center; position: relative; }
+  .slide.active { display: flex; }
+  .slide.dark { background: var(--navy); color: #fff; }
+  .kicker { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--teal); margin-bottom: 12px; }
+  .dark .kicker { color: #7dd3c8; }
+  h1 { font-size: 52px; font-weight: 750; letter-spacing: -0.025em; line-height: 1.08; }
+  h2 { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 10px; }
+  .lede { font-size: 19px; color: var(--muted); max-width: 62ch; margin-top: 8px; }
+  .dark .lede { color: #c3cedd; }
+  .title-sub { font-size: 22px; color: #a9b6c9; margin-top: 14px; font-weight: 300; }
+  .title-facts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 26px; }
+  .title-facts span { font-size: 13px; font-family: ui-monospace, Menlo, monospace;
+    background: var(--navy2); border: 1px solid #33445f; border-radius: 20px; padding: 4px 14px; color: #dbe4f0; }
+  ul.points { list-style: none; margin-top: 20px; }
+  ul.points li { font-size: 18px; padding: 9px 0 9px 30px; position: relative; color: var(--muted); }
+  ul.points li::before { content: "—"; position: absolute; left: 4px; color: var(--teal); font-weight: 700; }
+  ul.points li b { color: var(--ink); }
+  .dark ul.points li { color: #c3cedd; } .dark ul.points li b { color: #fff; }
+  .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 20px; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; }
+  .card h3 { font-size: 16px; margin-bottom: 8px; }
+  .card p, .card li { font-size: 14.5px; color: var(--muted); }
+  .card ul { list-style: none; } .card li { padding: 2.5px 0; }
+  .card li b { color: var(--ink); }
+  .card.hot { border-color: #e5c07a; background: var(--amber-bg); }
+  .card.cool { background: #f4f7fa; }
+  .strip { display: flex; gap: 0; margin-top: 22px; align-items: stretch; }
+  .cell { flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 12px 10px; min-width: 0; }
+  .cell .n { display: inline-block; font-size: 11px; font-weight: 800; color: #fff; background: var(--navy);
+    border-radius: 50%; width: 20px; height: 20px; line-height: 20px; text-align: center; }
+  .cell h4 { font-size: 13px; margin: 6px 0 4px; }
+  .cell p { font-size: 11.5px; color: var(--muted); line-height: 1.45; overflow-wrap: anywhere; }
+  .cell.hot { border-color: #e5c07a; background: var(--amber-bg); } .cell.hot .n { background: var(--amber); }
+  .sep { align-self: center; color: var(--faint); padding: 0 4px; font-size: 15px; flex: none; }
+  table.grid { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 14.5px; }
+  table.grid th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--faint); padding: 6px 10px; border-bottom: 2px solid var(--line); }
+  table.grid td { padding: 8px 10px; border-bottom: 1px solid var(--line); color: var(--muted); vertical-align: top; }
+  table.grid td:first-child { font-weight: 700; color: var(--ink); white-space: nowrap; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 4px; padding: 1px 8px; }
+  .t-allow { background: var(--teal-bg); color: var(--teal); } .t-review { background: var(--amber-bg); color: var(--amber); }
+  .t-reject { background: var(--red-bg); color: var(--red); } .t-na { background: var(--blue-bg); color: var(--blue); }
+  .bigstat { display: flex; gap: 34px; margin-top: 26px; }
+  .bigstat div b { display: block; font-size: 44px; font-weight: 750; letter-spacing: -0.02em; }
+  .bigstat div span { font-size: 14px; color: var(--muted); }
+  .cmd { background: var(--navy); color: #a9c6b8; border-radius: 8px; padding: 10px 16px;
+    font-family: ui-monospace, Menlo, monospace; font-size: 14px; margin-top: 10px; overflow-wrap: anywhere; }
+  .cmdline { margin-top: 14px; } .cmdline b { font-size: 15px; } .cmdline p { font-size: 13.5px; color: var(--muted); }
+  #hud { position: fixed; bottom: 14px; left: 0; right: 0; text-align: center; color: #5b6b84;
+    font-size: 13px; font-family: ui-monospace, Menlo, monospace; pointer-events: none; }
+  #hud b { color: #c3cedd; }
+  .foot { position: absolute; bottom: 22px; left: 64px; right: 64px; font-size: 12px; color: var(--faint);
+    display: flex; justify-content: space-between; }
+  @media print {
+    @page { size: 12.8in 7.8in; margin: 0; }
+    body { background: #fff; }
+    #stage { display: block; padding: 0; }
+    .slide { display: flex; width: 100%; max-width: none; min-height: 7.8in; border-radius: 0;
+      page-break-after: always; padding: 0.6in 0.8in; }
+    #hud { display: none; } .foot { left: 0.8in; right: 0.8in; bottom: 0.35in; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <section class="slide dark">
+    <div class="kicker">QueueDesk · synthetic payment learning lab</div>
+    <h1>Durable payments,<br>learned by breaking them.</h1>
+    <p class="title-sub">Send a payment once — even if you click twice. Lose a message — nothing is lost. Smell fraud — it gets held for review.</p>
+    <div class="title-facts"><span>local-only</span><span>177 backend tests</span><span>74 dashboard tests</span>
+      <span>SC01–SC12 green</span><span>Jev live · $1 cap</span></div>
+    <div class="foot"><span>QueueDesk deck · 6 Oct 2026</span><span>1 / 13</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Why it exists</div>
+    <h2>A lab, not a demo</h2>
+    <p class="lede">Real payment systems fail in boring, expensive ways: a message gets lost, a customer is charged twice,
+    fraud slips through quietly. QueueDesk is a <b>working miniature</b> of such a system where you can
+    trigger each failure on demand and watch the safety nets catch it.</p>
+    <ul class="points">
+      <li><b>Real parts, toy money:</b> an actual database, an actual message queue — but every dollar is pretend</li>
+      <li><b>Honest status:</b> if something is unresolved, the screen says “pending” — it never fakes “all good”</li>
+      <li><b>12 disaster drills:</b> unplug the queue, crash mid-payment, send poison — each with a saved report card</li>
+      <li><b>A live AI guard:</b> a real fraud-checking AI screens payments under a strict $1 spending cap</li>
+    </ul>
+    <div class="foot"><span>QueueDesk</span><span>2 / 13</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">The flow</div>
+    <h2>Journey of a payment</h2>
+    <p class="lede">Follow $125 from “send” to “settled”. Seven steps — each one either safely stored or visibly waiting.</p>
+    <div class="strip">
+      <div class="cell"><span class="n">1</span><h4>Front door</h4><p>The app receives your $125. Sent twice by accident? Counted once — the receipt key proves it.</p></div><div class="sep">→</div>
+      <div class="cell"><span class="n">2</span><h4>Written down</h4><p>Payment + delivery note are saved together. A crash here loses nothing — both or neither.</p></div><div class="sep">→</div>
+      <div class="cell"><span class="n">3</span><h4>Conveyor belt</h4><p>A message queue carries the payment onward. Bad messages are set aside, never jam the belt.</p></div><div class="sep">→</div>
+      <div class="cell"><span class="n">4</span><h4>Sorter</h4><p>A worker picks it up, ignores duplicates, and looks up your history before anything else.</p></div><div class="sep">→</div>
+      <div class="cell hot"><span class="n">5</span><h4>Security check</h4><p>Rules + AI judge it: pass, hold for review, block, or “couldn’t check — hold safely”.</p></div><div class="sep">→</div>
+      <div class="cell"><span class="n">6</span><h4>Cashier</h4><p>A pretend bank settles it: paid, declined, or “unsure”. Lost answers are chased up later.</p></div><div class="sep">→</div>
+      <div class="cell"><span class="n">7</span><h4>Receipt filed</h4><p>The final result + full history are stored, and the dashboard shows every step.</p></div>
+    </div>
+    <div class="foot"><span>QueueDesk</span><span>3 / 13</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Architecture</div>
+    <h2>Four parts, one laptop</h2>
+    <p class="lede">Everything runs on this machine — nothing in the cloud except the AI fraud-checker.</p>
+    <div class="cols2">
+      <div class="card cool"><h3>1 · The engine (takes payments)</h3><ul>
+        <li>A web service receives payments and hands them to the queue</li>
+        <li>The database remembers everything: payments, delivery notes, fraud checks, history</li>
+        <li>The message queue delivers each payment at least once; the worker ignores repeats</li>
+      </ul></div>
+      <div class="card cool"><h3>2 · The dashboard (watch only)</h3><ul>
+        <li>A web UI shows payments, fraud holds, queue depths, and traces</li>
+        <li>Strictly read-only — looking can never change or break anything</li>
+        <li>Unknowns show as dashes; “pending” means pending, never guessed</li>
+      </ul></div>
+    </div>
+    <div class="cols2">
+      <div class="card"><h3>3 · The security desk</h3><ul>
+        <li>Simple rules plus an AI adviser screen every payment <b>before</b> money moves</li>
+        <li>Every decision and its reasons are stored for review</li>
+      </ul></div>
+      <div class="card"><h3>4 · The drill instructors</h3><ul>
+        <li>A traffic generator sends scripted payments — normal ones and fraud attempts</li>
+        <li>A verifier runs 12 disaster drills and grades each with a report card</li>
+      </ul></div>
+    </div>
+    <div class="foot"><span>QueueDesk</span><span>4 / 13</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Risk gate</div>
+    <h2>Rules decide. AI advises.</h2>
+    <p class="lede">Three simple tripwires catch the obvious stuff; an AI adviser double-checks. And a strict rule:
+    <b>the AI can never approve, block, or accuse anyone</b> — it only answers two yes/no questions as background.</p>
+    <div class="cols2">
+      <div class="card"><h3>The three tripwires</h3><ul>
+        <li><b>Stranger danger</b> — first-ever payment to this person? → <span class="tag t-review">hold for review</span></li>
+        <li><b>Weird amount</b> — $87,000 when you usually send $500? → <span class="tag t-review">hold for review</span></li>
+        <li><b>Hard limit</b> — $95,000+ to a stranger? → <span class="tag t-reject">blocked</span></li>
+        <li>If the AI can't be reached, rules still apply; quiet payments → <span class="tag t-na">held safely</span></li>
+      </ul></div>
+      <div class="card"><h3>Four strictness settings</h3><ul>
+        <li><b>Off</b> — everything sails through (for testing the plumbing)</li>
+        <li><b>Rules only</b> — tripwires without the AI</li>
+        <li><b>Rules + pretend AI</b> — a free built-in stand-in, same questions</li>
+        <li><b>Rules + real AI</b> — the live model, under a $1 spending cap</li>
+      </ul></div>
+    </div>
+    <div class="foot"><span>QueueDesk</span><span>5 / 13</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Live AI · $1 cap</div>
+    <h2>The AI guard, on a prepaid meter</h2>
+    <p class="lede">“Jev” is an outside AI service that answers two questions per payment: <i>is the recipient new?</i> and
+    <i>is the amount unusual?</i> It sees only numbers — never names, never account details.</p>
+    <ul class="points">
+      <li><b>Prepaid $1 meter:</b> every answer costs a fraction of a cent; the meter lives in the database, so restarting the app can't reset it</li>
+      <li><b>Hard stop at $1:</b> once the dollar is spent, checks pause and payments queue for review — shown on screen, never silent</li>
+      <li><b>Observed cost:</b> one real check took 0.3 seconds and cost $0.00002 — two-thousandths of a cent</li>
+      <li><b>It already taught us something:</b> the AI reports “confidence” differently than our test double did — found on the first live call, fixed and locked in with a test</li>
+    </ul>
+    <div class="foot"><span>QueueDesk</span><span>6 / 13</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Failure lab</div>
+    <h2>Twelve disaster drills — on purpose</h2>
+    <p class="lede">Each drill breaks one thing, then checks the safety net held. A few favorites:</p>
+    <div class="cols2">
+      <div class="card"><h3>“Unplug it mid-flight”</h3><ul>
+        <li><b>Kill the message queue</b> — payments pile up safely, drain cleanly after restart</li>
+        <li><b>Crash halfway through saving</b> — redelivery produces exactly one result, never two</li>
+        <li><b>Send a poison message</b> — quarantined with a reason; everything else keeps flowing</li>
+      </ul></div>
+      <div class="card"><h3>“Confuse it”</h3><ul>
+        <li><b>Click “pay” twice</b> — charged once; <b>change the amount mid-retry</b> — rejected loudly</li>
+        <li><b>Lose the bank's reply</b> — chased up and settled; truly unknown stays “pending”</li>
+        <li><b>Flood it / starve it</b> — bursts absorb, deadlines admit only what fits</li>
+      </ul></div>
+    </div>
+    <p class="lede" style="margin-top:16px">One command runs every drill plus all unit tests and grades the report card: pass, or exactly what failed.</p>
+    <div class="foot"><span>QueueDesk</span><span>7 / 13</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Dashboard</div>
+    <h2>Read-only operations view</h2>
+    <p class="lede">A control tower for the lab: six screens, every number traceable to a real reading. Nothing here can change anything — it's windows, not levers.</p>
+    <div class="cols2">
+      <div class="card"><h3>The three you'll use most</h3><ul>
+        <li><b>Overview</b> — the big picture: how many paid, how many held, queue health</li>
+        <li><b>Payments</b> — the ledger, newest first; filter by experiment run</li>
+        <li><b>Risk review</b> — the held-payments queue with reasons, plus the AI spend meter</li>
+      </ul></div>
+      <div class="card"><h3>For digging deeper</h3><ul>
+        <li><b>Queues / Ops</b> — is the conveyor belt backed up? any guards tripped?</li>
+        <li><b>Telemetry / Scenarios</b> — follow one payment's trail; replay past drills</li>
+        <li>Missing data shows as a dash — the screen would rather admit ignorance than invent a number</li>
+      </ul></div>
+    </div>
+    <div class="foot"><span>QueueDesk</span><span>8 / 13</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Stack</div>
+    <h2>What's inside (the stack)</h2>
+    <p class="lede">Industry-standard parts with pinned versions — the same setup rebuilds bit-for-bit on any machine.</p>
+    <table class="grid">
+      <tr><th>Part</th><th>Technology</th><th>What it does, plainly</th></tr>
+      <tr><td>The engine</td><td>Java 25 · Spring Boot 4.0.8</td><td>The web service that takes payments and runs the whole flow</td></tr>
+      <tr><td>The dashboard</td><td>Angular 22 · Tailwind 4.3</td><td>The control-tower screens you look at (built to match the designs)</td></tr>
+      <tr><td>The memory</td><td>PostgreSQL 17</td><td>The database that forgets nothing: payments, checks, history, AI meter</td></tr>
+      <tr><td>The conveyor</td><td>IBM MQ</td><td>The industrial message queue that never drops a payment</td></tr>
+      <tr><td>The boxes</td><td>Kubernetes (kind)</td><td>Runs each part in its own container, all on this laptop</td></tr>
+      <tr><td>The AI guard</td><td>TypeSafe Jev</td><td>The outside fraud-checker, prepaid $1, numbers-only — no names</td></tr>
+      <tr><td>The flight recorder</td><td>OpenTelemetry · logs</td><td>Every payment leaves a trace you can follow step by step</td></tr>
+    </table>
+    <div class="foot"><span>QueueDesk</span><span>9 / 13</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Operate</div>
+    <h2>Try it: four commands</h2>
+    <div class="cmdline"><b>1 · Start everything</b><div class="cmd">./start-lab</div>
+      <p>Launches the database, queue, engine, and dashboard. Safe to re-run; won't fight for busy ports.</p></div>
+    <div class="cmdline"><b>2 · Send 20 payments, fraud mixed in</b><div class="cmd">./scripts/generate --run-id w1 --count 20 --scenario risk-2 --send --observe</div>
+      <p>Shows the plan first without sending; --send fires it, --observe watches each one settle.</p></div>
+    <div class="cmdline"><b>3 · Clean slate · 4 · Prove health</b><div class="cmd">./scripts/reset-lab &nbsp;&amp;&nbsp; ./scripts/verify</div>
+      <p>Wipe the pretend data between experiments; run every test and all 12 disaster drills.</p></div>
+    <div class="foot"><span>QueueDesk</span><span>10 / 13</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Receipts</div>
+    <h2>Verified, not claimed</h2>
+    <div class="bigstat">
+      <div><b>177</b><span>backend tests green</span></div>
+      <div><b>74</b><span>dashboard specs green</span></div>
+      <div><b>12</b><span>failure scenarios green</span></div>
+      <div><b>$0.00006</b><span>total cloud spend of $1</span></div>
+    </div>
+    <ul class="points">
+      <li><b>Fraud mix caught live:</b> 20 payments in, 6 held with reasons — 5 giant amounts, 1 first-timer</li>
+      <li><b>AI check proved live:</b> a real fraud screen answered in 0.3 seconds for $0.00002</li>
+      <li><b>Screens match the designs:</b> every page screenshot-checked against its mockup</li>
+    </ul>
+    <div class="foot"><span>QueueDesk</span><span>11 / 13</span></div>
+  </section>
+
+  <section class="slide">
+    <div class="kicker">Next</div>
+    <h2>Where it goes from here</h2>
+    <ul class="points">
+      <li><b>Grade the guards:</b> run rules and AI side by side on the same fraud — who catches more, who cries wolf?</li>
+      <li><b>Speed vs cost:</b> how slow and pricey does the AI get at high volume?</li>
+      <li><b>Sneakier fraud:</b> rapid-fire bursts, split-up amounts, fraud rings</li>
+      <li><b>Let reviewers act:</b> today the panel is look-only — approve/release buttons come later</li>
+      <li><b>Tune the tripwires:</b> set the real limits using measured data, not guesses</li>
+    </ul>
+    <div class="foot"><span>QueueDesk</span><span>12 / 13</span></div>
+  </section>
+
+  <section class="slide dark">
+    <div class="kicker">QueueDesk</div>
+    <h1>Break it on purpose.<br>Learn for real.</h1>
+    <p class="title-sub">Local-only · honest states · proved failure handling · live AI under a hard cap</p>
+    <div class="title-facts"><span>./start-lab</span><span>:8080 API</span><span>:4200 dashboard</span></div>
+    <div class="foot"><span>QueueDesk deck · 6 Oct 2026</span><span>13 / 13</span></div>
+  </section>
+
+</div>
+<div id="hud"><b id="cur">1</b> / 13 · ← → navigate</div>
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  let i = 0;
+  function go(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, k) => s.classList.toggle('active', k === i));
+    document.getElementById('cur').textContent = i + 1;
+    history.replaceState(null, '', '#' + (i + 1));
+  }
+  addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); go(i + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(i - 1); }
+    if (e.key === 'Home') go(0);
+    if (e.key === 'End') go(slides.length - 1);
+  });
+  addEventListener('click', e => { if ((e.target.closest('a')) == null) go(i + 1); });
+  const fromHash = parseInt(location.hash.slice(1), 10);
+  go(Number.isFinite(fromHash) ? fromHash - 1 : 0);
+</script>
+</body>
+</html>

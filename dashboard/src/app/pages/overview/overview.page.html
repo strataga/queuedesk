@@ -1,0 +1,468 @@
+<div class="flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-semibold tracking-tight">Overview</h1>
+    <p class="mt-1 text-sm text-slate-600">Synthetic payment operations · Read-only lab.</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <label class="text-xs text-slate-600">Window
+      <select [value]="windowMinutes" (change)="setWindow($any($event.target).value)" aria-label="Census window"
+        class="ml-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-sm">
+        @for (option of windowOptions; track option.minutes) {
+          <option [value]="option.minutes" [selected]="option.minutes === windowMinutes">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+    <a routerLink="/scenarios" class="rounded border border-sky-800 px-3 py-1 text-sm font-medium text-sky-800 hover:bg-sky-50">▷ View scenarios</a>
+  </div>
+</div>
+
+<section aria-label="Lab-wide census" class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  @if (lab$ | async; as lr) {
+    @let lv = toView(lr);
+    @if (lv.value; as lab) {
+      <div class="rounded-lg border border-slate-200 bg-white p-4">
+        <div class="flex items-center gap-3">
+          <span aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-800">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+          </span>
+          <p class="text-sm text-slate-600">Synthetic instructions</p>
+        </div>
+        <p class="mt-2 text-3xl font-semibold tabular-nums">{{ lab.admitted | number }}</p>
+        <p class="mt-1 text-xs text-slate-600">{{ windowLabel() }} · lab-wide{{ lv.fresh ? '' : ' · stale' }}</p>
+      </div>
+      <div class="rounded-lg border border-slate-200 bg-white p-4">
+        <div class="flex items-center gap-3">
+          <span aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-800">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg>
+          </span>
+          <p class="text-sm text-slate-600">Simulated completed</p>
+        </div>
+        <p class="mt-2 text-3xl font-semibold tabular-nums">{{ labCount(lab, 'COMPLETED_SIMULATED') | number }}</p>
+        <p class="mt-1 text-xs text-slate-600">{{ labCount(lab, 'REJECTED') }} rejected{{ lv.fresh ? '' : ' · stale' }}</p>
+      </div>
+    } @else {
+      <div class="rounded-lg border border-slate-200 bg-white p-4 sm:col-span-2">
+        <qd-state-message state="unavailable" [message]="describe(lv.error)" />
+      </div>
+    }
+  }
+  @if (risk$ | async; as rr) {
+    @let rm = toView(rr);
+    @if (rm.value; as sum) {
+      <div class="rounded-lg border border-slate-200 bg-white p-4">
+        <div class="flex items-center gap-3">
+          <span aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 22 20H2Z"/><path d="M12 10v4M12 17.5v.5"/></svg>
+          </span>
+          <p class="text-sm text-slate-600">Risk held</p>
+        </div>
+        <p class="mt-2 text-3xl font-semibold tabular-nums">{{ sum.riskHeld | number }}</p>
+        <p class="mt-1 text-xs text-slate-600">gate {{ sum.mode }} · current{{ rm.fresh ? '' : ' · stale' }}</p>
+      </div>
+    } @else {
+      <div class="rounded-lg border border-slate-200 bg-white p-4">
+        <p class="text-sm text-slate-600">Risk held</p>
+        <p class="mt-2 text-3xl font-semibold text-slate-400">—</p>
+        <p class="mt-1 text-xs text-slate-600">{{ describe(rm.error) }}</p>
+      </div>
+    }
+  }
+  @if (telemetry$ | async; as tr) {
+    @let tv = toView(tr);
+    @if (tv.value; as t) {
+      @let p95 = completionP95(t);
+      <div class="rounded-lg border border-slate-200 bg-white p-4">
+        <div class="flex items-center gap-3">
+          <span aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-800">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20v-6M11 20V6M17 20v-9"/></svg>
+          </span>
+          <p class="text-sm text-slate-600">End-to-end p95</p>
+        </div>
+        @if (p95 !== null) {
+          <p class="mt-2 text-3xl font-semibold tabular-nums">{{ p95 | number }} ms</p>
+        } @else {
+          <p class="mt-2 text-3xl font-semibold text-slate-400">—</p>
+        }
+        <p class="mt-1 text-xs text-slate-600">{{ telemetryWindowLabel() }} · n={{ t.completion.n }}{{ tv.fresh ? '' : ' · stale' }}</p>
+      </div>
+    } @else {
+      <div class="rounded-lg border border-slate-200 bg-white p-4">
+        <p class="text-sm text-slate-600">End-to-end p95</p>
+        <p class="mt-2 text-3xl font-semibold text-slate-400">—</p>
+        <p class="mt-1 text-xs text-slate-600">{{ describe(tv.error) }}</p>
+      </div>
+    }
+  }
+</section>
+
+<div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+  <section aria-label="Processing throughput" class="rounded-lg border border-slate-200 bg-white p-4 lg:col-span-2">
+    <h2 class="text-lg font-semibold">Processing throughput</h2>
+    <p class="text-xs text-slate-600">Simulated completions / {{ bucketUnit() }} · durable server buckets · times UTC</p>
+    @if (throughput$ | async; as tr) {
+      @let tv = toView(tr);
+      @if (tv.value; as t) {
+        @if (!tv.fresh) {
+          <qd-state-message state="error" [message]="describe(tv.error)" />
+        }
+        <div class="mt-2">
+          <qd-throughput-chart [points]="t.points"></qd-throughput-chart>
+        </div>
+        <qd-refresh-note [at]="tv.at" [stale]="!tv.fresh"></qd-refresh-note>
+      } @else {
+        <qd-state-message state="unavailable" [message]="describe(tv.error)" />
+      }
+    } @else {
+      <qd-state-message state="loading" />
+    }
+  </section>
+
+  <section aria-label="MQ queue health" class="rounded-lg border border-slate-200 bg-white p-4">
+    <div class="flex flex-wrap items-baseline justify-between gap-2">
+      <h2 class="text-lg font-semibold">MQ queue health</h2>
+      <a routerLink="/queues" class="text-sm text-sky-800 underline hover:text-sky-600">Open Queues →</a>
+    </div>
+    @if (queues$ | async; as qr) {
+      @let qv = toView(qr);
+      @if (qv.value; as q) {
+        @if (!qv.fresh) {
+          <qd-state-message state="error" [message]="describe(qv.error)" />
+        }
+        <p class="mt-1 text-xs text-slate-600">Transport snapshot</p>
+        <p class="font-mono text-xs text-slate-600">{{ q.mq.queueManager }} · QUEUEDESK.INSTRUCTION.IN</p>
+        <ul class="mt-2 space-y-2 text-sm">
+          <li class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+            <span class="inline-flex items-center gap-2">
+              <span aria-hidden="true" class="h-2.5 w-2.5 rounded-full" [class.bg-amber-400]="q.mq.depthEstimate > 0" [class.bg-slate-300]="q.mq.depthEstimate === 0"></span>
+              Instruction queue
+            </span>
+            <span class="rounded bg-slate-100 px-2 py-0.5 text-xs tabular-nums">{{ q.mq.depthEstimate }} ready</span>
+          </li>
+          <li class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+            <span class="inline-flex items-center gap-2">
+              <span aria-hidden="true" class="h-2.5 w-2.5 rounded-full" [class.bg-emerald-500]="q.mq.connected && q.mq.activeConsumers > 0" [class.bg-slate-300]="!(q.mq.connected && q.mq.activeConsumers > 0)"></span>
+              Active consumer
+            </span>
+            <span class="rounded bg-slate-100 px-2 py-0.5 text-xs tabular-nums">{{ q.mq.activeConsumers }} {{ q.mq.consumerState === 'LISTENING' ? 'connected' : 'stopped' }}</span>
+          </li>
+          <li class="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+            <span class="inline-flex items-center gap-2">
+              <span aria-hidden="true" class="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
+              Quarantine
+            </span>
+            @if (q.quarantine.stale) {
+              <span class="rounded bg-amber-100 px-2 py-0.5 text-xs tabular-nums text-amber-900">Stale · last {{ q.quarantine.count ?? '—' }}</span>
+            } @else {
+              <span class="rounded bg-slate-100 px-2 py-0.5 text-xs tabular-nums">{{ q.quarantine.count ?? '—' }} held · current</span>
+            }
+          </li>
+        </ul>
+        <p class="mt-2 text-xs text-slate-600">Application estimate · Queue depth is not a payment outcome.</p>
+        <qd-refresh-note [at]="qv.at" [stale]="!qv.fresh"></qd-refresh-note>
+      } @else {
+        <qd-state-message state="unavailable" [message]="describe(qv.error)" />
+      }
+    } @else {
+      <qd-state-message state="loading" />
+    }
+  </section>
+</div>
+
+@if (recents$ | async; as combo) {
+  @let rv = toView(combo.recents);
+  <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+    <section aria-label="Recent synthetic payments" class="rounded-lg border border-slate-200 bg-white p-4 lg:col-span-2">
+      <h2 class="text-lg font-semibold">Recent synthetic payments</h2>
+      <p class="text-xs text-slate-600">Newest first · lab-wide</p>
+      @if (rv.value; as recents) {
+        @if (!rv.fresh) {
+          <qd-state-message state="error" [message]="describe(rv.error)" />
+        }
+        @if (recents.items.length === 0) {
+          <qd-state-message state="empty" message="No admitted instructions yet." />
+        } @else {
+          <div class="mt-2 overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+                <tr><th scope="col" class="px-4 py-2">Instruction</th><th scope="col" class="px-4 py-2">Amount</th><th scope="col" class="px-4 py-2">Business status</th><th scope="col" class="px-4 py-2">Risk</th></tr>
+              </thead>
+              <tbody>
+                @for (item of recents.items; track item.instructionId) {
+                  <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                    <td class="px-4 py-2">
+                      <a [routerLink]="['/payments', item.instructionId]" class="font-mono text-xs text-sky-800 underline hover:text-sky-600">{{ item.payload.clientReference }}</a>
+                    </td>
+                    <td class="px-4 py-2 tabular-nums">{{ item.payload.amountMinor | minorCurrency: item.payload.currency }}</td>
+                    <td class="px-4 py-2"><qd-status-badge [value]="item.status"></qd-status-badge></td>
+                    <td class="px-4 py-2">
+                      @if (item.riskStatus) {
+                        <qd-status-badge [value]="item.riskStatus" kind="risk"></qd-status-badge>
+                      } @else {
+                        <span class="text-xs text-slate-400" title="No assessment recorded">—</span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+        <qd-refresh-note [at]="rv.at" [stale]="!rv.fresh"></qd-refresh-note>
+      } @else {
+        <qd-state-message state="unavailable" [message]="describe(rv.error)" />
+      }
+    </section>
+
+    <section aria-label="Risk review" class="rounded-lg border border-slate-200 bg-white p-4">
+      @if (held$ | async; as hr) {
+        @let hv = toView(hr);
+        @if (hv.value; as held) {
+          @if (!hv.fresh) {
+            <qd-state-message state="error" [message]="describe(hv.error)" />
+          }
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 class="text-lg font-semibold">Risk review</h2>
+            <span class="rounded bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-900">Gate {{ held.mode }}</span>
+          </div>
+          @if (held.items[0]; as selected) {
+            <p class="mt-2 text-xs text-slate-600">Latest held instruction</p>
+            <div class="mt-1 flex flex-wrap items-baseline justify-between gap-2">
+              <p class="font-mono text-xl font-semibold">{{ selected.clientReference }}</p>
+              @if (selected.riskOutput === 'REVIEW') {
+                <span class="inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900"><span aria-hidden="true">◉</span> Review required</span>
+              } @else {
+                <qd-status-badge [value]="selected.riskOutput" kind="risk"></qd-status-badge>
+              }
+            </div>
+            <p class="mt-2 text-xs text-slate-600">Risk reason(s)</p>
+            @if (selected.reasonCodes.length === 0) {
+              <p class="mt-1 font-mono text-xs text-slate-600">none recorded</p>
+            } @else {
+              <ul class="mt-1 space-y-0.5 font-mono text-xs">
+                @for (code of selected.reasonCodes; track code) {
+                  <li>{{ code }}</li>
+                }
+              </ul>
+            }
+          } @else {
+            @if (held.mode === 'OFF') {
+              <p class="mt-2 text-sm text-slate-600">The risk gate is off: instructions flow through untouched and no assessments are recorded.</p>
+            } @else {
+              <p class="mt-2 text-sm text-slate-600">No held instructions right now.</p>
+            }
+          }
+          <p class="mt-3 text-sm"><a routerLink="/risk" class="text-sky-800 underline hover:text-sky-600">View risk assessments →</a></p>
+          <qd-refresh-note [at]="hv.at" [stale]="!hv.fresh"></qd-refresh-note>
+        } @else {
+          <h2 class="text-lg font-semibold">Risk review</h2>
+          <qd-state-message state="unavailable" [message]="describe(hv.error)" />
+        }
+      } @else {
+        <h2 class="text-lg font-semibold">Risk review</h2>
+        <qd-state-message state="loading" />
+      }
+    </section>
+  </div>
+
+  <section aria-label="Instruction path" class="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h2 class="text-sm font-semibold">Instruction path @if (rv.value?.items?.[0]; as head) { · {{ head.payload.clientReference }} }</h2>
+        <p class="text-xs text-slate-600">Illustrative path · Risk gate runs before simulated clearing.</p>
+      </div>
+      @if (rv.value?.items?.[0]; as head) {
+        <p class="flex gap-3 text-sm">
+          @if (combo.traceId) {
+            <a [routerLink]="['/telemetry/traces', combo.traceId]" class="text-sky-800 underline hover:text-sky-600">Trace detail ↗</a>
+          }
+          <a [routerLink]="['/payments', head.instructionId]" class="text-sky-800 underline hover:text-sky-600">Durable audit ↗</a>
+        </p>
+      }
+    </div>
+    <ol class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+      <li class="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5">HTTP admission</li>
+      <li aria-hidden="true" class="text-slate-400">→</li>
+      <li class="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5">Outbox + MQ</li>
+      <li aria-hidden="true" class="text-slate-400">→</li>
+      <li class="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5">Worker</li>
+      <li aria-hidden="true" class="text-slate-400">→</li>
+      <li class="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5">Risk gate</li>
+      <li aria-hidden="true" class="text-slate-400">→</li>
+      <li class="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5">Mock receiver</li>
+      <li aria-hidden="true" class="text-slate-400">→</li>
+      <li class="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5">Outcome saved</li>
+    </ol>
+  </section>
+}
+
+<section aria-label="Run scope" class="mt-6 rounded-lg border border-slate-200 bg-white p-4">
+  <form (ngSubmit)="openRun(runInput)" class="flex flex-wrap items-end gap-2">
+    <span class="min-w-52 flex-1">
+      <label for="overview-run" class="text-sm font-medium">Run id</label>
+      <input
+        id="overview-run"
+        name="runInput"
+        [(ngModel)]="runInput"
+        placeholder="e.g. demo"
+        autocomplete="off"
+        class="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm" />
+    </span>
+    <button type="submit" class="rounded bg-sky-800 px-4 py-1.5 text-sm font-medium text-white hover:bg-sky-700">
+      Open run
+    </button>
+  </form>
+  @if (recentRuns.length > 0) {
+    <p class="mt-3 text-xs text-slate-600">
+      Recent:
+      @for (run of recentRuns; track run; let last = $last) {
+        <button type="button" (click)="openRun(run)" class="text-sky-800 underline hover:text-sky-600">{{ run }}</button>@if (!last) {<span aria-hidden="true"> · </span>}
+      }
+    </p>
+  }
+</section>
+
+@let activeRun = (activeRun$ | async) ?? '';
+@if (activeRun === '') {
+  <qd-state-message state="empty" message="Enter a run id above to scope the overview. Unknown runs report zeros." />
+} @else {
+  <section [attr.aria-label]="'Run ' + activeRun" class="mt-4">
+    @if (run$ | async; as r) {
+      @let v = toView(r);
+      @if (v.value; as run) {
+        @if (!v.fresh) {
+          <qd-state-message state="error" [message]="describe(v.error)" />
+        }
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div class="rounded-lg border border-slate-200 bg-white p-4">
+            <p class="text-xs font-medium uppercase tracking-wide text-slate-600">Admitted</p>
+            <p class="mt-1 text-3xl font-semibold">{{ run.admitted }}</p>
+            <p class="mt-1 text-xs text-slate-600">scope: run {{ activeRun }}</p>
+          </div>
+          <div class="rounded-lg border border-slate-200 bg-white p-4">
+            <p class="text-xs font-medium uppercase tracking-wide text-slate-600">Completed (sim)</p>
+            <p class="mt-1 text-3xl font-semibold">{{ stateCount(run, 'COMPLETED_SIMULATED') }}</p>
+            <p class="mt-1 text-xs text-slate-600">{{ stateCount(run, 'REJECTED') }} rejected</p>
+          </div>
+          <div class="rounded-lg border border-slate-200 bg-white p-4">
+            <p class="text-xs font-medium uppercase tracking-wide text-slate-600">Unresolved</p>
+            <p class="mt-1 text-3xl font-semibold">{{ unresolved(run) }}</p>
+            <p class="mt-1 text-xs text-slate-600">{{ run.reconcileOpen }} open reconcile tasks</p>
+          </div>
+          <div class="rounded-lg border border-slate-200 bg-white p-4">
+            <p class="text-xs font-medium uppercase tracking-wide text-slate-600">Outbox pending</p>
+            <p class="mt-1 text-3xl font-semibold">{{ run.outboxPending }}</p>
+            <p class="mt-1 text-xs text-slate-600">{{ run.outboxPublished }} published</p>
+          </div>
+        </div>
+        <div class="mt-3 flex flex-wrap items-center gap-2 text-sm">
+          <span class="text-slate-600">By state:</span>
+          @for (state of knownStates; track state) {
+            <span class="inline-flex items-center gap-1.5">
+              <qd-status-badge [value]="state"></qd-status-badge>
+              <span class="font-semibold">{{ stateCount(run, state) }}</span>
+            </span>
+          }
+          <a [routerLink]="['/runs', activeRun]" class="ml-auto text-sm text-sky-800 underline hover:text-sky-600">Full run accounting →</a>
+        </div>
+        <div class="mt-3 rounded-lg border border-slate-200 bg-white p-4">
+          <h3 class="text-sm font-semibold">Run accounting since page open</h3>
+          <p class="text-xs text-slate-600">The backend keeps no run history, so this accumulates one sample per successful refresh.</p>
+          <qd-trend-chart [series]="accountingTrend()"></qd-trend-chart>
+        </div>
+        <qd-refresh-note [at]="v.at" [stale]="!v.fresh"></qd-refresh-note>
+      } @else {
+        <qd-state-message state="unavailable" [message]="describe(v.error)" />
+      }
+    } @else {
+      <qd-state-message state="loading" />
+    }
+  </section>
+
+  <section aria-label="Recent instructions" class="mt-6">
+    <h2 class="text-lg font-semibold">Recent instructions <span class="text-sm font-normal text-slate-600">(run {{ activeRun }})</span></h2>
+    @if (recent$ | async; as recent) {
+      @let rv = toView(recent);
+      @if (rv.value; as page) {
+        @if (!rv.fresh) {
+          <qd-state-message state="error" [message]="describe(rv.error)" />
+        }
+        @if (page.items.length === 0) {
+          <qd-state-message state="empty" message="This run has no admitted instructions yet." />
+        } @else {
+          <div class="mt-2 overflow-x-auto rounded-lg border border-slate-200 bg-white">
+            <table class="w-full text-left text-sm">
+              <thead class="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+                <tr><th scope="col" class="px-4 py-2">Reference</th><th scope="col" class="px-4 py-2">Amount</th><th scope="col" class="px-4 py-2">Business status</th><th scope="col" class="px-4 py-2">Risk</th><th scope="col" class="px-4 py-2">Delivery</th><th scope="col" class="px-4 py-2">Age</th></tr>
+              </thead>
+              <tbody>
+                @for (item of page.items; track item.instructionId) {
+                  <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                    <td class="px-4 py-2">
+                      <a [routerLink]="['/payments', item.instructionId]" class="font-mono text-xs text-sky-800 underline hover:text-sky-600">{{ item.payload.clientReference }}</a>
+                    </td>
+                    <td class="px-4 py-2 tabular-nums">{{ item.payload.amountMinor | minorCurrency: item.payload.currency }}</td>
+                    <td class="px-4 py-2"><qd-status-badge [value]="item.status"></qd-status-badge></td>
+                    <td class="px-4 py-2">
+                      @if (item.riskStatus) {
+                        <qd-status-badge [value]="item.riskStatus" kind="risk"></qd-status-badge>
+                      } @else {
+                        <span class="text-xs text-slate-400" title="No assessment recorded">—</span>
+                      }
+                    </td>
+                    <td class="px-4 py-2"><qd-status-badge [value]="item.delivery" kind="delivery"></qd-status-badge></td>
+                    <td class="px-4 py-2 text-slate-600"><time [attr.datetime]="item.receivedAt" [attr.title]="item.receivedAt">{{ item.receivedAt | timeAgo }}</time></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <qd-refresh-note [at]="rv.at" [stale]="!rv.fresh"></qd-refresh-note>
+        }
+      } @else {
+        <qd-state-message state="unavailable" [message]="describe(rv.error)" />
+      }
+    } @else {
+      <qd-state-message state="loading" />
+    }
+  </section>
+}
+
+<section aria-label="Lab safeguards" class="mt-6">
+  <h2 class="text-lg font-semibold">Lab safeguards <span class="text-sm font-normal text-slate-600">(lab-wide)</span></h2>
+  @if (ops$ | async; as ops) {
+    @let ov = toView(ops);
+    @if (ov.value; as snap) {
+      @if (!ov.fresh) {
+        <qd-state-message state="error" [message]="describe(ov.error)" />
+      }
+      @if (snap.guards.haltTraffic) {
+        <div role="alert" class="mt-2 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900">
+          <p class="font-semibold">✕ Traffic halted: {{ snap.guards.reasons.join('; ') || 'guard condition active' }}</p>
+        </div>
+      }
+      <dl class="mt-2 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div class="rounded-lg border border-slate-200 bg-white p-4">
+          <dt class="text-xs font-medium uppercase tracking-wide text-slate-600">Process</dt>
+          <dd class="mt-1"><qd-status-badge [value]="snap.liveness.status" kind="health"></qd-status-badge></dd>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-4">
+          <dt class="text-xs font-medium uppercase tracking-wide text-slate-600">Dependencies</dt>
+          <dd class="mt-1"><qd-status-badge [value]="snap.readiness.status" kind="health"></qd-status-badge></dd>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-4">
+          <dt class="text-xs font-medium uppercase tracking-wide text-slate-600">Quarantine</dt>
+          <dd class="mt-1 text-sm"><strong>{{ snap.quarantine.items.length }}</strong> held · <qd-status-badge [value]="snap.quarantine.stale ? 'STALE' : 'CURRENT'" kind="fresh"></qd-status-badge></dd>
+        </div>
+        <div class="rounded-lg border border-slate-200 bg-white p-4">
+          <dt class="text-xs font-medium uppercase tracking-wide text-slate-600">Outbox backlog</dt>
+          <dd class="mt-1 text-sm"><strong>{{ snap.guards.outboxPending }}</strong> pending / limit {{ snap.guards.backlogLimit }}</dd>
+        </div>
+      </dl>
+      <qd-refresh-note [at]="ov.at" [stale]="!ov.fresh"></qd-refresh-note>
+    } @else {
+      <qd-state-message state="unavailable" [message]="describe(ov.error)" />
+    }
+  } @else {
+    <qd-state-message state="loading" />
+  }
+</section>

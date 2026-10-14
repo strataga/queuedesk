@@ -1,0 +1,19 @@
+* QueueDesk lab topology. Re-runnable: REPLACE keeps definitions converging.
+DEFINE QLOCAL('QUEUEDESK.INSTRUCTION.IN') DEFPSIST(YES) MAXDEPTH(5000) REPLACE
+* Operational hold for poison. Routing is APPLICATION-owned (QUAR-01): the worker
+* counts JMSXDeliveryCount and moves the message itself after three failed
+* processing deliveries. BOTHRESH(0) disables the JMS client's own poison logic
+* on purpose: when the client intercepts a broken route it throws JMSWMQ1080
+* inside the listener container's receive call, where no application hook can
+* turn it into a clean stop. Proved by probe 2026-10-05; see RUNBOOK-L3.
+* BOQNAME below is documentation only at threshold 0. The app never consumes
+* from BACKOUT; the reconciler only browses it.
+DEFINE QLOCAL('QUEUEDESK.INSTRUCTION.BACKOUT') DEFPSIST(YES) MAXDEPTH(5000) REPLACE
+ALTER QLOCAL('QUEUEDESK.INSTRUCTION.IN') BOQNAME('QUEUEDESK.INSTRUCTION.BACKOUT') BOTHRESH(0)
+* B04 risk harness isolation (RS01-RS06): the risk-eval app boots against its
+* own database and these queues, so harness traffic never races the live
+* backend or other lanes. Same application-owned routing contract as above;
+* the existing QUEUEDESK.** auth profile already covers the app principal.
+DEFINE QLOCAL('QUEUEDESK.RISK.EVAL.IN') DEFPSIST(YES) MAXDEPTH(5000) REPLACE
+DEFINE QLOCAL('QUEUEDESK.RISK.EVAL.BACKOUT') DEFPSIST(YES) MAXDEPTH(5000) REPLACE
+ALTER QLOCAL('QUEUEDESK.RISK.EVAL.IN') BOQNAME('QUEUEDESK.RISK.EVAL.BACKOUT') BOTHRESH(0)

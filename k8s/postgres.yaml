@@ -1,0 +1,107 @@
+# In-cluster Postgres 17 (Phase 9). Data lives on a hostPath volume backed by the
+# kind extraMount (.k8s-data/pgdata on the operator machine), so `kind delete
+# cluster` + recreate preserves durable rows; the PV reclaim policy is Retain so
+# even a PVC delete never wipes lab data implicitly. Credentials arrive via the
+# qdesk-db Secret created by scripts/k8s — never in this manifest.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: qdesk-pgdata
+  labels:
+    lab: queuedesk
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  hostPath:
+    path: /qdesk-volumes/pgdata
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: qdesk-pgdata
+  namespace: queuedesk-lab
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: ""
+  volumeName: qdesk-pgdata
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: queuedesk-lab
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: queuedesk
+            - name: POSTGRES_DB
+              value: queuedesk
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: qdesk-db
+                  key: password
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "queuedesk"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "queuedesk"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+      volumes:
+        - name: pgdata
+          persistentVolumeClaim:
+            claimName: qdesk-pgdata
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: queuedesk-lab
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

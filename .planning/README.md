@@ -5,7 +5,7 @@ Start with [STATE.md](STATE.md), then [PROJECT.md](PROJECT.md) and [ROADMAP.md](
 - [REQUIREMENTS.md](REQUIREMENTS.md): 61 requirements, each mapped to one phase; all 25 original source IDs retained, including deferred PR12.
 - [ROADMAP.md](ROADMAP.md): eight phases with dependencies and observable acceptance through optional Angular.
 - [VALIDATION.md](VALIDATION.md): all 12 scenarios, failure matrix and stage gates.
-- [BACKLOG.md](BACKLOG.md): controlled operations, AWS/Terraform and Kubernetes with promotion gates.
+- [BACKLOG.md](BACKLOG.md): controlled operations and the L5 risk lab with promotion gates (Kubernetes promoted to Phase 9; AWS/Terraform declined as out-of-scope).
 - [INGEST-CONFLICTS.md](INGEST-CONFLICTS.md): resolved differences between the PRD and the starter.
 - [intel/SYNTHESIS.md](intel/SYNTHESIS.md): source inventory, extracted intent and visual findings.
 - [codebase/BASELINE.md](codebase/BASELINE.md): what exists and the freshly rerun test evidence.

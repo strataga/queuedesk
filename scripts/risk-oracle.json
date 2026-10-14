@@ -1,0 +1,52 @@
+{
+  "_comment": "RISK ORACLE (RISK-05): evaluator-only labels for RS01-RS06. These labels, the seed sets, and any scenario name revealing a label NEVER enter scorer input: the scorer reads feature snapshots + mock signals only. Dev/calibration/final-test seed sets are disjoint with disjoint synthetic actor histories (features scope to run_id); the final set below froze before thresholds were chosen (UNUSUAL_RATIO 5.0, SIMULATED_BLOCK 9500000). RULES_PLUS_MOCK validates the harness only; it proves no Jev accuracy.",
+  "tool": "risk-eval",
+  "fixtureVersion": "qd-fixtures-1",
+  "policyVersions": {"feature": "1.0", "questions": "mock-2026-10", "policy": "0.4", "rules": "0.4"},
+  "suites": {
+    "rs01": {
+      "title": "Benign normal and benign unusual activity",
+      "scenario": "risk-1", "seed": 101, "count": 20,
+      "devSeeds": [11, 12], "calibrationSeeds": [13], "finalSeed": 101,
+      "labelRule": "all-benign (unusual is not automatically fraud)",
+      "expect": {"rejects": 0, "minHolds": 1, "maxHolds": 20, "note": "first-in-run holds NEW_RECIPIENT; the rest complete"}
+    },
+    "rs02": {
+      "title": "Labeled suspicious velocity or conflicting context",
+      "scenario": "risk-2", "seed": 203, "count": 20,
+      "devSeeds": [21, 22], "calibrationSeeds": [23], "finalSeed": 203,
+      "labelRule": "index%4==3 (huge amount) is suspicious; all others benign",
+      "suspiciousCount": 5,
+      "expect": {"missedSuspicious": 0, "rejects": 0, "note": "huge amounts hold UNUSUAL_AMOUNT; 8M < 9.5M block so none reject"}
+    },
+    "rs03": {
+      "title": "HTTP retries and MQ redeliveries",
+      "scenario": "risk-3", "seed": 303, "count": 20,
+      "devSeeds": [31], "calibrationSeeds": [32], "finalSeed": 303,
+      "labelRule": "repeats are benign duplicates, never fraud evidence",
+      "expect": {"uniqueRows": 20, "repeatResponses": 5, "assessmentsPerUniqueMax": 1, "note": "retries create no rows; redelivery reuses the cached assessment"}
+    },
+    "rs04": {
+      "title": "Missing, contradictory or adversarial memo text",
+      "scenario": "risk-4", "seed": 404, "count": 5,
+      "devSeeds": [41], "calibrationSeeds": [42], "finalSeed": 404,
+      "labelRule": "injected payloads are invalid input, not instructions",
+      "expect": {"injectedAdmissions": 0, "assessmentsForInjected": 0, "note": "no memo field exists: unknown JSON properties 400 before persistence; policy, labels, and destinations unaltered"}
+    },
+    "rs05": {
+      "title": "Provider timeout, invalid type, rate limit or wrong model",
+      "scenario": "risk-5", "seed": 505, "count": 4,
+      "devSeeds": [51], "calibrationSeeds": [52], "finalSeed": 505,
+      "labelRule": "faulted evaluations are NOT_ASSESSED holds, operator-visible",
+      "faults": ["TIMEOUT", "INVALID", "UNAVAILABLE", "UNKNOWN"],
+      "expect": {"firstInRun": "REVIEW/NEW_RECIPIENT (rules-first under faults)", "quietFaulted": "NOT_ASSESSED with the fault status", "receiverCallsForFaulted": 0, "providerCallsPerFaultedMax": 1, "allowsForFaulted": 0}
+    },
+    "rs06": {
+      "title": "Restart around assessment save / hold commit",
+      "scenario": "risk-6", "seed": 606, "count": 1,
+      "devSeeds": [61], "calibrationSeeds": [62], "finalSeed": 606,
+      "labelRule": "the single instruction holds exactly once across the restart",
+      "expect": {"outcomes": 1, "assessments": 1, "haltExitCode": 99}
+    }
+  }
+}

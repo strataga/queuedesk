@@ -42,7 +42,7 @@ These are planning inputs, not executable PLAN.md files. Resolve the open implem
 2. Repeated event delivery leaves one processed_message and one definitive result with visible dedup evidence, without regressing the instruction state.
 3. Database business result and dedup commit together before JMS commit; database failure leaves the delivery eligible for redelivery.
 4. ID/run reads show business status, reason, delivery detail and timestamps without inferring completion from queue depth or the outbox marker.
-5. The learner can explain the separate DB/JMS boundaries and trace one stable business/event identity through the diagram, rows and logs.
+5. Learner-review material is prepared for the separate DB/JMS boundaries and tracing one stable business/event identity through the diagram, rows and logs.
 
 ## Evidence
 
@@ -78,7 +78,8 @@ Future-phase references describe integration points that do not yet exist at int
 - Verify the selected Spring listener transaction/acknowledgement behavior against the DB service proxy boundary.
 - Specify dedup races and state versioning so duplicate processing never overwrites a definitive outcome.
 - Define deterministic fixtures, reason codes and useful timestamps; avoid inventing observed intermediate states.
-- Plan a safe stop/rollback path for unsupported messages before the full poison-routing phase.
+- Specify the interim unsupported-message behavior before the full poison-routing phase: bounded and diagnostic, preferring consumer stop with a visible reason over unbounded rollback, so one bad message cannot wedge the single consumer during core scenario runs. Record the Phase 4 precondition that no core fixture emits an unprocessable envelope.
+- Enforce PRD §8 rules: never deserialize arbitrary Java objects from messages; store correlationId as a bounded sanitized value.
 
 <deferred>
 ## Deferred Scope

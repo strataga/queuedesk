@@ -16,7 +16,7 @@ Stage: L4 optional. Dependency: Phase 7.
 <decisions>
 ## Source Decisions and Planning Defaults
 
-- **D-01:** Use Angular as the PRD's later-stage default and the backend API as the only source; no direct DB/MQ access.
+- **D-01:** Use latest Angular plus Tailwind (user decision 2026-10-04; PRD default was Angular) and the backend API as the only source; no direct DB/MQ access. Pin exact Angular/Node/Tailwind versions when Phase 8 is planned.
 - **D-02:** Five-second polling pauses when the view is not visible.
 - **D-03:** Always display the simulated nature of the application; combine text/icons with status colors.
 - **D-04:** Transport evidence is separate from business result. Missing intermediate observations are not invented timeline facts.
@@ -55,6 +55,7 @@ Read API integration checks and browser checks for all five views, bounded filte
 - `docs/QueueDesk_PRD.md §§4, 6–7, 15–17, 20`
 - `docs/images/QueueDesk_Architecture.png`
 - `docs/images/QueueDesk_Status_Model.png`
+- `docs/images/ui/01-overview.png` through `10-scenario-run-detail.png` (L4 screens are design inputs; 04/05 are B04 scope)
 - `.planning/REQUIREMENTS.md` — requirement definitions and owning phase.
 - `.planning/VALIDATION.md` — scenario and failure evidence.
 - `.planning/INGEST-CONFLICTS.md` — target versus starter resolutions.
@@ -73,15 +74,15 @@ Future-phase references describe integration points that do not yet exist at int
 
 ## Research and Open Implementation Choices
 
-- Verify a supported Angular/Node toolchain when this phase is planned; do not guess current versions during intake.
-- Choose layout, navigation and typography through the UI design workflow; the supplied diagrams are architecture references, not UI mockups.
+- Verify the latest supported Angular/Node/Tailwind toolchain when this phase is planned and pin exact versions then; do not guess versions during intake.
+- Use docs/images/ui/01-overview, 02-payments, 03-payment-detail, 06-queues, 07-telemetry, 08-trace-detail, 09-scenarios and 10-scenario-run-detail as L4 layout/navigation/typography inputs; mockups 04-risk-review, 05-risk-assessment and the RS05 catalog entry are B04 (L5) scope, not Phase 8.
 - Define snapshot scope/freshness and timestamp ordering for aggregate/run/timeline endpoints, including stale projections.
 - Decide how bounded run manifests from Phase 4 are read consistently without exposing fault injection or operational write controls.
 
 <deferred>
 ## Deferred Scope
 
-Any operator action belongs to B01 with identity/outcome re-check, authorization, explicit confirmation and audit. Deployment is B02/B03.
+Any operator action belongs to B01 with identity/outcome re-check, authorization, explicit confirmation and audit. Deployment beyond the laptop is out of scope; local Kubernetes is Phase 9.
 </deferred>
 
 ---

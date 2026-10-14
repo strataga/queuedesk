@@ -8,7 +8,7 @@ None. No accepted ADRs, locked-decision contradictions, unknown classifications 
 
 None. The differences below are between target requirements and explicitly limited starter behavior, not competing PRDs.
 
-### INFO (7)
+### INFO (11)
 
 [INFO] Authoritative target versus current implementation
   Found: README.md and docs/MILESTONES.md identify the current in-memory HTTP rehearsal and explicitly defer durable L1.
@@ -44,3 +44,23 @@ None. The differences below are between target requirements and explicitly limit
   Found: PR11 is L4; PR12 and cloud/Kubernetes exercises are deferred, with separate design/entry conditions.
   Note: Phase 8 includes read-only Angular after the reliability gate. BACKLOG.md preserves controlled actions and optional deployment work without weakening PRD entry conditions.
   source: docs/QueueDesk_PRD.md §§4, 15, 20, 22.
+
+[INFO] L5 fraud-risk scope was excluded from the initial plan
+  Found: PRD §§23–25 define PR13–PR16, RS01–RS06, TG04 and Figure 8 (QueueDesk_Risk_Gate.png); §15 reserves the read-only risk panel for L5. None were in requirements, roadmap or backlog.
+  Note: Preserved as BACKLOG.md B04 with mock-first/live-gated entry conditions. UI mockups 04-risk-review, 05-risk-assessment and the RS05 catalog entry are B04 design inputs, not Phase 8 scope.
+  source: docs/QueueDesk_PRD.md §§15, 17A, 23–25; docs/images/QueueDesk_Risk_Gate.png; docs/images/ui/.
+
+[INFO] Distributed tracing acceptance was only partially planned
+  Found: PRD §17A requires trace context across outbox/MQ, spans per attempt, async links and exporter-failure behavior (TG02/TG03); OBS-01/OBS-02 covered logs/metrics only.
+  Note: Added TEL-01/TEL-02 to Phase 7 with TG02/TG03 acceptance. Telemetry mockups 07/08 assume this plumbing exists.
+  source: docs/QueueDesk_PRD.md §17A; docs/images/ui/07-telemetry.png; docs/images/ui/08-trace-detail.png.
+
+[INFO] UI mockups arrived after the planning scaffold
+  Found: Ten read-only dashboard mockups in docs/images/ui/ (added after intake) plus the previously unlisted QueueDesk_Risk_Gate.png. All figures are illustrative; no operator writes are shown.
+  Note: Added to INGEST-MANIFEST.yaml. L4 screens (01–03, 06–10 except RS05/risk spans) are Phase 8 design inputs; risk screens are B04. SOURCES.json is unchanged: it pins library-sourced files and the ui/ files have no library provenance.
+  source: docs/images/ui/; docs/images/QueueDesk_Risk_Gate.png.
+
+[INFO] PRD §9 audit records were unowned until the pre-development audit
+  Found: instruction_audit transition records with atomic commit had no owning requirement; the UI timeline and TG02 assume them.
+  Note: Extended DATA-01 (audit table plus admission audit row) and WORK-01/STATE-01 (audit with outcome transitions). No new IDs; no renumbering.
+  source: docs/QueueDesk_PRD.md §9; docs/images/ui/03-payment-detail.png.

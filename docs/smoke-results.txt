@@ -2,57 +2,58 @@ WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
 WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/Users/jason/projects/queuedesk/.cache/apache-maven-3.9.11/lib/guice-5.1.0-classes.jar)
 WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
 WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
-13:34:05.875 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [dev.queuedesk.http.InstructionApiTest]: InstructionApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-13:34:05.923 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration dev.queuedesk.QueueDeskApplication for test class dev.queuedesk.http.InstructionApiTest
-13:34:05.950 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [dev.queuedesk.http.InstructionApiTest]: InstructionApiTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
-13:34:05.952 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration dev.queuedesk.QueueDeskApplication for test class dev.queuedesk.http.InstructionApiTest
-
-  .   ____          _            __ _ _
- /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
-( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
- \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
-  '  |____| .__|_| |_|_| |_\__, | / / / /
- =========|_|==============|___/=/_/_/_/
-
- :: Spring Boot ::                (v4.0.8)
-
-2026-10-04T13:34:06.066-05:00  INFO 1705 --- [queuedesk] [           main] dev.queuedesk.http.InstructionApiTest    : Starting InstructionApiTest using Java 25.0.4.1 with PID 1705 (started by jason in /Users/jason/projects/queuedesk)
-2026-10-04T13:34:06.067-05:00  INFO 1705 --- [queuedesk] [           main] dev.queuedesk.http.InstructionApiTest    : No active profile set, falling back to 1 default profile: "default"
-2026-10-04T13:34:06.414-05:00  INFO 1705 --- [queuedesk] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
-2026-10-04T13:34:06.414-05:00  INFO 1705 --- [queuedesk] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
-2026-10-04T13:34:06.415-05:00  INFO 1705 --- [queuedesk] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
-2026-10-04T13:34:06.423-05:00  INFO 1705 --- [queuedesk] [           main] dev.queuedesk.http.InstructionApiTest    : Started InstructionApiTest in 0.452 seconds (process running for 0.868)
-Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
-Java HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
-WARNING: A Java agent has been loaded dynamically (/Users/jason/projects/queuedesk/.cache/repository/net/bytebuddy/byte-buddy-agent/1.17.8/byte-buddy-agent-1.17.8.jar)
-WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
-WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
-WARNING: Dynamic loading of agents will be disallowed by default in a future release
-mode=send scenario=normal seed=42 runId=smoke-normal count=3 rate=10 concurrency=1 base=http://127.0.0.1:18080 attemptAmountMinorTotal=135144
-key=smoke-normal-0000 http=202 latencyMs=70
-key=smoke-normal-0001 http=202 latencyMs=3
-key=smoke-normal-0002 http=202 latencyMs=2
+mode=send scenario=normal seed=42 runId=smoke-normal-32854-1791321195 count=3 unique=3 rate=10 concurrency=1 base=http://127.0.0.1:18080 fixtures=qd-fixtures-1 attemptAmountMinorTotal=135144
+key=smoke-normal-32854-1791321195-0000 http=202 latencyMs=68
+key=smoke-normal-32854-1791321195-0001 http=202 latencyMs=14
+key=smoke-normal-32854-1791321195-0002 http=202 latencyMs=18
 attempted=3 accepted=3 repeated=0 invalid=0 unknown=0 failed=0 unsent=0
-Processing outcomes: NOT_OBSERVED; admissions remain RECEIVED. No MQ or worker exists.
-mode=send scenario=duplicate seed=42 runId=smoke-duplicate count=5 rate=10 concurrency=1 base=http://127.0.0.1:18080 attemptAmountMinorTotal=232914
-key=smoke-duplicate-0000 http=202 latencyMs=24
-key=smoke-duplicate-0001 http=202 latencyMs=2
-key=smoke-duplicate-0002 http=202 latencyMs=2
-key=smoke-duplicate-0003 http=202 latencyMs=6
-key=smoke-duplicate-0003 http=200 latencyMs=6
-attempted=5 accepted=4 repeated=1 invalid=0 unknown=0 failed=0 unsent=0
-Processing outcomes: NOT_OBSERVED; admissions remain RECEIVED. No MQ or worker exists.
-mode=send scenario=invalid seed=42 runId=smoke-invalid count=4 rate=10 concurrency=1 base=http://127.0.0.1:18080 attemptAmountMinorTotal=60133
-key=smoke-invalid-0000 http=400 latencyMs=27
-key=smoke-invalid-0001 http=400 latencyMs=2
-key=smoke-invalid-0002 http=400 latencyMs=2
-key=smoke-invalid-0003 http=400 latencyMs=3
+Processing outcomes: NOT_OBSERVED by this run (pass --observe, or GET /api/v1/instructions?runId=smoke-normal-32854-1791321195).
+mode=send scenario=duplicate seed=42 runId=smoke-duplicate-32854-1791321195 count=6 unique=5 rate=10 concurrency=1 base=http://127.0.0.1:18080 fixtures=qd-fixtures-1 attemptAmountMinorTotal=285131
+key=smoke-duplicate-32854-1791321195-0000 http=202 latencyMs=15
+key=smoke-duplicate-32854-1791321195-0001 http=202 latencyMs=16
+key=smoke-duplicate-32854-1791321195-0002 http=202 latencyMs=17
+key=smoke-duplicate-32854-1791321195-0003 http=202 latencyMs=17
+key=smoke-duplicate-32854-1791321195-0004 http=202 latencyMs=14
+key=smoke-duplicate-32854-1791321195-0000 http=200 latencyMs=11
+attempted=6 accepted=5 repeated=1 invalid=0 unknown=0 failed=0 unsent=0
+Processing outcomes: NOT_OBSERVED by this run (pass --observe, or GET /api/v1/instructions?runId=smoke-duplicate-32854-1791321195).
+mode=send scenario=invalid seed=42 runId=smoke-invalid-32854-1791321195 count=4 unique=4 rate=10 concurrency=1 base=http://127.0.0.1:18080 fixtures=qd-fixtures-1 attemptAmountMinorTotal=60133
+key=smoke-invalid-32854-1791321195-0000 http=400 latencyMs=6
+key=smoke-invalid-32854-1791321195-0001 http=400 latencyMs=4
+key=smoke-invalid-32854-1791321195-0002 http=400 latencyMs=3
+key=smoke-invalid-32854-1791321195-0003 http=400 latencyMs=3
 attempted=4 accepted=0 repeated=0 invalid=4 unknown=0 failed=0 unsent=0
-Processing outcomes: NOT_OBSERVED; admissions remain RECEIVED. No MQ or worker exists.
-mode=send scenario=burst seed=42 runId=smoke-burst count=3 rate=10 concurrency=1 base=http://127.0.0.1:18080 attemptAmountMinorTotal=135144
-key=smoke-burst-0000 http=202 latencyMs=28
-key=smoke-burst-0001 http=202 latencyMs=3
-key=smoke-burst-0002 http=202 latencyMs=2
+Processing outcomes: NOT_OBSERVED by this run (pass --observe, or GET /api/v1/instructions?runId=smoke-invalid-32854-1791321195).
+mode=send scenario=burst seed=42 runId=smoke-burst-32854-1791321195 count=3 unique=3 rate=10 concurrency=1 base=http://127.0.0.1:18080 fixtures=qd-fixtures-1 attemptAmountMinorTotal=135144
+key=smoke-burst-32854-1791321195-0000 http=202 latencyMs=15
+key=smoke-burst-32854-1791321195-0001 http=202 latencyMs=14
+key=smoke-burst-32854-1791321195-0002 http=202 latencyMs=15
 attempted=3 accepted=3 repeated=0 invalid=0 unknown=0 failed=0 unsent=0
-Processing outcomes: NOT_OBSERVED; admissions remain RECEIVED. No MQ or worker exists.
-PASS: deterministic CLI, local allowlist/caps, all four scenarios, live HTTP admission/repeat/conflict/validation/GET, restart loss; both test servers stopped.
+Processing outcomes: NOT_OBSERVED by this run (pass --observe, or GET /api/v1/instructions?runId=smoke-burst-32854-1791321195).
+mode=send scenario=conflict seed=42 runId=smoke-conflict-32854-1791321195 count=4 unique=2 rate=10 concurrency=1 base=http://127.0.0.1:18080 fixtures=qd-fixtures-1 attemptAmountMinorTotal=84762
+key=smoke-conflict-32854-1791321195-0000 http=202 latencyMs=13
+key=smoke-conflict-32854-1791321195-0000 http=409 latencyMs=7
+key=smoke-conflict-32854-1791321195-0002 http=202 latencyMs=18
+key=smoke-conflict-32854-1791321195-0002 http=409 latencyMs=10
+attempted=4 accepted=2 repeated=0 invalid=2 unknown=0 failed=0 unsent=0
+Processing outcomes: NOT_OBSERVED by this run (pass --observe, or GET /api/v1/instructions?runId=smoke-conflict-32854-1791321195).
+mode=send scenario=reject seed=42 runId=smoke-reject-32854-1791321195 count=3 unique=3 rate=10 concurrency=1 base=http://127.0.0.1:18080 fixtures=qd-fixtures-1 attemptAmountMinorTotal=135144
+key=smoke-reject-32854-1791321195-0000 http=202 latencyMs=16
+key=smoke-reject-32854-1791321195-0001 http=202 latencyMs=10
+key=smoke-reject-32854-1791321195-0002 http=202 latencyMs=13
+attempted=3 accepted=3 repeated=0 invalid=0 unknown=0 failed=0 unsent=0
+Processing outcomes: NOT_OBSERVED by this run (pass --observe, or GET /api/v1/instructions?runId=smoke-reject-32854-1791321195).
+mode=send scenario=uncertain seed=42 runId=smoke-uncertain-32854-1791321195 count=4 unique=4 rate=10 concurrency=1 base=http://127.0.0.1:18080 fixtures=qd-fixtures-1 attemptAmountMinorTotal=184029
+key=smoke-uncertain-32854-1791321195-0000 http=202 latencyMs=13
+key=smoke-uncertain-32854-1791321195-0001 http=202 latencyMs=14
+key=smoke-uncertain-32854-1791321195-0002 http=202 latencyMs=13
+key=smoke-uncertain-32854-1791321195-0003 http=202 latencyMs=29
+attempted=4 accepted=4 repeated=0 invalid=0 unknown=0 failed=0 unsent=0
+Processing outcomes: NOT_OBSERVED by this run (pass --observe, or GET /api/v1/instructions?runId=smoke-uncertain-32854-1791321195).
+mode=send scenario=unknown seed=42 runId=smoke-unknown-32854-1791321195 count=3 unique=3 rate=10 concurrency=1 base=http://127.0.0.1:18080 fixtures=qd-fixtures-1 attemptAmountMinorTotal=135144
+key=smoke-unknown-32854-1791321195-0000 http=202 latencyMs=14
+key=smoke-unknown-32854-1791321195-0001 http=202 latencyMs=10
+key=smoke-unknown-32854-1791321195-0002 http=202 latencyMs=13
+attempted=3 accepted=3 repeated=0 invalid=0 unknown=0 failed=0 unsent=0
+Processing outcomes: NOT_OBSERVED by this run (pass --observe, or GET /api/v1/instructions?runId=smoke-unknown-32854-1791321195).
+PASS: deterministic CLI, local allowlist/caps, all eight scenarios, live HTTP admission/repeat/conflict/validation/GET, restart survival; both test servers stopped.

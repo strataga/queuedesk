@@ -1,0 +1,16 @@
+# kind cluster for the QueueDesk lab (Phase 9, K8S-01). Single node, local only.
+# extraMounts bind repo-local volume dirs into the node so Postgres and MQ data
+# survive `kind delete cluster` + recreate (hostPath PVs point at /qdesk-volumes).
+# The node needs no published ports: all access is via kubectl port-forward on
+# loopback. Pinned: kind 0.33.0, kindest/node v1.37.0 (kubectl client v1.36.1).
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: qdesk
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
+    extraMounts:
+      - hostPath: ./.k8s-data/pgdata
+        containerPath: /qdesk-volumes/pgdata
+      - hostPath: ./.k8s-data/mqm
+        containerPath: /qdesk-volumes/mqm

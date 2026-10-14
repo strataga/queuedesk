@@ -79,6 +79,9 @@ Future-phase references describe integration points that do not yet exist at int
 - Specify cancellation, bounded concurrency, monotonic deadlines and how unknown admissions are rediscovered using original identities.
 - Define HTTP versus end-to-end latency start/end points and avoid including unresolved instructions in completed latency.
 - Design run-manifest/API provenance for expected counts and fixture versions needed by UI-04; keep fault controls restricted to the lab.
+- Treat docs/images/ui/09-scenarios.png and 10-scenario-run-detail.png as design inputs for GEN-01/UI-04 reports (counts, assertions, reproducibility preview); the sketched `queuedesk generate --scenario ...` CLI contract is a proposal to adopt or deliberately diverge from. The RS05 catalog entry is B04 scope.
+- Resolve the CLI flag tension at plan time: PRD §13 dry-run-by-default with explicit `--send` (no `--dry-run` flag) versus the mockup's explicit `--dry-run` flag; adopt one contract deliberately.
+- Choose the CI platform for TEST-01/OPS-02 gates (no CI config exists in-repo); if no hosted CI is wanted, define a local-gates-only equivalent that still distinguishes real Postgres/MQ passes from skips.
 
 <deferred>
 ## Deferred Scope

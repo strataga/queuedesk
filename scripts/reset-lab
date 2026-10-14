@@ -1,0 +1,22 @@
+#!/bin/sh
+# Lab reset: clears all synthetic run data (Postgres) and drains both MQ queues.
+# The lab caps live admissions at 1000 rows; scenario and smoke runs accumulate,
+# so reset between evidence runs. Destroys lab data only; schema and QM config
+# (queues, BOTHRESH, grants) are untouched. Needs both lab containers up.
+set -eu
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+docker exec qdesk-postgres psql -U queuedesk -d queuedesk -c \
+  "TRUNCATE instruction_audit, reconciliation_task, receiver_result, quarantine_record, processed_message, processing_attempt, outbox, instruction RESTART IDENTITY CASCADE; UPDATE quarantine_projection_meta SET last_reconciled_at = NULL, last_error = NULL;" > /dev/null
+# Best-effort drain: CLEAR refuses while a live consumer holds the queue open
+# (runmqsc exit 10), which is fine — a running consumer drains input itself.
+printf "CLEAR QL(QUEUEDESK.INSTRUCTION.IN)\nCLEAR QL(QUEUEDESK.INSTRUCTION.BACKOUT)\nEND\n" \
+  | docker exec -i qdesk-mq bash -c "runmqsc QDESK" > /dev/null 2>&1 || true
+# Report the resulting depths LOUDLY: callers that need a clean lab (verify
+# gate 0) must fail on residue instead of sliding past it.
+depth() {
+  docker exec qdesk-mq bash -c "echo 'DIS QL($1) CURDEPTH' | runmqsc QDESK" 2>/dev/null \
+    | sed -n 's/.*CURDEPTH(\([0-9][0-9]*\)).*/\1/p' | head -1
+}
+IN_DEPTH=$(depth QUEUEDESK.INSTRUCTION.IN)
+BACKOUT_DEPTH=$(depth QUEUEDESK.INSTRUCTION.BACKOUT)
+echo "lab reset: tables truncated, IN depth=${IN_DEPTH:-?} BACKOUT depth=${BACKOUT_DEPTH:-?} (stop the app and re-run for a full drain)"

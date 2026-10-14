@@ -25,3 +25,25 @@ docs:
     type: DOC
   - path: docs/images/QueueDesk_Spring_Layers.png
     type: DOC
+  - path: docs/images/QueueDesk_Risk_Gate.png
+    type: DOC
+  - path: docs/images/ui/01-overview.png
+    type: DOC
+  - path: docs/images/ui/02-payments.png
+    type: DOC
+  - path: docs/images/ui/03-payment-detail.png
+    type: DOC
+  - path: docs/images/ui/04-risk-review.png
+    type: DOC
+  - path: docs/images/ui/05-risk-assessment.png
+    type: DOC
+  - path: docs/images/ui/06-queues.png
+    type: DOC
+  - path: docs/images/ui/07-telemetry.png
+    type: DOC
+  - path: docs/images/ui/08-trace-detail.png
+    type: DOC
+  - path: docs/images/ui/09-scenarios.png
+    type: DOC
+  - path: docs/images/ui/10-scenario-run-detail.png
+    type: DOC
