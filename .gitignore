@@ -11,3 +11,6 @@ dashboard/.angular/
 .k8s-data/
 __pycache__/
 *.pyc
+docs/smoke-results.txt
+docs/test-results.txt
+docs/source-bundle/
