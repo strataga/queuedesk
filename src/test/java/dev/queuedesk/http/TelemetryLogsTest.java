@@ -14,8 +14,11 @@ import java.util.UUID;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// Telemetry Logs tab (mockup 07): the live process log ring, bounded and
-// read-only. Markers keep assertions robust to fellow suites' rows.
+/**
+ * The live log-ring endpoint: rows are visible, level thresholds filter,
+ * and bad levels or limits are rejected. Integration suite; unique markers
+ * keep assertions robust to fellow suites' log rows.
+ */
 @Tag("integration")
 @SpringBootTest(properties = {"queuedesk.publisher.enabled=false", "queuedesk.worker.enabled=false",
         "queuedesk.reconcile.enabled=false", "queuedesk.quarantine.enabled=false"})

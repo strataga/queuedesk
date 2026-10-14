@@ -7,9 +7,12 @@ import java.util.Map;
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
-// Policy composition without Spring (RISK-03): rules first, signals as
-// context, REJECT only under the explicit simulation block, faults holding
-// safely. No score or confidence ever allows, rejects, or names fraud.
+/**
+ * Policy composition without Spring: rules first, provider signals as
+ * context only, REJECT solely under the explicit simulation block, and
+ * faults holding safely with their own status. No score or confidence ever
+ * allows, rejects, or gets called a probability of fraud.
+ */
 class RiskPolicyTest {
     private static final Instant AS_OF = Instant.parse("2026-10-05T00:00:00Z");
 

@@ -37,6 +37,14 @@ import static org.junit.jupiter.api.Assertions.*;
         "queuedesk.reconcile.enabled=false", "queuedesk.quarantine.enabled=false",
         "queuedesk.risk.mode=RULES_PLUS_MOCK", "queuedesk.risk.provider-deadline-ms=300",
         "spring.datasource.url=${QD_RISK_DB_URL:jdbc:postgresql://127.0.0.1:5442/queuedesk_risk}"})
+/**
+ * Gate proofs against real Postgres: holds commit atomically, the receiver
+ * is never called on hold, provider faults hold safely with bounded calls,
+ * redeliveries reuse the cached assessment, lease conflicts hold visibly,
+ * and an audited resume releases through a continuation on the original
+ * instruction. Integration suite on its own self-provisioned database, so
+ * the live lab's workers can never steal its rows.
+ */
 class RiskGateTest {
     // Self-provisioning: CREATE DATABASE queuedesk_risk when missing (Flyway
     // migrates it on context boot). Maintenance connection derives from the

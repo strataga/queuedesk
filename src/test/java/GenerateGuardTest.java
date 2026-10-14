@@ -8,11 +8,13 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 
-// SAFE-01 generator side, end to end: against a guards endpoint reporting a
-// halt, the real scripts/generate sends nothing, writes an honest report and
-// exits 2. An unreadable guard state (unreachable endpoint, non-200,
-// malformed halt body) fails CLOSED the same way — a safeguard that cannot
-// be read cannot be trusted.
+/**
+ * Generator safeguard, end to end: when the guards endpoint reports a halt,
+ * the real {@code scripts/generate} sends nothing, writes an honest report,
+ * and exits 2. An unreadable guard state (endpoint unreachable, non-200, or
+ * a malformed halt body) fails closed the same way: a safeguard that cannot
+ * be read cannot be trusted.
+ */
 class GenerateGuardTest {
     @TempDir Path tmp;
     @Test void haltsBeforeAnySend() throws Exception {

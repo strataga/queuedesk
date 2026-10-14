@@ -11,8 +11,12 @@ import org.springframework.transaction.support.AbstractPlatformTransactionManage
 import org.springframework.transaction.support.DefaultTransactionStatus;
 import static org.junit.jupiter.api.Assertions.*;
 
-// Fast single-threaded coverage on the in-memory double. True concurrency proof
-// lives in PostgresAdmissionTest: only the database constraint survives races.
+/**
+ * Fast, single-threaded admission coverage on the in-memory doubles:
+ * repeat returns the original, conflict preserves it, capacity is bounded,
+ * and newest-first paging reverses correctly. True concurrency proof lives
+ * in the Postgres suite, where only the database constraint survives races.
+ */
 class AdmissionServiceTest {
     private PaymentInstruction payload() { return new PaymentInstruction("ref","run","SENDER_A","RECEIVER_B",1L,"USD"); }
     // No-op manager: runs the same template code with no real transaction.

@@ -14,9 +14,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// TG01: bounded metrics agree with durable state. Counters use deltas (the
-// registry is shared per context); gauges are compared against live SQL.
-// OPS-02: integration suite — needs the named lab PG + MQ; CI runs it explicitly.
+/**
+ * Bounded metrics agree with durable state: counters move by expected
+ * deltas (the registry is shared per context) and gauges match live SQL.
+ * Integration suite.
+ */
 @Tag("integration")
 @SpringBootTest(properties = {"queuedesk.publisher.enabled=false", "queuedesk.worker.enabled=false",
         "queuedesk.reconcile.enabled=false", "queuedesk.quarantine.enabled=false"})

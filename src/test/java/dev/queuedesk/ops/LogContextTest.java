@@ -4,7 +4,11 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import static org.junit.jupiter.api.Assertions.*;
 
-// MDC scoping without Spring: null removes, close restores.
+/**
+ * MDC scoping without Spring: a null value removes the key instead of
+ * inheriting a stale outer value, close restores the previous map, and odd
+ * key/value counts are rejected.
+ */
 class LogContextTest {
     @Test void nullValueRemovesInsteadOfInheritingStaleOuter() {
         try (var outer = LogContext.of("eventId", "outer")) {

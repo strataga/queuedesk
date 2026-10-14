@@ -8,8 +8,11 @@ import java.time.Instant;
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
-// Parse-boundary validation (no Spring): structural defects fail here with
-// IllegalArgumentException so every caller shares one poison/digest path.
+/**
+ * Envelope parse boundary without Spring: valid JSON round-trips, syntactic
+ * garbage is rejected while IDs still extract for correlation, and the
+ * shared backoff curve stays positive, bounded, and capped.
+ */
 class InstructionReceivedEventTest {
     private final ObjectMapper mapper = new ObjectMapper();
     private String validJson() {

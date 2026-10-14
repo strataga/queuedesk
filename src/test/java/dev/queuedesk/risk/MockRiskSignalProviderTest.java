@@ -7,10 +7,12 @@ import java.util.Map;
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
-// Deterministic mock provider without Spring (RISK-02): feature-mirrored
-// answers, seeded confidence, bounded latency, and the fault taxonomy. The
-// mock never meters usage (null on every assessment) — only Jev rows carry
-// token counts into the $1-cap ledger.
+/**
+ * The deterministic mock provider without Spring: feature-mirrored answers,
+ * seeded confidence, bounded latency, honest abstention, and every fault
+ * injection. The mock never meters usage; only live rows feed the budget
+ * ledger.
+ */
 class MockRiskSignalProviderTest {
     private static final Instant AS_OF = Instant.parse("2026-10-05T00:00:00Z");
 

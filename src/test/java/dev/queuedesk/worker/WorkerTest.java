@@ -24,10 +24,13 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 
-// Worker proofs against real Postgres and real MQ with the live listener
-// consumer. The publisher stays manual (deterministic sends); the worker runs
-// for real. Needs ./scripts/postgres up and ./scripts/mq up.
-// OPS-02: integration suite — needs the named lab PG + MQ; CI runs it explicitly.
+/**
+ * Worker proofs against real Postgres and real MQ with the live listener:
+ * success and business-rejection paths, redelivery dedup, crash-window
+ * recovery, rollback pacing, poison routing to backout, the broken-route
+ * backstop, quarantine projection, reconciliation, and metrics agreement.
+ * Integration suite; the publisher stays manual for deterministic sends.
+ */
 @Tag("integration")
 @SpringBootTest(properties = {"queuedesk.publisher.enabled=false", "queuedesk.worker.enabled=true",
         "queuedesk.reconcile.enabled=false", "queuedesk.quarantine.enabled=false"})

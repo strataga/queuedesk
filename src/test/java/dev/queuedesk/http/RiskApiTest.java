@@ -11,9 +11,11 @@ import java.util.UUID;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// B04 read-only dashboard contracts (DASH-01..06) plus the deferred review
-// action: POST /api/v1/risk/reviews stays 404 NOT_FOUND until B01 lands.
-// OPS-02: integration suite — needs the named lab PG + MQ; CI runs it explicitly.
+/**
+ * Read-only risk dashboard contracts: nullable risk fields on instruction
+ * reads, the held list and summary, the usage ledger, and the deferred
+ * review action staying 404. Integration suite.
+ */
 @Tag("integration")
 @SpringBootTest(properties = {"queuedesk.publisher.enabled=false", "queuedesk.worker.enabled=false",
         "queuedesk.reconcile.enabled=false", "queuedesk.quarantine.enabled=false"})

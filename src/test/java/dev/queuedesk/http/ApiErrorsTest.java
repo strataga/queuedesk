@@ -3,7 +3,11 @@ package dev.queuedesk.http;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-// Guards the advice mappings directly; live outage behavior is drilled in the runbook.
+/**
+ * The error-mapping contract, tested directly against the advice: outages
+ * become safe 503s and client errors keep the shared code/message shape.
+ * Live outage behavior is drilled in the runbooks.
+ */
 class ApiErrorsTest {
     private final ApiErrors errors = new ApiErrors();
     @Test void outageMapsToSafe503() {

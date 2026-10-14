@@ -3,8 +3,11 @@ package dev.queuedesk.risk;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-// Mode parsing without Spring (RISK-02): four modes, JEV live behind human
-// approval, and unknown input fails fast with the supported set named.
+/**
+ * Mode parsing without Spring: the four modes parse, and unknown input
+ * fails fast with the supported set named. Bad gate configuration is
+ * rejected at construction, never at first payment.
+ */
 class RiskModeTest {
     @Test void parsesTheFourModes() {
         assertEquals(RiskMode.OFF, RiskMode.parse("OFF"));

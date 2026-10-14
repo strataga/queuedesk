@@ -35,8 +35,13 @@ import static org.junit.jupiter.api.Assertions.*;
 // by a stale scheduled poller holding the claim lock).
 // OPS-02: integration suite — needs the named lab PG + MQ; CI runs it explicitly.
 @Tag("integration")
-// outageSurvival owns the shared broker mid-suite: never run concurrently
-// with other tests, even if parallelism is enabled later.
+/**
+ * Outbox and publisher proofs against real Postgres and real MQ: atomic
+ * admission-plus-event storage, in-order publishing, crash-after-send
+ * recovery with a stable event ID, deferred-head ordering, and outage
+ * survival. Integration suite (isolated: it owns the shared broker during
+ * the outage drill). Fails loudly without the lab containers.
+ */
 @Isolated
 @SpringBootTest(properties = {"queuedesk.publisher.enabled=false", "queuedesk.worker.enabled=false",
         "queuedesk.reconcile.enabled=false", "queuedesk.quarantine.enabled=false"})

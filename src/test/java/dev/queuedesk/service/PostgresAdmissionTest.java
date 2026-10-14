@@ -19,12 +19,13 @@ import java.util.*;
 import java.util.concurrent.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-// Durability proofs against real local Postgres (runbook: scripts/postgres up first).
-// Each test uses a unique runId and deletes its rows afterwards.
-// No background schedulers: cached test contexts must not run pollers that
-// steal fellow suites' work (WorkerTest's tasks were once skipped mid-test
-// by a stale scheduled poller holding the claim lock).
-// OPS-02: integration suite — needs the named lab PG + MQ; CI runs it explicitly.
+/**
+ * Durability proofs against real Postgres: concurrent same-key admissions
+ * yield one identity, the capacity cap is exact under concurrency, a
+ * changed-body race preserves the original, and instruction plus audit
+ * commit atomically. Integration suite; each test uses a unique run and
+ * deletes its rows afterwards.
+ */
 @Tag("integration")
 @SpringBootTest(properties = {"queuedesk.publisher.enabled=false", "queuedesk.worker.enabled=false",
         "queuedesk.reconcile.enabled=false", "queuedesk.quarantine.enabled=false"})

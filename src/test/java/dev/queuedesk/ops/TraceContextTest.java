@@ -21,10 +21,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// TG02: trace context survives admission → outbox → MQ → attempt → settle as
-// one trace with distinguishable attempt spans. Needs real PG + MQ; the
-// publisher and poller stay manual, the worker runs live.
-// OPS-02: integration suite — needs the named lab PG + MQ; CI runs it explicitly.
+/**
+ * Trace context survives admission, outbox, MQ, worker attempt, and settle
+ * as one trace with distinguishable attempt spans. Integration suite; the
+ * publisher and poller stay manual while the worker runs live.
+ */
 @Tag("integration")
 @SpringBootTest(properties = {"queuedesk.publisher.enabled=false", "queuedesk.worker.enabled=true",
         "queuedesk.reconcile.enabled=false", "queuedesk.quarantine.enabled=false"})

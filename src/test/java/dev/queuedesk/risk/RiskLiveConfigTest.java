@@ -6,11 +6,12 @@ import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-// Live-gate wiring: the Jev bean exists ONLY in RULES_PLUS_JEV mode with a
-// credential, and boot fails loudly without one. Hermetic by construction:
-// every run pins api-key or api-key-file explicitly, so a developer's real
-// .cache/jev-secrets/apiKey can neither rescue the failure case nor leak
-// into the success case. No network, no DB.
+/**
+ * Live-gate wiring: the Jev bean exists only in RULES_PLUS_JEV mode with a
+ * credential, and boot fails loudly without one. Hermetic by construction:
+ * every run pins the key or key file explicitly, so a developer's real key
+ * file can neither rescue the failure case nor leak into the success case.
+ */
 class RiskLiveConfigTest {
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withUserConfiguration(RiskLiveConfig.class)

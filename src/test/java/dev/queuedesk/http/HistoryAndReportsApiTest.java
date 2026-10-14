@@ -16,12 +16,13 @@ import java.util.UUID;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// Read-only UI-support history + reports (B04 mockup parity): per-instruction
-// audit timeline and processing attempts, plus CLI report list/serve from files
-// (zero new migrations — the reports dir is read straight off disk with a
-// traversal guard). Reports point at an isolated temp dir per class, never the
-// repo's reports/, so global files cannot leak into assertions.
-// OPS-02: integration suite — needs the named lab PG + MQ; CI runs it explicitly.
+/**
+ * Read-only history and reports APIs: per-instruction audit timeline and
+ * processing attempts, plus CLI report listing and serving straight off
+ * disk behind a path-traversal guard. Integration suite. Reports point at
+ * an isolated temp directory per class, never the repo's reports folder,
+ * so global files cannot leak into assertions.
+ */
 @Tag("integration")
 @SpringBootTest(properties = {"queuedesk.publisher.enabled=false", "queuedesk.worker.enabled=false",
         "queuedesk.reconcile.enabled=false", "queuedesk.quarantine.enabled=false"})

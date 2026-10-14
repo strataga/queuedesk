@@ -3,6 +3,11 @@ package dev.queuedesk.domain;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * The request fingerprint: deterministic for equal payloads, sensitive to
+ * every business field, and version-mixed so a format bump changes every
+ * digest instead of colliding with stored ones.
+ */
 class RequestHashTest {
     private PaymentInstruction payload(long amount) {
         return new PaymentInstruction("ref", "run", "SENDER_A", "RECEIVER_B", amount, "USD");

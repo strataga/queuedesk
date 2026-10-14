@@ -13,9 +13,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
-// OBS-01: the JSON contract plus MDC scope nesting. No Spring, no Docker:
-// pure logging mechanics. The production logback.xml itself is loaded and
-// its encoder pinned, so config drift fails the suite instead of the logs.
+/**
+ * The JSON log contract and MDC scope nesting, with no Spring and no
+ * Docker. The production logback.xml itself is loaded and its encoder
+ * pinned, so configuration drift fails this suite instead of the logs.
+ */
 class LogFormatTest {
     @Test void productionLogbackKeepsJsonContract() throws Exception {
         var context = new LoggerContext();

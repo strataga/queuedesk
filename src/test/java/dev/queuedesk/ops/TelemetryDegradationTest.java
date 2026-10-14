@@ -12,10 +12,12 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
-// TG03: with the OTLP endpoint dead, processing continues and the diagnostic
-// loss is counted — business work never blocks on telemetry. The endpoint is
-// pinned to a closed loopback port so the failure is deterministic.
-// OPS-02: integration suite — needs the named lab PG + MQ; CI runs it explicitly.
+/**
+ * With the OTLP endpoint dead, processing continues and the diagnostic
+ * loss is counted: business work never blocks on telemetry. The endpoint
+ * is pinned to a closed loopback port so the failure is deterministic.
+ * Integration suite.
+ */
 @Tag("integration")
 @SpringBootTest(properties = {"queuedesk.publisher.enabled=false", "queuedesk.worker.enabled=true",
         "queuedesk.reconcile.enabled=false", "queuedesk.quarantine.enabled=false",

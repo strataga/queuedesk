@@ -15,9 +15,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// Lab-wide overview counts (mockup 01): windowed instruction census plus
-// current outbox/reconcile gauges. Reads see committed lab rows, so tests
-// assert deltas over a captured baseline. Rolls back like InstructionApiTest.
+/**
+ * Lab-wide overview reads: windowed instruction census, current backlog
+ * gauges, throughput buckets, and the recent-payments table. Integration
+ * suite. Reads see committed lab rows, so tests assert deltas over a
+ * captured baseline.
+ */
 @Tag("integration")
 @SpringBootTest(properties = {"queuedesk.publisher.enabled=false", "queuedesk.worker.enabled=false",
         "queuedesk.reconcile.enabled=false", "queuedesk.quarantine.enabled=false"})

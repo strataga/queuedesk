@@ -12,11 +12,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// HTTP contracts against the real stack. Each method rolls back, so keys stay unique.
-// No background schedulers: cached test contexts must not run pollers that
-// steal fellow suites' work (WorkerTest's tasks were once skipped mid-test
-// by a stale scheduled poller holding the claim lock).
-// OPS-02: integration suite — needs the named lab PG + MQ; CI runs it explicitly.
+/**
+ * HTTP contracts against the real stack: admission, exact repeat, conflict,
+ * reads, listing with cursors and time windows, trace links, and the
+ * quarantine view. Integration suite; each method rolls back so keys stay
+ * unique. Background schedulers stay off so cached contexts cannot steal
+ * fellow suites' work.
+ */
 @Tag("integration")
 @SpringBootTest(properties = {"queuedesk.publisher.enabled=false", "queuedesk.worker.enabled=false",
         "queuedesk.reconcile.enabled=false", "queuedesk.quarantine.enabled=false"})

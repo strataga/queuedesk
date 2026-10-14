@@ -14,9 +14,12 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-// Real-transport tests: JevHttpTransport against a loopback stub server —
-// status mapping, auth header, deadline and the no-retry rule. The only
-// network in this phase is 127.0.0.1 within the test JVM.
+/**
+ * The real Jev HTTP transport against a loopback stub server: status
+ * mapping, bearer auth header, deadline enforcement, and the no-retry rule.
+ * The only network involved is 127.0.0.1 inside the test JVM, and failure
+ * messages must never carry the credential.
+ */
 class JevHttpTransportTest {
     private HttpServer server;
     private final AtomicInteger hits = new AtomicInteger();

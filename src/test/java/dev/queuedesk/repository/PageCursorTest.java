@@ -6,6 +6,11 @@ import java.util.Base64;
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Opaque cursor encoding: round-trips exactly, blank means "from the
+ * beginning", and garbage or half-valid tokens are rejected as bad cursors
+ * (HTTP 400), never as server errors.
+ */
 class PageCursorTest {
     @Test void roundTrip() {
         var id = UUID.randomUUID();

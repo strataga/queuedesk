@@ -13,10 +13,12 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
-// REC-01: receiver truth is independent, idempotent per instructionId, and the
-// fixtures lose responses deterministically. Real Postgres, no MQ traffic:
-// publisher, worker and reconciler are all off in this context.
-// OPS-02: integration suite — needs the named lab PG + MQ; CI runs it explicitly.
+/**
+ * Receiver truth is independent and idempotent per instruction: repeats
+ * return the stored result, fixtures lose replies deterministically,
+ * unknown stays unknown across reissue, and concurrent first calls yield
+ * one row. Integration suite on real Postgres with no MQ traffic.
+ */
 @Tag("integration")
 @SpringBootTest(properties = {"queuedesk.publisher.enabled=false", "queuedesk.worker.enabled=false",
         "queuedesk.reconcile.enabled=false", "queuedesk.quarantine.enabled=false"})

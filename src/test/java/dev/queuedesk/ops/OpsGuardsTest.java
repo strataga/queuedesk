@@ -13,10 +13,12 @@ import java.util.UUID;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// SAFE-01: the guards view agrees with durable state and halts traffic over
-// the limit. Backlog limit is pinned to 0 so one admission deterministically
-// trips the halt; disk assertions avoid host-dependent values.
-// OPS-02: integration suite — needs the named lab PG + MQ; CI runs it explicitly.
+/**
+ * The guards view agrees with durable state and halts traffic over the
+ * limit. The backlog limit is pinned to 0 so one admission trips the halt
+ * deterministically; disk assertions avoid host-dependent values.
+ * Integration suite.
+ */
 @Tag("integration")
 @SpringBootTest(properties = {"queuedesk.publisher.enabled=false", "queuedesk.worker.enabled=false",
         "queuedesk.reconcile.enabled=false", "queuedesk.quarantine.enabled=false",

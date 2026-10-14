@@ -4,8 +4,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-// Jev config validation: pinned models, mandatory credentials, https outside
-// loopback. Plain JUnit — the holder must fail fast wherever it is built.
+/**
+ * Jev configuration validation: pinned models only, mandatory credential,
+ * HTTPS outside loopback, bounded deadlines, and a credential-redacting
+ * toString. Plain JUnit: the holder must fail fast wherever it is built.
+ */
 class JevPropertiesTest {
     @Test void acceptsAPinnedModelOnHttps() {
         var props = new JevProperties("https://api.typesafe.ai", "jev-1.13.0", "secret", 2000);

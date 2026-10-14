@@ -14,9 +14,12 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
-// V8: the reconciliation identity is scoped to OPEN rows. A second task while
-// one is OPEN is still rejected; after DONE, a re-uncertain instruction may
-// open a fresh task instead of crashing on history.
+/**
+ * The reconciliation identity is scoped to OPEN tasks: a second task while
+ * one is open is rejected, but after DONE a re-uncertain instruction may
+ * open a fresh task instead of crashing on its own history.
+ * Integration suite.
+ */
 @Tag("integration")
 @SpringBootTest(properties = {"queuedesk.publisher.enabled=false", "queuedesk.worker.enabled=false",
         "queuedesk.reconcile.enabled=false", "queuedesk.quarantine.enabled=false"})

@@ -3,6 +3,10 @@ package dev.queuedesk.domain;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Domain validation without Spring: a well-formed instruction constructs
+ * cleanly, proving the record's constructor is the single validity gate.
+ */
 class PaymentInstructionTest {
     @Test void validatesWithoutSpring() {
         var good = new PaymentInstruction(" ref ", "run", "SENDER_A", "RECEIVER_B", 12500L, "USD");

@@ -4,8 +4,11 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-// Gauge fallback without Spring or a database: live values cache, outages
-// serve last-good, and a gauge that never read serves -1 (unknown, not zero).
+/**
+ * Gauge fallback without Spring or a database: live values are cached,
+ * outages serve the last good reading, and a gauge that never read serves
+ * -1 (unknown, never a fake zero). Gauges stay isolated per name.
+ */
 class QueuedeskMetricsTest {
     private QueuedeskMetrics metrics() {
         return new QueuedeskMetrics(new SimpleMeterRegistry(), null, new dev.queuedesk.risk.LatencyBuckets());

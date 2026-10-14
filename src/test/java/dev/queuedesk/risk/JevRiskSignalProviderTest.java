@@ -13,9 +13,12 @@ import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-// Jev adapter tests (live gate, stubbed phase): mapping, fault taxonomy and
-// request shape behind a scripted JevTransport — no network, no credentials.
-// Plain JUnit, no Spring: the adapter must work wherever the interface goes.
+/**
+ * The Jev adapter behind a scripted transport: response mapping, the typed
+ * fault taxonomy, budget refusal before any call, and request shape
+ * (snapshot numbers only, no identities to leak). No network, no
+ * credentials, no Spring.
+ */
 class JevRiskSignalProviderTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final JevProperties PROPS =

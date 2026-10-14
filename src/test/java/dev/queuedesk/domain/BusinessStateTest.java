@@ -3,9 +3,11 @@ package dev.queuedesk.domain;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-// STATE-01: the legal business transitions, and the regressions that must never
-// happen. Delivery detail (PENDING_PUBLISH/…) is a separate dimension and is
-// rejected everywhere here.
+/**
+ * The business state machine: every legal transition, the terminal states
+ * that must never regress, and proof that delivery detail
+ * ({@code PENDING_PUBLISH} and friends) is not a business state anywhere.
+ */
 class BusinessStateTest {
     @Test void legalTransitions() {
         assertTrue(BusinessState.allowed("RECEIVED", "BUSINESS_ACCEPTED"));

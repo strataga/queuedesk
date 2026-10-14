@@ -8,6 +8,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * The 16 KiB body limit at both read paths: exactly-at-limit passes, one
+ * byte over fails, on bulk reads, single-byte reads, and the character
+ * (Reader) path that would otherwise bypass the counter.
+ */
 class BodyLimitFilterTest {
     private static ServletInputStream stream(byte[] data) {
         var in = new ByteArrayInputStream(data);

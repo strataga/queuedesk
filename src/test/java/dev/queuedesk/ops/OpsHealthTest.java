@@ -19,9 +19,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // loop — and recovery must restore readiness. Named lab resources only.
 // OPS-02: integration suite — needs the named lab PG + MQ; CI runs it explicitly.
 @Tag("integration")
-// Owns the shared broker during its outage drill: never run concurrently
-// with other tests, even if parallelism is enabled later. Restores the QM
-// in finally and proves recovery before returning.
+/**
+ * Liveness is the process, readiness is the dependencies: an MQ outage
+ * degrades readiness while liveness stays UP (never a restart loop), and
+ * recovery restores readiness. Integration suite, isolated because it owns
+ * the shared broker during the outage drill and restores it afterwards.
+ */
 @Isolated
 @SpringBootTest(properties = {"queuedesk.publisher.enabled=false", "queuedesk.worker.enabled=false",
         "queuedesk.reconcile.enabled=false", "queuedesk.quarantine.enabled=false"})
