@@ -7,10 +7,20 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 
-/** Controlled redelivery injector for SC07: replays one stored instruction as a
- *  second JMS delivery of the SAME eventId. Lab-only; loopback MQ with the
- *  lab's documented credentials. Payload bytes are rebuilt from the live read
- *  plus a recomputed REQUEST_HASH_V1 (same canonical form as the app). */
+/**
+ * Controlled redelivery injector: replays one stored instruction as a
+ * second JMS delivery of the <em>same</em> eventId, to prove worker dedup.
+ *
+ * <p>The envelope bytes are rebuilt from the live instruction read plus a
+ * recomputed {@code REQUEST_HASH_V1} in the app's exact canonical form, so
+ * the replay is indistinguishable from a genuine broker redelivery. Any
+ * drift from the app's hash contract breaks the drill loudly, which is the
+ * point. Lab-only: loopback HTTP and MQ with the documented credentials.
+ *
+ * <p>Usage: {@code scripts/redeliver <baseUrl> <instructionId> <eventId> [queue]}.
+ * The optional queue supports isolated drill lanes; the default is the
+ * shared input queue.
+ */
 public class Redeliver {
     public static void main(String[] args) throws Exception {
         if (args.length != 3 && args.length != 4) throw new IllegalArgumentException(
@@ -66,6 +76,8 @@ public class Redeliver {
     }
     // Minimal JSON readers: the read view is app-shaped (string/number fields,
     // no nesting above payload, no escaped quotes in synthetic fixtures).
+
+    /** Reads one string field from the instruction view JSON. */
     private static String field(String json, String name) {
         String key = "\"" + name + "\":\"";
         int start = json.indexOf(key);
@@ -73,6 +85,7 @@ public class Redeliver {
         int end = json.indexOf('"', start + key.length());
         return json.substring(start + key.length(), end);
     }
+    /** Reads one numeric field (verbatim text) from the instruction view JSON. */
     private static String number(String json, String name) {
         String key = "\"" + name + "\":";
         int start = json.indexOf(key);
@@ -81,9 +94,11 @@ public class Redeliver {
         while (end < json.length() && "-+0123456789.eE".indexOf(json.charAt(end)) >= 0) end++;
         return json.substring(start + key.length(), end);
     }
+    /** Backslash-escapes one field for the canonical hash string (mirrors the app exactly). */
     private static String esc(String field) {
         return field.replace("\\", "\\\\").replace("|", "\\|");
     }
+    /** Lowercase hex SHA-256 of the canonical payload string. */
     private static String sha256(String canonical) throws Exception {
         byte[] digest = MessageDigest.getInstance("SHA-256").digest(canonical.getBytes(StandardCharsets.UTF_8));
         var hex = new StringBuilder(digest.length * 2);

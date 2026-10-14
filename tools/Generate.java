@@ -7,20 +7,50 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 
-/** Standalone Java source launcher: no Spring or third-party dependencies.
- *  The script is the primary producer (PR01): seeded fixtures, bounded pacing,
- *  separate send and observe phases (GN07), machine-readable reports (GEN-01). */
+/**
+ * The QueueDesk traffic generator: the lab's primary payment producer.
+ *
+ * <p>A single self-contained Java source file (run via the source launcher,
+ * no Spring and no third-party dependencies) so it stays usable even when
+ * the app itself will not build. Everything is seeded and deterministic:
+ * the same seed, count, scenario, and run ID always produce the same plan,
+ * with no wall-clock identifiers.
+ *
+ * <p>Two phases, deliberately separate: <b>send</b> paces submissions at a
+ * bounded rate and classifies each HTTP outcome; <b>observe</b> then polls
+ * the run until every admitted payment reaches a terminal state (or the
+ * observe deadline expires honestly). Without {@code --send} the tool is a
+ * dry run that only prints the plan.
+ *
+ * <p>Safety rules: loopback-only targets (exact {@code 127.0.0.1} literal),
+ * the lab guard endpoint is consulted before sending and fails closed, and
+ * ambiguous admissions are never auto-retried — rerunning the exact same
+ * options is the retry, made safe by server-side idempotency.
+ *
+ * <p>Exit codes: 0 = every expectation held, 1 = assertion failures,
+ * 2 = work left unsent or unresolved.
+ */
 class Generate {
+    /** Fixture-set version stamped into reports so runs stay comparable across changes. */
     static final String FIXTURES = "qd-fixtures-1";
+    /** One planned attempt: idempotency key, exact body bytes, expected HTTP class, amount, repeat flag. */
     record Planned(String key, String body, int expected, long amountMinor, boolean repeat) {}
+    /** One actual attempt outcome: HTTP status (-1 = unknown), latency, send time, and returned ID. */
     record Sent(String key, String body, int expected, int http, long latencyMs, long sentAtMs, String instructionId) {}
+
+    /** Entry point. Argument errors print usage and exit 1; see the class doc for exit-code meanings. */
     public static void main(String[] args) throws Exception {
         try { run(args); }
         catch (IllegalArgumentException e) { System.err.println(e.getMessage()); System.exit(1); }
     }
-    // SAFE-01 guard check: returns the halt reason, or null to proceed. Fails
-    // CLOSED: an unreadable guard state (non-200, unreachable, malformed)
-    // halts new traffic — a safeguard that cannot be read cannot be trusted.
+    /**
+     * Lab-safeguard check before any traffic is sent.
+     *
+     * @return the halt reason to report, or {@code null} to proceed. Fails
+     *         closed: an unreadable guard state (non-200, unreachable, or
+     *         malformed) halts new traffic, because a safeguard that cannot
+     *         be read cannot be trusted
+     */
     static String guardHaltReason(String base) {
         try {
             var client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
@@ -37,6 +67,7 @@ class Generate {
             return "guard check unreachable (" + why + ", fail closed)";
         }
     }
+    /** Extracts the guard reasons array (bounded) for the halt message. */
     static String reasonsDetail(String json) {
         int reasons = json.indexOf("\"reasons\":[");
         if (reasons < 0) return "halted";
@@ -44,6 +75,11 @@ class Generate {
         if (end < 0) return "halted";
         return json.substring(reasons + 11, Math.min(end, reasons + 300));
     }
+    /**
+     * Parses options, builds the seeded plan, then (with {@code --send})
+     * guards, sends, classifies, optionally observes, asserts, and reports.
+     * All bounds are validated up front; nothing is sent for an invalid run.
+     */
     static void run(String[] args) throws Exception {
         var options = new HashMap<String, String>();
         boolean send = false, observe = false;
@@ -163,13 +199,20 @@ class Generate {
         if (!unresolved.isEmpty()) System.exit(2);
         if (!assertionFailures.isEmpty() || failed>0) System.exit(1);
     }
-    // SC02 shape: count unique admissions, then count/4 exact key/body repeats of
-    // the first keys. Conflict: admit/change-amount pairs. Reject: reject- fixtures.
-    // Risk fixtures (RS01-RS06) reuse the same bounds/allowlist: risk-1 is benign
-    // small amounts; risk-2 mixes a huge amount every 4th instruction (labeled
-    // suspicious in the evaluator-only oracle); risk-3 repeats the duplicate
-    // shape; risk-4/5/6 are normal-shaped (injection, faults, and restart are
-    // driven by the risk harness, not the payload).
+    /**
+     * Builds the deterministic attempt plan for one scenario.
+     *
+     * <p>Shapes by scenario: {@code duplicate} appends exact key/body repeats
+     * of the first keys (count/4 of them); {@code conflict} pairs each
+     * admission with a same-key changed-amount attempt expecting 409;
+     * {@code invalid} cycles four distinct validity failures; {@code reject},
+     * {@code uncertain}, and {@code unknown} select receiver fixtures by
+     * clientReference prefix. Risk scenarios reuse the same bounds:
+     * {@code risk-1} is benign small amounts, {@code risk-2} mixes a huge
+     * amount every fourth instruction, {@code risk-3} repeats the duplicate
+     * shape, and {@code risk-4/5/6} are normal-shaped (injection, faults,
+     * and restart are driven by the risk harness, not the payload).
+     */
     static List<Planned> buildPlan(String scenario, long seed, int count, String runId) {
         var random = new Random(seed);
         var plan = new ArrayList<Planned>();
@@ -206,6 +249,12 @@ class Generate {
         }
         return plan;
     }
+    /**
+     * Sends the plan at {@code rate} attempts per second across a small
+     * thread pool, stopping submission at the send deadline (the remainder
+     * stays honestly unsent). Transport failures record HTTP -1 (unknown);
+     * nothing is retried here.
+     */
     static List<Sent> sendAll(HttpClient client, URI base, List<Planned> plan, int rate, int concurrency, int sendSeconds) throws Exception {
         long deadline = System.nanoTime() + Duration.ofSeconds(sendSeconds).toNanos();
         long intervalNanos = 1_000_000_000L / rate;
@@ -250,11 +299,17 @@ class Generate {
         }
         return new ArrayList<>(sent);
     }
+    /** Observation result: outcome counts, end-to-end latencies, terminal state per key, and unresolved keys. */
     record Observed(int observed, int completed, int rejected, int held, int pending, List<Long> e2eLatencies,
             Map<String, String> terminalByKey, List<String> unresolved) {}
-    // GN07: sending is over; poll the run list every 2s until every admitted key
-    // is terminal or the separate completion deadline expires. Unknown admissions
-    // are rediscovered by their original clientReference (identical to the key).
+
+    /**
+     * Observe phase: sending is over; poll the run list every 2 seconds
+     * until every admitted key is terminal (a risk hold counts as settled
+     * observation under the gate) or the separate completion deadline
+     * expires. Admissions whose outcome was unknown are rediscovered by
+     * their original clientReference.
+     */
     static Observed observeRun(HttpClient client, URI base, String runId, List<Sent> sent, int observeSeconds) throws Exception {
         var sentAtByKey = new HashMap<String, Long>();
         var refToKey = new HashMap<String, String>();
@@ -307,7 +362,10 @@ class Generate {
         return new Observed(sentAtByKey.size(), completed, rejected, held,
                 sentAtByKey.size() - terminalByKey.size(), e2e, terminalByKey, unresolved);
     }
+    /** One listed instruction's business state and client reference, keyed by instruction ID. */
     record ItemState(String state, String ref) {}
+
+    /** Pages through the run's instruction list (cursor contract) collecting current states. */
     static Map<String, ItemState> listRunStates(HttpClient client, URI base, String runId) throws Exception {
         var states = new LinkedHashMap<String, ItemState>();
         String cursor = null;
@@ -336,7 +394,11 @@ class Generate {
         } while (cursor != null);
         return states;
     }
-    // Per-scenario assertions beyond HTTP codes; failures exit 1, never fabricated.
+    /**
+     * Per-scenario assertions beyond HTTP codes: originals unchanged after
+     * conflicts, invalid runs creating no rows, and expected terminal states
+     * per scenario. Failures are collected and exit 1; never fabricated.
+     */
     static void scenarioAssertions(String scenario, List<Sent> sent, Map<String, String> terminalByKey,
             List<String> unresolved, HttpClient client, URI base, List<String> failures) throws Exception {
         if (scenario.equals("conflict")) {
@@ -378,12 +440,14 @@ class Generate {
         // unknown: nothing terminal is expected; the runner asserts the pending
         // shape (open tasks, no rejection, no replacement) through the API.
     }
+    /** Minimal string-field reader for app-shaped JSON (no escaped quotes in synthetic fixtures). */
     static String jsonString(String json, String field) {
         int at = json.indexOf("\"" + field + "\":\"");
         if (at < 0) return null;
         int start = at + field.length() + 4;
         return json.substring(start, json.indexOf('"', start));
     }
+    /** Renders a latency distribution (count, p50, p95, max) as a JSON object; zeros when empty. */
     static String distJson(List<Long> values) {
         if (values.isEmpty()) return "{\"count\":0,\"p50\":0,\"p95\":0,\"max\":0}";
         var sorted = new ArrayList<>(values);
@@ -392,9 +456,15 @@ class Generate {
                 + ",\"p95\":" + sorted.get(Math.min(sorted.size()-1, sorted.size()*95/100))
                 + ",\"max\":" + sorted.get(sorted.size()-1) + "}";
     }
+    /** Escapes a string for inclusion in hand-built report JSON. */
     static String jsonEscape(String s) {
         return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
     }
+    /**
+     * Writes the machine-readable run report consumed by the scenario runner
+     * and re-served by the dashboard. The shape is a contract: outcome keys
+     * appear exactly as asserted downstream (RISK_HELD only when nonzero).
+     */
     static void writeReport(Path path, String scenario, long seed, String runId, int planned, int unique,
             int rate, int concurrency, int sendSeconds, int observeSeconds, URI base, Instant startedAt,
             int attempted, int accepted, int repeated, int invalid, int unknown, int failed, int unsent,
