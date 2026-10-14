@@ -1,4 +1,7 @@
 #!/bin/sh
+# Smoke-test launcher: packages the app, then verifies real HTTP admission
+# (publisher/worker off) plus generator determinism and guards.
+# See scripts/smoke.py.
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 . "$ROOT/scripts/java-env.sh"

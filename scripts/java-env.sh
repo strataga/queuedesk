@@ -1,5 +1,8 @@
 #!/bin/sh
-# Shared by both wrappers. Prefer the verified installed JDK 25 on this Mac.
+# Shared JDK 25 selection, sourced (never executed) by every lab wrapper.
+# Prefers the verified installed JDK 25 on this Mac via java_home(1), then
+# verifies the version string really says 25 — a silent wrong-major JDK
+# would fail later with much worse errors. Fails fast with a named fix.
 if [ -z "${JAVA_HOME:-}" ] && [ -x /usr/libexec/java_home ]; then
   JAVA_HOME=$(/usr/libexec/java_home -v 25 2>/dev/null) || true
 fi

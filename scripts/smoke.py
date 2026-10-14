@@ -1,4 +1,11 @@
-"""Real HTTP and source-launcher verification; uses only Python's standard library."""
+"""Smoke verification for the packaged app over real HTTP.
+
+Boots the jar on a scratch port with the publisher and worker off, so
+admissions stay RECEIVED and can be asserted exactly: generator
+determinism, loopback allowlist and bounds, all eight scenarios over
+live HTTP, repeat/conflict semantics, validation, and restart survival.
+Standard library only. Requires Postgres up (scripts/postgres up).
+"""
 import json, os, socket, subprocess, tempfile, time, urllib.request, urllib.error
 from pathlib import Path
 root=Path(__file__).resolve().parent.parent
@@ -8,11 +15,13 @@ with socket.socket() as probe:
     probe.bind(('127.0.0.1',18080))
 
 def generate(*args, expected=0):
+    """Run the generator CLI and assert its exit code; returns stdout for report assertions."""
     r=subprocess.run([str(root/'scripts/generate'),*args],cwd=root,text=True,capture_output=True,timeout=15)
     assert r.returncode==expected,(r.returncode,r.stdout,r.stderr)
     return r.stdout
 
 def request(path, body=None, key=None):
+    """One HTTP call returning (status, parsed JSON); HTTP errors are values, not exceptions."""
     headers={'Content-Type':'application/json'}
     if key: headers['Idempotency-Key']=key
     req=urllib.request.Request(base+path,data=None if body is None else json.dumps(body).encode(),headers=headers)
@@ -23,6 +32,7 @@ def request(path, body=None, key=None):
         return e.code,json.load(e)
 
 def start(log):
+    """Boot the packaged jar on the smoke port (publisher/worker off) and wait for readiness."""
     process=subprocess.Popen([os.environ['JAVA_HOME']+'/bin/java','-jar',str(root/'target/queuedesk-0.1.0.jar'),'--server.port=18080','--queuedesk.publisher.enabled=false','--queuedesk.worker.enabled=false'],cwd=root,stdout=log,stderr=log)
     try:
         for _ in range(100):
@@ -37,6 +47,7 @@ def start(log):
         raise
 
 def stop(process):
+    """Terminate the test server, escalating to kill after a bounded wait."""
     process.terminate()
     try: process.wait(timeout=10)
     except subprocess.TimeoutExpired: process.kill(); process.wait()

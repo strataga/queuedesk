@@ -1,13 +1,14 @@
-# QueueDesk backend in kind (Phase 9): one replica running the API, publisher,
+# QueueDesk backend in kind: one replica running the API, publisher,
 # worker, quarantiner and reconciler exactly as on the host lab. Single replica
-# is a correctness requirement, not a capacity choice: publisher/worker
-# multi-pod scaling needs the deferred lease/locking design (D-03).
+# is a correctness requirement, not a capacity choice: the publisher and
+# worker are not yet safe to scale across pods (that needs a lease/locking
+# design that is deliberately deferred).
 #
-# Probes reuse the Phase 7 health model (D-02): liveness is process-alive only,
-# readiness/startup include db+mq dependency state, so a broker or database
-# outage marks the pod NotReady without restarting it. No values in this file
-# are secret: passwords come from Secrets, the MQ endpoint from a ConfigMap —
-# all created by scripts/k8s at deploy time.
+# Probes reuse the app's health model: liveness is process-alive only,
+# readiness/startup include database + MQ dependency state, so a broker or
+# database outage marks the pod NotReady without restarting it. No values in
+# this file are secret: passwords come from Secrets, the MQ endpoint from a
+# ConfigMap — all created by scripts/k8s at deploy time.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

@@ -30,11 +30,13 @@ for _attempt in range(6):
         time.sleep(10)
 
 def generate(*args, expected=0, timeout=240):
+    """Run the generator CLI and assert its exit code; returns stdout for report assertions."""
     r=subprocess.run([str(root/'scripts/generate'),*args],cwd=root,text=True,capture_output=True,timeout=timeout)
     assert r.returncode==expected,(r.returncode,r.stdout,r.stderr)
     return r.stdout
 
 def request(path):
+    """One GET returning (status, parsed JSON); HTTP errors are values, not exceptions."""
     req=urllib.request.Request(base+path,headers={'Content-Type':'application/json'})
     try:
         with urllib.request.urlopen(req,timeout=10) as response:
@@ -43,6 +45,7 @@ def request(path):
         return e.code,json.load(e)
 
 def post_raw(path, body, key):
+    """POST raw JSON bytes (injection vectors bypass client-side shaping); errors are values."""
     req=urllib.request.Request(base+path,data=body.encode(),method='POST',
         headers={'Content-Type':'application/json','Idempotency-Key':key})
     try:
@@ -53,6 +56,7 @@ def post_raw(path, body, key):
         except Exception: return e.code,{'code':'UNPARSEABLE'}
 
 def start(log, extra_env=None, extra_args=None):
+    """Boot the packaged jar against the isolated risk DB/queues with the gate on; wait ready."""
     env=dict(os.environ)
     env['QD_DB_URL']=f'jdbc:postgresql://127.0.0.1:5442/{RISK_DB}'
     env['QUEUEDESK_RISK_MODE']='RULES_PLUS_MOCK'
@@ -74,6 +78,7 @@ def start(log, extra_env=None, extra_args=None):
         raise
 
 def stop(process):
+    """Terminate a harness app if still running; returns its exit code (99 proves a latch halt)."""
     if process.poll() is not None: return process.poll()
     process.terminate()
     try: process.wait(timeout=20)
@@ -81,6 +86,7 @@ def stop(process):
     return process.poll()
 
 def run_summary(runid):
+    """Fetch one run's accounting summary, asserting HTTP 200."""
     status,summary=request('/api/v1/runs/'+runid)
     assert status==200,(status,summary)
     return summary
@@ -118,12 +124,14 @@ def lab_guard():
         assert r.returncode==0,(r.returncode,r.stderr)
 
 def psql(sql):
+    """Run one SQL statement in the risk database and return trimmed text output."""
     r=subprocess.run(['docker','exec','qdesk-postgres','psql','-U','queuedesk','-d',RISK_DB,'-tA','-c',sql],
         capture_output=True,text=True,timeout=30)
     assert r.returncode==0,(r.returncode,r.stderr)
     return r.stdout.strip()
 
 def wait_settled(runid, total, timeout=90):
+    """Poll until every admitted instruction in the run is completed, rejected, or risk-held."""
     deadline=time.time()+timeout
     while time.time()<deadline:
         summary=run_summary(runid)
@@ -134,13 +142,16 @@ def wait_settled(runid, total, timeout=90):
     raise AssertionError(f"run {runid} did not settle: {run_summary(runid)}")
 
 def assessments(runid):
+    """Read (result, status, reasons, reference) per assessed instruction, ordered by reference."""
     rows=psql(f"SELECT a.policy_result||'|'||a.evaluation_status||'|'||COALESCE(array_to_string(a.reason_codes,','),'')||'|'||i.client_reference FROM risk_assessment a JOIN instruction i ON i.instruction_id=a.instruction_id WHERE i.run_id='{runid}' ORDER BY i.client_reference")
     return [tuple(line.split('|')) for line in rows.splitlines() if line]
 
 def receiver_calls(runid):
+    """Total receiver call count for a run (proves holds never reach the receiver)."""
     return int(psql(f"SELECT COALESCE(SUM(calls),0) FROM receiver_result WHERE instruction_id IN (SELECT instruction_id FROM instruction WHERE run_id='{runid}')"))
 
 def assessment_count(runid):
+    """Stored assessment count for a run (proves reuse instead of re-scoring)."""
     return int(psql(f"SELECT COUNT(*) FROM risk_assessment WHERE instruction_id IN (SELECT instruction_id FROM instruction WHERE run_id='{runid}')"))
 
 def provider_p95(runid):
@@ -150,15 +161,18 @@ def provider_p95(runid):
     return float(value)
 
 def write_report(path, suite, seed, runid, extra):
+    """Write one suite's JSON evidence report under reports/ and return it."""
     report={'tool':'risk-eval','fixtureVersion':'qd-fixtures-1','scenario':suite,'seed':seed,'runId':runid,
         'endedAt':datetime.now(timezone.utc).isoformat(),'assertionFailures':[],**extra}
     with open(path,'w') as f: json.dump(report,f,indent=2)
     return report
 
 def load_oracle():
+    """Load the evaluator-only labels and thresholds (never visible to policy or scorer)."""
     with open(root/'scripts/risk-oracle.json') as f: return json.load(f)
 
 def rs01(tag, reports, oracle):
+    """RS01 benign traffic: holds are counted as false alarms; rejects and receiver calls on holds forbidden."""
     suite=oracle['suites']['rs01']
     runid=f'rs01-{tag}'
     out=generate('--send','--observe','--scenario','risk-1','--seed',str(suite['seed']),
@@ -184,6 +198,7 @@ def rs01(tag, reports, oracle):
     print(f"RS01 benign: {len(holds)}/{suite['count']} held (false alarms), 0 rejected, receiver untouched on holds")
 
 def rs02(tag, reports, oracle):
+    """RS02 suspicious mix: oracle-labeled huge payments must all hold as UNUSUAL_AMOUNT."""
     suite=oracle['suites']['rs02']
     runid=f'rs02-{tag}'
     out=generate('--send','--observe','--scenario','risk-2','--seed',str(suite['seed']),
@@ -212,6 +227,7 @@ def rs02(tag, reports, oracle):
     print(f"RS02 suspicious mix: 0 missed / {suite['suspiciousCount']} suspicious, {len(false_alarms)} false alarms, all huge held UNUSUAL_AMOUNT")
 
 def rs03(tag, reports, oracle):
+    """RS03 retries/redelivery: repeats create no rows and no second assessment; redelivery dedups."""
     suite=oracle['suites']['rs03']
     runid=f'rs03-{tag}'
     out=generate('--send','--observe','--scenario','risk-3','--seed',str(suite['seed']),
@@ -244,6 +260,7 @@ def rs03(tag, reports, oracle):
     print(f"RS03 retries/redelivery: 25 attempts, 20 rows, 20 assessments, redelivery absorbed as duplicate")
 
 def rs04(tag, reports, oracle):
+    """RS04 memo injection: adversarial bodies 400 before persistence; the gate still works after."""
     suite=oracle['suites']['rs04']
     runid=f'rs04-{tag}'
     # Adversarial memo vectors: the lab has no memo field, so injection arrives
@@ -277,6 +294,7 @@ def rs04(tag, reports, oracle):
     print(f"RS04 memo injection: {len(vectors)} vectors 400d with zero rows, gate unaltered after")
 
 def rs05(tag, reports, oracle, log):
+    """RS05 provider faults: each fault holds safely (rules first), bounded calls, receiver untouched."""
     suite=oracle['suites']['rs05']
     # PRD fault names map to the mock taxonomy: rate-limit/wrong-model surface
     # as UNAVAILABLE/INVALID (refused response / failed validation).
@@ -311,6 +329,7 @@ def rs05(tag, reports, oracle, log):
     print("RS05 provider faults: all four hold NOT_ASSESSED with bounded calls and zero receiver invocations")
 
 def rs06(tag, reports, oracle, log):
+    """RS06 restart: a halt between assessment save and outcome commit rolls back fully; one hold after."""
     suite=oracle['suites']['rs06']
     runid=f'rs06-{tag}'
     # Boot lab-armed with the risk latch: the first hold attempt halts the JVM
@@ -357,6 +376,7 @@ def rs06(tag, reports, oracle, log):
     print("RS06 restart: halt rolled back; reboot committed one hold, one assessment, one marker")
 
 def main():
+    """Select suites, verify lab isolation, run shared then fault/restart suites, write reports."""
     which=sys.argv[1] if len(sys.argv)>1 else 'all'
     assert which in ('all','rs1','rs2','rs3','rs4','rs5','rs6'),f'usage: scripts/risk-eval.py [rs1|rs2|rs3|rs4|rs5|rs6|all]'
     for port,helper in [(5442,'./scripts/postgres up'),(1414,'./scripts/mq up')]:

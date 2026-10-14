@@ -1,5 +1,5 @@
 #!/bin/sh
-# Phase 9 evidence (K8S-01): scenario regression plus pod-restart, rollout,
+# Kubernetes evidence gate: scenario regression plus pod-restart, rollout,
 # Postgres-restart, MQ-outage and cluster-recreation checks against the kind lab.
 # Requires `scripts/k8s up` + `scripts/k8s setup` first. Manages its own
 # loopback port-forward (18080); leaves the cluster running with its data.

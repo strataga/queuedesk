@@ -1,5 +1,8 @@
 #!/bin/sh
-# Lab-only poison injector for the L3 drill. See docs/RUNBOOK-L3.md.
+# Lab-only poison injector for the quarantine drill: puts one raw message,
+# byte-for-byte as given, on the worker input queue.
+# Usage: scripts/poison <runTag> <rawBody> — see tools/Poison.java and
+# docs/RUNBOOK-L3.md. MQ client jars resolve from the local Maven cache.
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 . "$ROOT/scripts/java-env.sh"

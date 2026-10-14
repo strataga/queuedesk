@@ -15,7 +15,7 @@ You need JDK 25, Docker Desktop (Postgres and IBM MQ run as containers), and Nod
 # Logs:      /tmp/qdesk-app.log and /tmp/qdesk-dashboard.log
 ```
 
-`start-lab` starts the containers, waits for MQ, runs the database migrations, and starts the app and dashboard. Running it again is safe. It stops with an error if ports 8080 or 4200 are already taken. To stop, use the `kill` line it prints, then run `./scripts/mq down` and `./scripts/postgres down`. Your data stays in the container volumes.
+`start-lab` starts the containers, waits for MQ, and starts the app (which runs the database migrations on boot) and the dashboard. Containers restart cleanly, but the script refuses to start when ports 8080 or 4200 already answer, so stop a running lab before starting it again. To stop, use the `kill` line it prints, then run `./scripts/mq down` and `./scripts/postgres down`. Your data stays in the container volumes.
 
 On macOS the scripts pick JDK 25 for you, even if your shell defaults to another version. On other machines, set `JAVA_HOME` to a JDK 25 installation first.
 

@@ -1,8 +1,10 @@
 #!/bin/sh
 # Lab reset: clears all synthetic run data (Postgres) and drains both MQ queues.
 # The lab caps live admissions at 1000 rows; scenario and smoke runs accumulate,
-# so reset between evidence runs. Destroys lab data only; schema and QM config
-# (queues, BOTHRESH, grants) are untouched. Needs both lab containers up.
+# so reset between evidence runs. The TRUNCATE ... CASCADE also clears dependent
+# rows (risk assessments, leases, reviews), which zeroes the Jev usage ledger.
+# Destroys lab data only; schema and QM config (queues, BOTHRESH, grants) are
+# untouched. Needs both lab containers up.
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 docker exec qdesk-postgres psql -U queuedesk -d queuedesk -c \

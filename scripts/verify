@@ -1,6 +1,9 @@
 #!/bin/sh
-# TEST-01 explicit gates, in order: unit+integration suite, durable-backend
-# smoke, core scenario evidence. Needs ./scripts/postgres up and ./scripts/mq up.
+# Full verification gates, in order: (0) refuse a dirty lab, (1) unit +
+# integration suite against real Postgres/MQ, (2) durable-backend smoke,
+# (3) core scenarios SC01-SC12 including failure drills. Any gate failing
+# aborts the rest. Needs ./scripts/postgres up and ./scripts/mq up, with the
+# app itself stopped (gate 0 enforces drained queues).
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$ROOT"

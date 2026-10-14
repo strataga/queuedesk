@@ -1,6 +1,9 @@
 #!/bin/sh
 # Start the whole QueueDesk lab: Postgres + MQ containers, backend API, dashboard.
-# Idempotent for containers (restarts existing ones); refuses if 8080/4200 are taken.
+# Containers restart idempotently; the script refuses to start when 8080 or
+# 4200 already answers (an existing lab or a foreign listener) instead of
+# killing whatever owns the port. Backend/dashboard run in the background;
+# the final banner prints their PIDs and the exact stop commands.
 # Logs: /tmp/qdesk-app.log, /tmp/qdesk-dashboard.log
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -12,6 +15,8 @@ for port in 8080 4200; do
   fi
 done
 
+# --- Containers: start (or restart) the named lab containers, wait for the
+# queue manager to report Running, and define queues on first use.
 echo "== containers =="
 "$ROOT/scripts/postgres" up
 "$ROOT/scripts/mq" up
@@ -27,6 +32,8 @@ END' | runmqsc QDESK" 2>/dev/null | grep -q "AMQ8409I"; then
   "$ROOT/scripts/mq" setup
 fi
 
+# --- Backend: boot in the background; fail fast (with the log path) if the
+# process dies or liveness never reports UP within the bounded wait.
 echo "== backend API (127.0.0.1:8080) =="
 unset MQ_APP_PASSWORD
 cd "$ROOT"
@@ -41,6 +48,8 @@ curl -s --max-time 3 http://127.0.0.1:8080/actuator/health/liveness 2>/dev/null 
   || { echo "backend never went live; see /tmp/qdesk-app.log" >&2; exit 1; }
 echo "backend up (pid $APP_PID)"
 
+# --- Dashboard: one-time npm install when needed, then the dev server in
+# the background with the same bounded-wait policy as the backend.
 echo "== dashboard (http://127.0.0.1:4200) =="
 if [ ! -d "$ROOT/dashboard/node_modules" ]; then
   echo "node_modules missing; running install (one-time, slow)"

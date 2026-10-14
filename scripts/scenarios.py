@@ -11,11 +11,13 @@ with socket.socket() as probe:
     probe.bind(('127.0.0.1',18081))
 
 def generate(*args, expected=0, timeout=180):
+    """Run the generator CLI and assert its exit code; returns stdout for report assertions."""
     r=subprocess.run([str(root/'scripts/generate'),*args],cwd=root,text=True,capture_output=True,timeout=timeout)
     assert r.returncode==expected,(r.returncode,r.stdout,r.stderr)
     return r.stdout
 
 def request(path):
+    """One GET returning (status, parsed JSON); HTTP errors are values, not exceptions."""
     req=urllib.request.Request(base+path,headers={'Content-Type':'application/json'})
     try:
         with urllib.request.urlopen(req,timeout=5) as response:
@@ -24,6 +26,7 @@ def request(path):
         return e.code,json.load(e)
 
 def start(log, extra_env=None):
+    """Boot the packaged jar on the scenario port (full pipeline on) and wait for readiness."""
     env=dict(os.environ)
     if extra_env: env.update(extra_env)
     process=subprocess.Popen([os.environ['JAVA_HOME']+'/bin/java','-jar',str(root/'target/queuedesk-0.1.0.jar'),'--server.port=18081'],cwd=root,stdout=log,stderr=log,env=env)
@@ -40,11 +43,13 @@ def start(log, extra_env=None):
         raise
 
 def stop(process):
+    """Terminate the test server, escalating to kill after a bounded wait."""
     process.terminate()
     try: process.wait(timeout=15)
     except subprocess.TimeoutExpired: process.kill(); process.wait()
 
 def run_summary(runid):
+    """Fetch one run's accounting summary, asserting HTTP 200."""
     status,summary=request('/api/v1/runs/'+runid)
     assert status==200,(status,summary)
     return summary
@@ -62,17 +67,20 @@ def lab_guard():
         raise SystemExit('REFUSED: lab queue manager QDESK not found; failure drills run only against the local lab')
 
 def psql(sql):
+    """Run one SQL statement in the lab Postgres container and return trimmed text output."""
     r=subprocess.run(['docker','exec','qdesk-postgres','psql','-U','queuedesk','-d','queuedesk','-tA','-c',sql],
         capture_output=True,text=True,timeout=30)
     assert r.returncode==0,(r.returncode,r.stderr)
     return r.stdout.strip()
 
 def runmqsc(script):
+    """Pipe an MQSC script into the lab queue manager; returns the completed process."""
     r=subprocess.run(['docker','exec','-i','qdesk-mq','bash','-c','runmqsc QDESK'],input=script,
         capture_output=True,text=True,timeout=60)
     return r
 
 def wait_attempt(iid, result, timeout=60):
+    """Poll until a processing-attempt row with the given result exists (or time out)."""
     deadline=time.time()+timeout
     while time.time()<deadline:
         if psql(f"SELECT COUNT(*) FROM processing_attempt WHERE instruction_id='{iid}' AND result='{result}'")>='1':
@@ -81,6 +89,7 @@ def wait_attempt(iid, result, timeout=60):
     raise AssertionError(f'no {result} attempt for {iid}')
 
 def wait_published(runid, total, timeout=30):
+    """Poll until the run's outbox has fully drained to the expected published total."""
     deadline=time.time()+timeout
     while time.time()<deadline:
         summary=run_summary(runid)
@@ -89,6 +98,7 @@ def wait_published(runid, total, timeout=30):
     raise AssertionError(f"outbox did not drain for {runid}: {run_summary(runid)}")
 
 def load_report(path):
+    """Load a generator report and assert the shared report contract (keys present, no failures)."""
     with open(path) as f: report=json.load(f)
     for key in ['scenario','seed','runId','attempted','unique','outcomes','httpLatencyMs','endToEndLatencyMs','unresolved','assertionFailures']:
         assert key in report,(key,path)

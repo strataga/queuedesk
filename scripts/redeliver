@@ -1,5 +1,8 @@
 #!/bin/sh
-# Lab-only controlled-redelivery injector for SC07. See docs/RUNBOOK-RECOVERY.md.
+# Lab-only controlled-redelivery injector (SC07): replays one stored
+# instruction as a second delivery of the same eventId to prove dedup.
+# Usage: scripts/redeliver <baseUrl> <instructionId> <eventId> [queue]
+# See tools/Redeliver.java and docs/RUNBOOK-RECOVERY.md.
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 . "$ROOT/scripts/java-env.sh"

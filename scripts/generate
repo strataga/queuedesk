@@ -1,4 +1,8 @@
 #!/bin/sh
+# Traffic generator launcher: runs the self-contained tools/Generate.java on
+# JDK 25 (via scripts/java-env.sh). Dry-run by default; pass --send to hit
+# the API and --observe to wait for completion. See tools/Generate.java for
+# the full contract, or run with --help.
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 . "$ROOT/scripts/java-env.sh"

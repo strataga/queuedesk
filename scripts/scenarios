@@ -1,4 +1,7 @@
 #!/bin/sh
+# Core scenario suite launcher (SC01-SC12): packages the app, then runs the
+# acceptance catalog against the local lab. Requires Postgres + MQ up.
+# See scripts/scenarios.py for the assertions and reports.
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 . "$ROOT/scripts/java-env.sh"
